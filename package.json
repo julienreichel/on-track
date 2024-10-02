@@ -10,9 +10,11 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@nuxt/eslint": "^0.5.7",
     "aws-amplify": "^6.6.2",
     "nuxt": "^3.13.0",
     "vue": "latest",
+    "vue-i18n": "^9.14.1",
     "vue-router": "latest"
   },
   "devDependencies": {
