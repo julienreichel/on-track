@@ -1,5 +1,5 @@
 <template>
-  <div class="lecture-container">
+  <div class="container">
     <h1>Lectures</h1>
     <ul class="lecture-list">
       <li
@@ -77,9 +77,10 @@ const fetchPrerequisites = async (lectureId: string): Promise<void> => {
 </script>
 
 <style scoped>
-.lecture-container {
-  font-family: Arial, sans-serif;
-  margin: 20px;
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 h1,

@@ -4,7 +4,7 @@
 
 // Define a generic type for the GraphQL query response
 interface GraphQLResponse {
-  id: string;
+  id?: string;
   [key: string]: string | object | number | undefined; // Allow other properties
 }
 
