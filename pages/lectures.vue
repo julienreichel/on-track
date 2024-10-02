@@ -15,24 +15,54 @@
     <div v-if="selectedLecture" class="prerequisite-container">
       <h3>Prerequisites for {{ selectedLecture.name.en }}</h3>
       <ul class="prerequisite-list">
-        <li v-for="{ prerequisite } in selectedLecture.prerequisites" :key="prerequisite.id" class="prerequisite-item">
+        <li
+          v-for="{ prerequisite } in selectedLecture.prerequisites"
+          :key="prerequisite.id"
+          @click="fetchPrerequisites(prerequisite.id)"
+          class="prerequisite-item"
+        >
           {{ prerequisite.name.en }}
+        </li>
+      </ul>
+      <h3>Follow up for {{ selectedLecture.name.en }}</h3>
+      <ul class="prerequisite-list">
+        <li
+          v-for="{ lecture } in selectedLecture.followUps"
+          :key="lecture.id"
+          @click="fetchPrerequisites(lecture.id)"
+          class="prerequisite-item"
+        >
+          {{ lecture.name.en }}
         </li>
       </ul>
     </div>
 
     <div class="add-lecture">
       <h2>Add New Lecture</h2>
-      <input v-model="newLecture.name.en" placeholder="Enter lecture name" class="lecture-input" />
+      <input
+        v-model="newLecture.name.en"
+        placeholder="Enter lecture name"
+        class="lecture-input"
+      />
 
       <h3>Select Prerequisites</h3>
-      <select v-model="selectedPrerequisites" multiple class="prerequisite-select">
-        <option v-for="lecture in lectureList" :key="lecture.id" :value="lecture.id">
+      <select
+        v-model="selectedPrerequisites"
+        multiple
+        class="prerequisite-select"
+      >
+        <option
+          v-for="lecture in lectureList"
+          :key="lecture.id"
+          :value="lecture.id"
+        >
           {{ lecture.name.en }}
         </option>
       </select>
 
-      <button @click="addLectureWithPrerequisites" class="add-button">Add Lecture</button>
+      <button @click="addLectureWithPrerequisites" class="add-button">
+        Add Lecture
+      </button>
     </div>
   </div>
 </template>
@@ -45,7 +75,7 @@ const lectureList = ref([]);
 const newLecture = ref({
   name: {
     en: "New Lecture",
-  }
+  },
 });
 const selectedPrerequisites = ref<string[]>([]);
 const selectedLecture = ref(null);
@@ -71,7 +101,7 @@ const addLectureWithPrerequisites = async (): Promise<void> => {
 };
 
 const fetchPrerequisites = async (lectureId: string): Promise<void> => {
-  selectedLecture.value =  await lectureService.get(lectureId);
+  selectedLecture.value = await lectureService.get(lectureId);
   console.log(selectedLecture.value);
 };
 </script>

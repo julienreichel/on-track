@@ -12,7 +12,6 @@ export default function () {
 
   const query = async (request: OpenAIRequest) => {
 
-    console.log(request);
     const data = await create(request);
 
     const requestId = data.id;
