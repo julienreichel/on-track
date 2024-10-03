@@ -153,7 +153,7 @@ const findClusters = (nodes, parents, children) => {
   const iterations = 2;
   for (let iter = 0; iter < iterations; iter++) {
     let minPos = nodes.length;
-    console.log(Object.keys(positions).map((k) => nodeMap[k].data.label + '->' + positions[k]));
+
     for (let l = 0; l <= maxLayer; l++) {
       const medianValues = {};
       layers[l].forEach((node) => {
@@ -165,9 +165,8 @@ const findClusters = (nodes, parents, children) => {
           linked.push(positions[node.id]);
         }
         medianValues[node.id] = getMedian(linked);
-        console.log(linked);
       });
-      console.log(l, Object.keys(medianValues).map((k) => nodeMap[k].data.label + '->' + medianValues[k]));
+
       layers[l].sort((a, b) => medianValues[a.id] - medianValues[b.id]);
       let pos = 0
       layers[l].forEach((node) => {
@@ -193,7 +192,7 @@ const findClusters = (nodes, parents, children) => {
         }
         medianValues[node.id] = getMedian(linked);
       });
-      console.log(l, Object.keys(medianValues).map((k) => nodeMap[k].data.label + '->' + medianValues[k]));
+
       layers[l].sort((a, b) => medianValues[a.id] - medianValues[b.id]);
       let pos = 0
       layers[l].forEach((node) => {
