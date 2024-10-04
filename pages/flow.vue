@@ -37,6 +37,7 @@ onMounted(async () => {
   nodes.value = lectures.map((lecture) => ({
     id: lecture.id,
     position: { x:0, y:0 },
+    style: { backgroundColor: 'aquamarine' },
     data: {
       label: lecture.name.en,
     },
@@ -138,4 +139,14 @@ onEdgesChange(async (changes) => {
 
 /* import the default theme, this is optional but generally recommended */
 @import "@vue-flow/core/dist/theme-default.css";
+
+.vue-flow__node.selected {
+  border: 3px solid #2a08ec;
+}
+
+.vue-flow__edge.selected .vue-flow__edge-path {
+  stroke: #2a08ec;
+  stroke-width: 3px;
+}
+
 </style>
