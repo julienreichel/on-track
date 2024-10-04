@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^1.1.4",
     "@nuxt/eslint": "^0.5.7",
     "@vue-flow/core": "^1.41.2",
     "aws-amplify": "^6.6.2",
