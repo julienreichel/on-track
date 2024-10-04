@@ -2,21 +2,16 @@
  * @type {import('aws-amplify/data').Client<import('../amplify/data/resource').Schema>}
  */
 
-// Define a generic type for the GraphQL query response
-interface GraphQLResponse {
+interface GraphQLModel {
   id?: string;
   [key: string]: string | object | number | undefined; // Allow other properties
 }
 
-interface Model {
-  [key: string]: string | object | number | undefined; // Allow other properties
-}
-
-interface Options {
+interface GraphQLOptions {
   [key: string]: string | object | number | undefined; // Define specific options if needed
 }
 
-interface Params {
+interface GraphQLParams {
   filter?: string;
   limit?: number;
   nextToken?: string;
@@ -38,15 +33,15 @@ export default function (
   /**
    * Call the GraphQL API
    * @param {string} request - The type of request to perform (e.g., 'create', 'update', 'delete', 'get', 'list').
-   * @param {object} input - The model data to be sent with the request.
-   * @param {object} options - Additional options for the request, such as authentication mode and selection set.
-   * @returns {GraphQLResponse} - A promise that resolves to the response data, which always includes an `id` property.
+   * @param {GraphQLModel} input - The model data to be sent with the request.
+   * @param {GraphQLOptions} options - Additional options for the request, such as authentication mode and selection set.
+   * @returns {Promise<GraphQLModel>} - A promise that resolves to the response data, which always includes an `id` property.
    */
   const call = async (
     request: string,
-    input: Model | Params,
-    options: Options = {}
-  ): Promise<GraphQLResponse> => {
+    input: GraphQLModel | GraphQLParams,
+    options: GraphQLOptions = {}
+  ): Promise<GraphQLModel> => {
     options = {
       ...defaultOptions,
       ...options,
@@ -58,22 +53,22 @@ export default function (
   /**
    * Create a model
    *
-   * @param {object} input the model data
-   * @param {object} options the options
-   * @returns {Promise<object>}
+   * @param {GraphQLModel} input the model data
+   * @param {GraphQLOptions} options the options
+   * @returns {Promise<GraphQLModel>}
    */
-  const create = async (input: Model, options: Options = {}) => {
+  const create = async (input: GraphQLModel, options: GraphQLOptions = {}) => {
     return call("create", input, options);
   };
 
   /**
    * Update a model
    *
-   * @param {object} input the model data
-   * @param {object} options the options
-   * @returns {Promise<object>}
+   * @param {GraphQLModel} input the model data
+   * @param {GraphQLOptions} options the options
+   * @returns {Promise<GraphQLModel>}
    */
-  const update = async (input: Model, options: Options = {}) => {
+  const update = async (input: GraphQLModel, options: GraphQLOptions = {}) => {
     return call("update", input, options);
   };
 
@@ -81,25 +76,23 @@ export default function (
    * Get a model
    *
    * @param {string} id the model id
-   * @param {object} options the options
-   * @returns {Promise<object>}
+   * @param {GraphQLOptions} options the options
+   * @returns {Promise<GraphQLModel>}
    */
-  const get = async (id: string, options: Options = {}) => {
+  const get = async (id: string, options: GraphQLOptions = {}) => {
     return call("get", { id }, options);
   };
 
   /**
    * Delete a model
    *
-   * @param {object} model the model
-   * @param {object} options the options
-   * @returns {Promise<object>}
+   * @param {GraphQLModel} model the model
+   * @param {GraphQLOptions} options the options
+   * @returns {Promise<GraphQLModel>}
    */
-  const del = async (model: Model, options: Options = {}) => {
-    if (!model.id) return;
+  const del = async (model: GraphQLModel, options: GraphQLOptions = {}) => {
 
-    const { id } = model;
-    const data = await call("delete", { id }, options);
+    const data = await call("delete", model, options);
 
     return data;
   };
@@ -107,15 +100,15 @@ export default function (
   /**
    * List models
    *
-   * @param {object} params options
+   * @param {GraphQLParams} params options
    * @param {string} [params.filter] filter
    * @param {number} [params.limit] limit
    * @param {string} [params.nextToken] nextToken
    * @param {string} [params.sortDirection] sortDirection
-   * @param {object} options the options
-   * @returns {Promise<object>}
+   * @param {GraphQLOptions} options the options
+   * @returns {Promise<GraphQLModel>}
    */
-  const list = async (params: Params = {}, options: Options = {}) => {
+  const list = async (params: GraphQLParams = {}, options: GraphQLOptions = {}) => {
     options = {
       selectionSet: listSelectionSet,
       ...options,
@@ -128,7 +121,7 @@ export default function (
     create,
     update,
     get,
-    del,
+    delete: del,
     list,
   };
 }

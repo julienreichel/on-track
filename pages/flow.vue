@@ -1,11 +1,26 @@
 <template>
   <div style="height: 600px; width: 100%">
-    <vue-flow :nodes="nodes" :edges="edges" />
+    <vue-flow
+      :nodes="nodes"
+      :edges="edges"
+      :connection-mode="ConnectionMode.Strict"
+    >
+      <panel>
+        <input
+          v-model="newLectureName"
+          placeholder="Lecture name"
+          type="text"
+          @keypress.enter="addLecture"
+        >
+      </panel>
+    </vue-flow>
   </div>
 </template>
 
 <script setup lang="js">
-import { VueFlow } from "@vue-flow/core";
+import { VueFlow, Panel, ConnectionMode, useVueFlow } from "@vue-flow/core";
+
+const { onConnect, onNodesChange, onEdgesChange, applyNodeChanges, applyEdgeChanges } = useVueFlow()
 
 const lectureService = useLecture();
 const prerequisiteService = useLecturePrerequisite();
@@ -231,10 +246,10 @@ const findClusters = (nodes, parents, children) => {
  const assignCoordinates = (layers, nodeSpacing = 100, layerHeight = 100) => {
   const coordinates = {};
   Object.keys(layers).forEach((layerNum) => {
-    const y = layerNum * layerHeight;
+    const y = layerHeight + layerNum * layerHeight;
     const nodesInLayer = layers[layerNum];
     nodesInLayer.forEach((node) => {
-      const x = node.position * nodeSpacing;
+      const x = node.position * nodeSpacing + nodeSpacing;
       coordinates[node.id] = { x, y };
     });
   });
@@ -283,13 +298,89 @@ onMounted(async () => {
 
   // convert prerequisites to edges
   edges.value = prerequisites.map((prerequisite) => ({
-    id: `${prerequisite.prerequisiteId}->${prerequisite.lectureId}`,
+    id: prerequisite.id,
     source: prerequisite.prerequisiteId,
     target: prerequisite.lectureId,
   }));
 
   nodes.value = layoutDAG(floatingNodes, edges.value);
 });
+
+const newLectureName = ref("");
+const addLecture = () => {
+  // Create a new lecture
+  const newLecture = {
+    name: {
+      en: newLectureName.value,
+    },
+  };
+
+  lectureService.create(newLecture).then((lecture) => {
+    // Add the new lecture to the list of nodes
+    nodes.value.push({
+      id: lecture.id,
+      position: { x: 500, y: 500 },
+      data: {
+        label: lecture.name.en,
+      },
+    });
+  });
+  newLectureName.value = "";
+};
+
+
+onConnect( async ({source, target}) => {
+  console.log("Connect:", source, target);
+  // create a new prerequisite
+  const prerequisite = await prerequisiteService.create({
+    lectureId: target,
+    prerequisiteId: source
+  });
+
+  console.log("Prerequisite:", prerequisite);
+
+  // Add the new edge to the list of edges
+  edges.value.push({
+    id: prerequisite.id,
+    source,
+    target,
+  });
+  console.log("Edges:", edges.value);
+
+});
+
+onNodesChange(async (changes) => {
+  const nextChanges = [];
+
+  for (const change of changes) {
+    if (change.type === 'remove') {
+      // delete the lecture
+      await lectureService.delete({ id: change.id })
+      nodes.value = nodes.value.filter(node => node.id !== change.id);
+      edges.value = edges.value.filter(edge => edge.source !== change.id && edge.target !== change.id);
+    } else {
+      nextChanges.push(change)
+    }
+  }
+
+  applyNodeChanges(nextChanges)
+})
+
+onEdgesChange(async (changes) => {
+  const nextChanges = []
+
+  for (const change of changes) {
+    if (change.type === 'remove') {
+      // delete the prerequisite
+      await prerequisiteService.delete({ id: change.id});
+      edges.value = edges.value.filter(edge => edge.id !== change.id);
+    } else {
+      nextChanges.push(change)
+    }
+  }
+
+  applyEdgeChanges(nextChanges)
+})
 </script>
 
 <style>

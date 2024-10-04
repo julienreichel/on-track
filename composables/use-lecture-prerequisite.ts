@@ -6,5 +6,5 @@ interface LecturePrerequisiteModel {
 }
 
 export default function () {
-  return useGraphqlQuery('LecturePrerequisite', ['prerequisiteId', 'lectureId']);
+  return useGraphqlQuery('LecturePrerequisite', ['id', 'prerequisiteId', 'lectureId']);
 }
