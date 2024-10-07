@@ -1,6 +1,7 @@
 import { jsonrepair } from "jsonrepair";
+import prerequisitePrompt from "./prompts/prerequisites.js";
 
-interface OpenAIRequest {
+interface OpenAIRequest extends GraphQLModel {
   system?: string;
   prompt: string;
   token: number;
@@ -42,5 +43,15 @@ export default function () {
     }
   };
 
-  return query;
+  const queryPrerequisites = async (existingLectures: string[], newLectures: string[]) => {
+    const request: OpenAIRequest = {
+      system: prerequisitePrompt.system(),
+      prompt: prerequisitePrompt.prompt(existingLectures, newLectures),
+      token: newLectures.length * 300,
+      format: "json",
+    };
+    return query(request);
+  };
+
+  return {query, queryPrerequisites};
 }

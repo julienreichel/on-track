@@ -106,14 +106,14 @@ export default function (
    * @param {string} [params.nextToken] nextToken
    * @param {string} [params.sortDirection] sortDirection
    * @param {GraphQLOptions} options the options
-   * @returns {Promise<GraphQLModel>}
+   * @returns {Promise<GraphQLModel[]>}
    */
-  const list = async (params: GraphQLParams = {}, options: GraphQLOptions = {}) => {
+  const list = async (params: GraphQLParams = {}, options: GraphQLOptions = {}) : Promise<GraphQLModel[]> => {
     options = {
       selectionSet: listSelectionSet,
       ...options,
     };
-    return call("list", params, options);
+    return call("list", params, options) as unknown as GraphQLModel[];
   };
 
   return {

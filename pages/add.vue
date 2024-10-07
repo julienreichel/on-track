@@ -1,9 +1,9 @@
 <template>
   <div class="container">
-    <h1>ChatGPT Interface</h1>
+    <h1>Add lectures</h1>
 
     <!-- Prompt Input -->
-    <label for="prompt">Prompt</label>
+    <label for="prompt">New lectures</label>
     <textarea id="prompt" v-model="prompt" rows="6" class="input" />
 
     <!-- Submit Button and Progress Icon -->
@@ -13,7 +13,7 @@
     </div>
 
     <!-- Response Output -->
-    <label for="response">Response</label>
+    <label for="response">Proposal for more</label>
     <textarea
       id="response"
       v-model="response"
@@ -29,18 +29,17 @@ const prompt = ref("");
 const response = ref("");
 const loading = ref(false);
 
-const { query } = useOpenAI();
+const lectureService = useLecture();
 
 const sendRequest = async () => {
   loading.value = true;
   response.value = ""; // Clear previous response
 
-  // Prepare the request payload
-  const input = {
-    prompt: prompt.value,
-    token: 1000,
-  };
-  response.value = await query(input);
+  const newLectures = prompt.value.split("\n");
+  const {additionalLectures} = await lectureService.createWithAI(newLectures);
+
+  response.value = additionalLectures.join("\n");
+
   loading.value = false;
 };
 </script>
