@@ -1,115 +1,45 @@
 <template>
-  <div class="container">
-    <h1>Add lectures</h1>
-
-    <!-- Prompt Input -->
-    <label for="prompt">New lectures</label>
-    <textarea id="prompt" v-model="prompt" rows="6" class="input" />
-
-    <!-- Submit Button and Progress Icon -->
-    <div class="controls">
-      <button :disabled="loading" @click="sendRequest">Send Request</button>
-      <div v-if="loading" class="spinner" />
-    </div>
-
-    <!-- Response Output -->
-    <label for="response">Proposal for more</label>
-    <textarea
-      id="response"
-      v-model="response"
-      rows="8"
-      class="output"
-      readonly
+  <q-page class="q-gutter-sm q-pa-sm">
+    <p class="text-h6 q-pt-md">Add lectures</p>
+    <q-input v-model="prompt" rows="6" type="textarea" />
+    <q-btn label="Send Request" @click="sendRequest" />
+    <q-input v-model="response" rows="6" readonly type="textarea" />
+    <div style="height: 900px; width: 100%">
+    <lecture-flow
+      :lectures="lectures"
+      :prerequisites="prerequisites"
     />
   </div>
+  </q-page>
 </template>
 
 <script setup lang="ts">
+const lectureService = useLecture();
+const { loading } = useQuasar();
+
+
 const prompt = ref("");
 const response = ref("");
-const loading = ref(false);
+const isLoading = ref(false);
+const lectures = ref([]);
+const prerequisites = ref([]);
 
-const lectureService = useLecture();
 
 const sendRequest = async () => {
-  loading.value = true;
+  loading.show();
+  isLoading.value = true;
   response.value = ""; // Clear previous response
 
   const newLectures = prompt.value.split("\n");
-  const {additionalLectures} = await lectureService.createWithAI(newLectures);
+  const { additionalLectures, touchedLectures, touchedPrerequisites } = await lectureService.createWithAI(newLectures);
+
+  lectures.value = touchedLectures;
+  prerequisites.value = touchedPrerequisites;
 
   response.value = additionalLectures.join("\n");
 
-  loading.value = false;
+  isLoading.value = false;
+  loading.hide();
 };
 </script>
 
-<style scoped>
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-label {
-  font-weight: bold;
-  margin-top: 10px;
-  display: block;
-}
-
-.input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.output {
-  width: 100%;
-  padding: 10px;
-  margin-top: 15px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #f7f7f7;
-}
-
-.controls {
-  display: flex;
-  align-items: center;
-}
-
-button {
-  padding: 10px 20px;
-  width: 100%;
-  background-color: #42b983;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background-color: #aaa;
-  cursor: not-allowed;
-}
-
-.spinner {
-  margin-left: 10px;
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(0, 0, 0, 0.1);
-  border-top: 3px solid #42b983;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-</style>

@@ -4,9 +4,9 @@ You are tasked with creating a curriculum for students that includes both existi
 
 **Objective (O)**:
 Your task is to analyze each new lecture in relation to the existing ones and:
-1. List the prerequisite lectures (either from the existing or new set).
-2. Identify any additional prerequisites that are not listed as specific lectures.
-3. Determine if any existing lectures may need the new lecture as a prerequisite.
+1. List the prerequisite lectures (either from the existing or new set) (Prerequisite).
+2. Identify any additional prerequisites that are not listed as specific lectures (Additional Prerequisites).
+3. Determine if any existing lectures may need the new lecture as a prerequisite (Dependent Existing Lectures).
 
 **Style (S)**:
 The response should be technical and formal, as you are generating a structured list of prerequisite relationships between lectures.

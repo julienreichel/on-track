@@ -3,7 +3,7 @@ export type LectureModel = GraphQLModel & {
   name: { en?: string; fr?: string };
   prerequisites: { prerequisite: { id: string } }[];
   followUps: { lecture: { id: string } }[];
-}
+};
 
 type locale = "en" | "fr";
 
@@ -49,100 +49,116 @@ export default function () {
     return calls.delete(model, options) as Promise<LectureModel>;
   };
 
-  const createWithAI = async (lectureList: string[], locale: locale = 'en') => {
-    const existingLectures:LectureModel[] = ((await calls.list()) || []) as LectureModel[];
+  const createWithAI = async (lectureList: string[], locale: locale = "en") => {
+    const existingLectures: LectureModel[] = ((await calls.list()) ||
+      []) as LectureModel[];
 
-    const newLectures = lectureList.filter(
-      (lecture) => !existingLectures.some((l:LectureModel) => l.name[locale] === lecture)
-    );
-
-    const existingLectureNames: string[] = existingLectures.map((l:LectureModel) => l.name[locale] || "").filter(Boolean);
+    const existingLectureNames: string[] = existingLectures
+      .map((l: LectureModel) => l.name[locale] || "")
+      .filter(Boolean);
     const response = await queryPrerequisites(
       existingLectureNames,
-      newLectures
+      lectureList
     );
     console.log("queryPrerequisites", response);
 
-    const createdLectures : LectureModel[] = [];
-    const additionalLectures : string[] = [];
+    const createdLectures: LectureModel[] = [];
+    const additionalLectures: string[] = [];
+    const touchedLectures: LectureModel[] = [];
+    const touchedPrerequisites: LecturePrerequisiteModel[] = [];
     if (!response) {
-      return {createdLectures, additionalLectures};
+      return { createdLectures, additionalLectures, touchedLectures, touchedPrerequisites };
     }
 
-  // step 1 create the new lectures
-  await Promise.all(
-    Object.keys(response).map(async (key) => {
-      const existing = existingLectures.find((l:LectureModel) => l.name[locale] === key);
-      if (existing) {
-        return;
-      }
-      const newLecture = {
-        name: {
-          en: key,
-        },
-      };
-      const lecture = await calls.create(newLecture) as unknown as LectureModel;
-      existingLectures.push(lecture);
-      createdLectures.push(lecture as unknown as LectureModel);
-    })
-  );
+    // step 1 create the new lectures
+    await Promise.all(
+      Object.keys(response).map(async (key) => {
+        const existing = existingLectures.find(
+          (l: LectureModel) => l.name[locale] === key
+        );
+        if (existing) {
+          return;
+        }
+        const newLecture = {
+          name: {
+            en: key,
+          },
+        };
+        const lecture = (await calls.create(
+          newLecture
+        )) as LectureModel;
+        existingLectures.push(lecture);
+        createdLectures.push(lecture);
+        touchedLectures.push(lecture);
+      })
+    );
 
-  console.log("existingLectures", existingLectures);
-  // step 2 create the prerequisites
-  const linkMap: Map<string, boolean> = new Map();
-  await Promise.all(
-    Object.keys(response).map(async (key) => {
-      const lecture = existingLectures.find((l:LectureModel) => l.name[locale] === key);
-      console.log("Processing", key, lecture);
-      if (!lecture) {
-        return;
-      }
-      await Promise.all(
-        response[key]["Prerequisite"].map(async (prerequisiteName:string) => {
-          const prerequisiteId = existingLectures.find(
-            (l:LectureModel) => l.name[locale] === prerequisiteName
-          )?.id;
-          if (!prerequisiteId) {
-            return;
-          }
-          console.log("Prerequisite", prerequisiteName, prerequisiteId);
-          linkMap.set(lecture.id + "->" + prerequisiteId, true);
-          await prerequisiteService.create({
-            lectureId: lecture.id,
-            prerequisiteId,
-          });
-        })
-      );
-      await Promise.all(
-        response[key]["Dependent Existing Lectures"].map(
-          async (lectureName: string) => {
-            const lectureId = existingLectures.find(
-              (l:LectureModel) => l.name[locale] === lectureName
-            )?.id;
-            if (!lectureId) {
-              return;
+    // step 2 create the prerequisites
+    const linkMap: Map<string, boolean> = new Map();
+    await Promise.all(
+      Object.keys(response).map(async (key) => {
+        const lecture = existingLectures.find(
+          (l: LectureModel) => l.name[locale] === key
+        );
+        if (!lecture) {
+          return;
+        }
+        await Promise.all(
+          response[key]["Prerequisite"].map(
+            async (prerequisiteName: string) => {
+              const prerequisite = existingLectures.find(
+                (l: LectureModel) => l.name[locale] === prerequisiteName
+              );
+              if (!prerequisite) {
+                return;
+              }
+              if (!touchedLectures.includes(prerequisite)) {
+                touchedLectures.push(prerequisite);
+              }
+              linkMap.set(lecture.id + "->" + prerequisite.id, true);
+              const pre = await prerequisiteService.create({
+                lectureId: lecture.id,
+                prerequisiteId: prerequisite.id,
+              }) as LecturePrerequisiteModel;
+              touchedPrerequisites.push(pre);
             }
-            // check if this was already added in the previous step
-            if (linkMap.has(lectureId + "->" + lecture.id)) {
-              return;
+          )
+        );
+        await Promise.all(
+          response[key]["Dependent Existing Lectures"].map(
+            async (lectureName: string) => {
+              const target = existingLectures.find(
+                (l: LectureModel) => l.name[locale] === lectureName
+              );
+              if (!target) {
+                return;
+              }
+              if (!touchedLectures.includes(target)) {
+                touchedLectures.push(target);
+              }
+              // check if this was already added in the previous step
+              if (linkMap.has(target.id + "->" + lecture.id)) {
+                return;
+              }
+              linkMap.set(lecture.id + "->" + lecture.id, true);
+              const pre = await prerequisiteService.create({
+                lectureId: target.id,
+                prerequisiteId: lecture.id,
+              }) as LecturePrerequisiteModel;;
+              touchedPrerequisites.push(pre);
             }
-            linkMap.set(lecture.id + "->" + lecture.id, true);
-            await prerequisiteService.create({
-              lectureId,
-              prerequisiteId: lecture.id,
-            });
-          }
-        )
-      );
-      // propose to the new user new prerequisites to be created
-      additionalLectures.push(... response[key]["Additional Prerequisites"]);
-    }));
+          )
+        );
+        // propose to the new user new prerequisites to be created
+        additionalLectures.push(...response[key]["Additional Prerequisites"]);
+      })
+    );
 
-    return {createdLectures, additionalLectures};
+    return { createdLectures, additionalLectures, touchedLectures, touchedPrerequisites };
   };
   return {
     ...calls,
     delete: del,
-    createWithAI
+    createWithAI,
   };
 }

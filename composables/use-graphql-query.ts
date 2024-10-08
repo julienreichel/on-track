@@ -21,8 +21,8 @@ export type GraphQLParams = {
 
 export default function (
   model: string,
-  selectionSet: string[],
-  listSelectionSet: string[]
+  selectionSet?: string[],
+  listSelectionSet?: string[]
 ) {
   const defaultOptions = {
     //authMode: "userPool",

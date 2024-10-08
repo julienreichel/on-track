@@ -1,4 +1,4 @@
-interface LecturePrerequisiteModel {
+export type LecturePrerequisiteModel = GraphQLModel & {
   prerequisiteId: string;
   lectureId: string;
   prerequisite?: { id: string } ;

@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
   devtools: { enabled: true },
-  modules: ["@nuxt/eslint"],
+  modules: ["@nuxt/eslint", "nuxt-quasar-ui"],
   ssr: false, // Disable server-side rendering
   imports: {
     presets: [
@@ -12,4 +12,29 @@ export default defineNuxtConfig({
       },
     ],
   },
+  quasar: {
+    // Configurable Component Defaults
+    plugins: [
+      'BottomSheet',
+      'Dialog',
+      'Loading',
+      'LoadingBar',
+      'Notify',
+      'Dark',
+    ],
+    components: {
+      defaults: {
+        QBtn: {
+          dense: false,
+          flat: false,
+        },
+        QInput: {
+          dense: false,
+          outlined: true
+        },
+        QPage: {
+        }
+      }
+    }
+  }
 });
