@@ -1,5 +1,5 @@
 <template>
-  <div style="height: 600px; width: 100%">
+  <div style="height: 900px; width: 100%">
     <vue-flow
       :nodes="nodes"
       :edges="edges"

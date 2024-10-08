@@ -1,4 +1,4 @@
-interface LectureModel extends GraphQLModel {
+export type LectureModel = GraphQLModel & {
   id: string;
   name: { en?: string; fr?: string };
   prerequisites: { prerequisite: { id: string } }[];
@@ -31,7 +31,7 @@ export default function () {
     if (!model?.id) return model;
     //must delete the prerequisites and followUps first
     if (!model.prerequisites || !model.followUps) {
-      model = await calls.get(model.id) as unknown as LectureModel;
+      model = (await calls.get(model.id)) as LectureModel;
     }
     // this no longer exists
     if (!model) return model;
@@ -46,11 +46,11 @@ export default function () {
       await prerequisiteService.delete(prerequisite);
     }
 
-    return calls.delete(model as GraphQLModel, options) as unknown as LectureModel;
+    return calls.delete(model, options) as Promise<LectureModel>;
   };
 
   const createWithAI = async (lectureList: string[], locale: locale = 'en') => {
-    const existingLectures:LectureModel[] = (await calls.list()) || [];
+    const existingLectures:LectureModel[] = ((await calls.list()) || []) as LectureModel[];
 
     const newLectures = lectureList.filter(
       (lecture) => !existingLectures.some((l:LectureModel) => l.name[locale] === lecture)

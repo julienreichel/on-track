@@ -1,7 +1,7 @@
 import { jsonrepair } from "jsonrepair";
 import prerequisitePrompt from "./prompts/prerequisites.js";
 
-interface OpenAIRequest extends GraphQLModel {
+export type OpenAIRequest = GraphQLModel & {
   system?: string;
   prompt: string;
   token: number;

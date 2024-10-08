@@ -2,16 +2,16 @@
  * @type {import('aws-amplify/data').Client<import('../amplify/data/resource').Schema>}
  */
 
-interface GraphQLModel {
+export type GraphQLModel = {
   id?: string;
   [key: string]: string | object | number | undefined; // Allow other properties
 }
 
-interface GraphQLOptions {
+export type GraphQLOptions = {
   [key: string]: string | object | number | undefined; // Define specific options if needed
 }
 
-interface GraphQLParams {
+export type GraphQLParams = {
   filter?: string;
   limit?: number;
   nextToken?: string;
