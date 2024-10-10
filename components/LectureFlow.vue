@@ -4,14 +4,18 @@
       :nodes="nodes"
       :edges="edges"
       :connection-mode="ConnectionMode.Strict"
-    />
+    >
+      <template #node-lecture="nodeProps">
+        <FlowLectureNode :data="nodeProps.data" :node-id="nodeProps.id"/>
+      </template>
+    </vue-flow>
   </div>
 </template>
 
 <script setup lang="js">
 import { VueFlow, ConnectionMode, useVueFlow } from "@vue-flow/core";
 
-const { onConnect, onNodesChange, onEdgesChange, applyNodeChanges, applyEdgeChanges, fitView } = useVueFlow()
+const { onConnect, onNodesChange, onEdgesChange, applyNodeChanges, applyEdgeChanges, updateNodeData } = useVueFlow()
 const { layout } = useLayout()
 
 const props = defineProps({
@@ -29,7 +33,7 @@ watch(() => props.lectures, async (lectures) => {
   nodes.value = lectures.map((lecture) => ({
     id: lecture.id,
     position: { x:0, y:0 },
-    style: { backgroundColor: 'aquamarine' },
+    type: 'lecture',
     data: {
       label: lecture.name.en,
     },
@@ -78,6 +82,9 @@ onNodesChange(async (changes) => {
       nodes.value = nodes.value.filter(node => node.id !== change.id);
       await lectureService.delete({ id: change.id })
     } else {
+      if (change.type === "select") {
+        updateNodeData(change.id, { selected: change.selected });
+      }
       nextChanges.push(change)
     }
   }
@@ -108,10 +115,6 @@ onEdgesChange(async (changes) => {
 
 /* import the default theme, this is optional but generally recommended */
 @import "@vue-flow/core/dist/theme-default.css";
-
-.vue-flow__node.selected {
-  border: 3px solid #2a08ec;
-}
 
 .vue-flow__edge.selected .vue-flow__edge-path {
   stroke: #2a08ec;
