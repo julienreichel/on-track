@@ -1,3 +1,5 @@
+import type { SectionModel } from "./use-section";
+
 export type LectureModel = GraphQLModel & {
   id: string;
   name: LocalizedText;
@@ -46,7 +48,7 @@ export default function () {
     if (!model?.id) return model;
     //must delete the prerequisites and followUps and sections first
     if (!model.prerequisites || !model.followUps || !model.sections) {
-      model = await calls.get(model.id) as LectureModel;
+      model = (await calls.get(model.id)) as LectureModel;
     }
     // this no longer exists
     if (!model) return model;
@@ -65,7 +67,8 @@ export default function () {
   };
 
   const createWithAI = async (lectureList: string[], locale: locale = "en") => {
-    const existingLectures: LectureModel[] = ((await calls.list()) || []) as LectureModel[];
+    const existingLectures: LectureModel[] = ((await calls.list()) ||
+      []) as LectureModel[];
 
     const existingLectureNames: string[] = existingLectures
       .map((l: LectureModel) => l.name[locale] || "")
@@ -95,10 +98,8 @@ export default function () {
         const existing = existingLectures.find(
           (l: LectureModel) => l.name[locale] === key
         );
-        if (existing) {
-          return;
-        }
         const data = response[key];
+
         const newLecture = {
           name: {
             [locale]: key,
@@ -107,22 +108,43 @@ export default function () {
             [locale]: data["Description"],
           },
           objectives: data["Objectives"].map((o: string) => ({ [locale]: o })),
-        };
-        const lecture = (await calls.create(newLecture)) as LectureModel;
-        existingLectures.push(lecture);
-        createdLectures.push(lecture);
+        } as LectureModel;
+        let lecture;
+        if (!existing) {
+          lecture = (await calls.create(newLecture)) as LectureModel;
+          existingLectures.push(lecture);
+          createdLectures.push(lecture);
+        } else {
+          newLecture.id = existing.id;
+          lecture = (await calls.update(newLecture)) as LectureModel;
+        }
         touchedLectures.push(lecture);
 
-        // create the sections with onlythe title so far
-        await Promise.all(data["Sections Names"].map((name: string) => sectionService.create({
-          name: {
-            [locale]: name
-          },
-          lectureId: lecture.id
-        })));
+        // create the sections with only the title so far
+        await Promise.all(
+          data["Sections Names"].map(async (name: string) => {
+            if (lecture.sections?.find((s) => s.name[locale] === name)) {
+              return; // already exists
+            }
+            const section = (await sectionService.create({
+              name: {
+                [locale]: name,
+              },
+              lectureId: lecture.id,
+            })) as SectionModel;
+            lecture.sections.push(section);
+          })
+        );
       })
     );
-
+    if (!createdLectures.length) {
+      return {
+        createdLectures,
+        additionalLectures,
+        touchedLectures,
+        touchedPrerequisites,
+      };
+    }
     // step 2 create the prerequisites
     const linkMap: Map<string, boolean> = new Map();
     await Promise.all(
@@ -182,10 +204,13 @@ export default function () {
         );
         // propose to the new user new prerequisites to be created
         additionalLectures.push(...response[key]["Additional Prerequisites"]);
-        const relatedLectures = response[key]["Related Lectures"].map((lectureName: string) =>
-            existingLectures
-              .find((l: LectureModel) => l.name[locale] === lectureName)
-          ).filter(Boolean);
+        const relatedLectures = response[key]["Related Lectures"]
+          .map((lectureName: string) =>
+            existingLectures.find(
+              (l: LectureModel) => l.name[locale] === lectureName
+            )
+          )
+          .filter(Boolean);
         touchedLectures.push(...relatedLectures);
       })
     );

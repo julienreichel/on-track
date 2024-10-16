@@ -51,7 +51,6 @@ export default function (
       ...defaultOptions,
       ...options,
     };
-    console.log("call", request, input, options);
     const { data } = await provider[request](input, options);
     return data;
   };

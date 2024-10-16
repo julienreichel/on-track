@@ -6,7 +6,11 @@
       :connection-mode="ConnectionMode.Strict"
     >
       <template #node-lecture="nodeProps">
-        <FlowLectureNode :data="nodeProps.data" :node-id="nodeProps.id"/>
+        <FlowLectureNode
+          :data="nodeProps.data"
+          :node-id="nodeProps.id"
+          @generate-node-data="generateNodeData"
+        />
       </template>
     </vue-flow>
   </div>
@@ -37,7 +41,8 @@ watch(() => props.lectures, async (lectures) => {
     data: {
       label: lecture.name?.en,
       description: lecture.description?.en,
-      objectives: lecture.objectives?.map(objective => objective.en)
+      objectives: lecture.objectives?.map(objective => objective.en) || [],
+      sections: [],
     },
   }));
   nextTick(() => {
@@ -87,7 +92,8 @@ onNodesChange(async (changes) => {
       if (change.type === "select") {
         if (change.selected) {
           const node = nodes.value.find(node => node.id === change.id);
-          if (node && !node.data.sections){
+          console.log(node.data)
+          if (node && !node.data.sections?.length) {
             const model = await lectureService.get(change.id);
             node.data.sections = model?.sections.map(section => section.name.en);
           }
@@ -117,6 +123,27 @@ onEdgesChange(async (changes) => {
 
   applyEdgeChanges(nextChanges)
 })
+
+const generateNodeData = async (nodeId) => {
+  updateNodeData(nodeId, {
+    selected: false,
+    processing: true
+  });
+
+  const node = nodes.value.find(node => node.id === nodeId);
+  const { touchedLectures } = await lectureService.createWithAI( [node.data.label] );
+
+  if (!touchedLectures.length){
+    return;
+  }
+  const model = touchedLectures[0];
+  updateNodeData(nodeId, {
+    description: model.description?.en,
+    objectives: model.objectives?.map(objective => objective.en),
+    sections: model.sections?.map(section => section.name.en),
+    processing: false
+   });
+}
 </script>
 
 <style>
