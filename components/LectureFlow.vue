@@ -1,5 +1,5 @@
 <template>
-  <div style="height: 900px; width: 100%">
+  <div style="height: 100%; width: 100%">
     <vue-flow
       :nodes="nodes"
       :edges="edges"
@@ -35,7 +35,9 @@ watch(() => props.lectures, async (lectures) => {
     position: { x:0, y:0 },
     type: 'lecture',
     data: {
-      label: lecture.name.en,
+      label: lecture.name?.en,
+      description: lecture.description?.en,
+      objectives: lecture.objectives?.map(objective => objective.en)
     },
   }));
   nextTick(() => {
@@ -83,6 +85,14 @@ onNodesChange(async (changes) => {
       await lectureService.delete({ id: change.id })
     } else {
       if (change.type === "select") {
+        if (change.selected) {
+          const node = nodes.value.find(node => node.id === change.id);
+          if (node && !node.data.sections){
+            const model = await lectureService.get(change.id);
+            node.data.sections = model?.sections.map(section => section.name.en);
+          }
+
+        }
         updateNodeData(change.id, { selected: change.selected });
       }
       nextChanges.push(change)

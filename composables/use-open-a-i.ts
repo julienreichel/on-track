@@ -12,7 +12,7 @@ export default function () {
   const { create, get } = useGraphqlQuery("OpenAIRequest");
 
   const query = async (request: OpenAIRequest) => {
-
+    request.ttl = Math.floor(Date.now() / 1000) + 3600 * 24; // kep request for 24h
     const data = await create(request);
 
     const requestId = data.id;

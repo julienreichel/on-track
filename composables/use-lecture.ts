@@ -1,6 +1,9 @@
 export type LectureModel = GraphQLModel & {
   id: string;
-  name: { en?: string; fr?: string };
+  name: LocalizedText;
+  description: LocalizedText;
+  objectives: LocalizedText[];
+  sections: SectionModel[];
   prerequisites: { prerequisite: { id: string } }[];
   followUps: { lecture: { id: string } }[];
 };
@@ -9,11 +12,23 @@ type locale = "en" | "fr";
 
 export default function () {
   const prerequisiteService = useLecturePrerequisite();
+  const sectionService = useSection();
   const { queryPrerequisites } = useOpenAI();
 
   const calls = useGraphqlQuery(
     "Lecture",
-    ["id", "name.*", "prerequisites.prerequisite.*", "followUps.lecture.*"],
+    [
+      "id",
+      "name.*",
+      "description.*",
+      "objectives.*",
+      "sections.id",
+      "sections.name.*",
+      "prerequisites.id",
+      "prerequisites.prerequisite.*",
+      "followUps.id",
+      "followUps.lecture.*",
+    ],
     ["id", "name.*"]
   );
 
@@ -29,29 +44,28 @@ export default function () {
     options: GraphQLOptions = {}
   ): Promise<LectureModel> => {
     if (!model?.id) return model;
-    //must delete the prerequisites and followUps first
-    if (!model.prerequisites || !model.followUps) {
-      model = (await calls.get(model.id)) as LectureModel;
+    //must delete the prerequisites and followUps and sections first
+    if (!model.prerequisites || !model.followUps || !model.sections) {
+      model = await calls.get(model.id) as LectureModel;
     }
     // this no longer exists
     if (!model) return model;
 
     await Promise.all(
-      model.prerequisites.map((pred) => prerequisiteService.delete(pred))
+      model.prerequisites.map((link) => prerequisiteService.delete(link))
     );
     await Promise.all(
-      model.followUps.map(async (pred) => prerequisiteService.delete(pred))
+      model.followUps.map(async (link) => prerequisiteService.delete(link))
     );
-    for (const { prerequisite } of model.prerequisites) {
-      await prerequisiteService.delete(prerequisite);
-    }
+    await Promise.all(
+      model.sections.map(async (sec) => sectionService.delete(sec))
+    );
 
     return calls.delete(model, options) as Promise<LectureModel>;
   };
 
   const createWithAI = async (lectureList: string[], locale: locale = "en") => {
-    const existingLectures: LectureModel[] = ((await calls.list()) ||
-      []) as LectureModel[];
+    const existingLectures: LectureModel[] = ((await calls.list()) || []) as LectureModel[];
 
     const existingLectureNames: string[] = existingLectures
       .map((l: LectureModel) => l.name[locale] || "")
@@ -67,7 +81,12 @@ export default function () {
     const touchedLectures: LectureModel[] = [];
     const touchedPrerequisites: LecturePrerequisiteModel[] = [];
     if (!response) {
-      return { createdLectures, additionalLectures, touchedLectures, touchedPrerequisites };
+      return {
+        createdLectures,
+        additionalLectures,
+        touchedLectures,
+        touchedPrerequisites,
+      };
     }
 
     // step 1 create the new lectures
@@ -79,17 +98,28 @@ export default function () {
         if (existing) {
           return;
         }
+        const data = response[key];
         const newLecture = {
           name: {
-            en: key,
+            [locale]: key,
           },
+          description: {
+            [locale]: data["Description"],
+          },
+          objectives: data["Objectives"].map((o: string) => ({ [locale]: o })),
         };
-        const lecture = (await calls.create(
-          newLecture
-        )) as LectureModel;
+        const lecture = (await calls.create(newLecture)) as LectureModel;
         existingLectures.push(lecture);
         createdLectures.push(lecture);
         touchedLectures.push(lecture);
+
+        // create the sections with onlythe title so far
+        await Promise.all(data["Sections Names"].map((name: string) => sectionService.create({
+          name: {
+            [locale]: name
+          },
+          lectureId: lecture.id
+        })));
       })
     );
 
@@ -116,16 +146,17 @@ export default function () {
                 touchedLectures.push(prerequisite);
               }
               linkMap.set(lecture.id + "->" + prerequisite.id, true);
-              const pre = await prerequisiteService.create({
+              linkMap.set(prerequisite.id + "->" + lecture.id, true); // do make sure no loop are created
+              const pre = (await prerequisiteService.create({
                 lectureId: lecture.id,
                 prerequisiteId: prerequisite.id,
-              }) as LecturePrerequisiteModel;
+              })) as LecturePrerequisiteModel;
               touchedPrerequisites.push(pre);
             }
           )
         );
         await Promise.all(
-          response[key]["Dependent Existing Lectures"].map(
+          response[key]["Is Prerequisite Of"].map(
             async (lectureName: string) => {
               const target = existingLectures.find(
                 (l: LectureModel) => l.name[locale] === lectureName
@@ -141,20 +172,30 @@ export default function () {
                 return;
               }
               linkMap.set(lecture.id + "->" + lecture.id, true);
-              const pre = await prerequisiteService.create({
+              const pre = (await prerequisiteService.create({
                 lectureId: target.id,
                 prerequisiteId: lecture.id,
-              }) as LecturePrerequisiteModel;;
+              })) as LecturePrerequisiteModel;
               touchedPrerequisites.push(pre);
             }
           )
         );
         // propose to the new user new prerequisites to be created
         additionalLectures.push(...response[key]["Additional Prerequisites"]);
+        const relatedLectures = response[key]["Related Lectures"].map((lectureName: string) =>
+            existingLectures
+              .find((l: LectureModel) => l.name[locale] === lectureName)
+          ).filter(Boolean);
+        touchedLectures.push(...relatedLectures);
       })
     );
 
-    return { createdLectures, additionalLectures, touchedLectures, touchedPrerequisites };
+    return {
+      createdLectures,
+      additionalLectures,
+      touchedLectures,
+      touchedPrerequisites,
+    };
   };
   return {
     ...calls,

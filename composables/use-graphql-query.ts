@@ -2,6 +2,11 @@
  * @type {import('aws-amplify/data').Client<import('../amplify/data/resource').Schema>}
  */
 
+export type LocalizedText = {
+  en?: string;
+  fr?: string
+}
+
 export type GraphQLModel = {
   id?: string;
   [key: string]: string | object | number | undefined; // Allow other properties
@@ -46,6 +51,7 @@ export default function (
       ...defaultOptions,
       ...options,
     };
+    console.log("call", request, input, options);
     const { data } = await provider[request](input, options);
     return data;
   };

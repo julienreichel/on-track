@@ -28,6 +28,31 @@ const schema = a.schema({
     fr: a.string(),
   }),
 
+  QuestionAnswer: a.customType({
+    text: a.ref("LocalizedText"),
+    valid: a.boolean(),
+  }),
+
+  Question: a.customType({
+    id: a.id().required(),
+    type: a.string(),
+    text: a.ref("LocalizedText"),
+    explanations: a.ref("LocalizedText"),
+    level: a.string(),
+    answers: a.ref("QuestionAnswer").array(),
+  }),
+
+  Section: a.model({
+    id: a.id().required(),
+    lectureId: a.id().required(),
+    name: a.ref("LocalizedText"),
+    introduction: a.ref("LocalizedText"),
+    theory: a.ref("LocalizedText"),
+    examples: a.ref("LocalizedText"),
+    questions: a.ref("Question").array(),
+    lecture: a.belongsTo("Lecture", "lectureId"),
+  }).authorization((allow) => [allow.guest()]),
+
   LecturePrerequisite: a
     .model({
       prerequisiteId: a.id().required(),
@@ -41,8 +66,11 @@ const schema = a.schema({
     .model({
       id: a.id().required(),
       name: a.ref("LocalizedText"),
+      description: a.ref("LocalizedText"),
+      objectives: a.ref("LocalizedText").array(),
       prerequisites: a.hasMany("LecturePrerequisite", "lectureId"),
       followUps: a.hasMany("LecturePrerequisite", "prerequisiteId"),
+      sections: a.hasMany("Section", "lectureId"),
     })
     .authorization((allow) => [allow.guest()]),
 });

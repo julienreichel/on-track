@@ -4,12 +4,12 @@
     <q-input v-model="prompt" rows="6" type="textarea" />
     <q-btn label="Send Request" @click="sendRequest" />
     <q-input v-model="response" rows="6" readonly type="textarea" />
-    <div style="height: 900px; width: 100%">
-    <lecture-flow
-      :lectures="lectures"
-      :prerequisites="prerequisites"
-    />
-  </div>
+    <div style="height: 300px; width: 100%">
+      <lecture-flow
+        :lectures="lectures"
+        :prerequisites="prerequisites"
+      />
+    </div>
   </q-page>
 </template>
 
