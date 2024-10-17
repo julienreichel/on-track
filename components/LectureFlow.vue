@@ -41,7 +41,7 @@ watch(() => props.lectures, async (lectures) => {
     data: {
       label: lecture.name?.en,
       description: lecture.description?.en,
-      objectives: lecture.objectives?.map(objective => objective.en) || [],
+      objectives: lecture.objectives || [],
       sections: [],
     },
   }));
@@ -95,7 +95,7 @@ onNodesChange(async (changes) => {
           console.log(node.data)
           if (node && !node.data.sections?.length) {
             const model = await lectureService.get(change.id);
-            node.data.sections = model?.sections.map(section => section.name.en);
+            node.data.sections = model?.sections;
           }
 
         }
@@ -134,13 +134,16 @@ const generateNodeData = async (nodeId) => {
   const { touchedLectures } = await lectureService.createWithAI( [node.data.label] );
 
   if (!touchedLectures.length){
+    updateNodeData(nodeId, {
+      processing: false
+    });
     return;
   }
   const model = touchedLectures[0];
   updateNodeData(nodeId, {
     description: model.description?.en,
     objectives: model.objectives?.map(objective => objective.en),
-    sections: model.sections?.map(section => section.name.en),
+    sections: model.sections,
     processing: false
    });
 }

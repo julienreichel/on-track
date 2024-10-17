@@ -17,29 +17,10 @@
               {{ data.description || "No description" }}
             </q-tab-panel>
             <q-tab-panel name="objectives">
-              <q-list>
-                <q-item
-                  v-for="(objective, idx) in data.objectives"
-                  :key="idx"
-                  class="q-pa-none"
-                >
-                  <q-item-section side>
-                    <q-checkbox v-model="check[idx]" />
-                  </q-item-section>
-                  <q-item-section>{{ objective }}</q-item-section>
-                </q-item>
-              </q-list>
+              <objective-list :objectives="data.objectives" />
             </q-tab-panel>
             <q-tab-panel name="sections">
-              <q-list>
-                <q-item
-                  v-for="(section, idx) in data.sections"
-                  :key="idx"
-                  class="q-pa-none"
-                >
-                  <q-item-section>{{ section }}</q-item-section>
-                </q-item>
-              </q-list>
+              <section-list :sections="data.sections" />
             </q-tab-panel>
           </q-tab-panels>
           <div class="row q-gutter-sm q-pa-sm">
@@ -69,7 +50,6 @@
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
 const { removeNodes } = useVueFlow()
 
-
 const props = defineProps({
   data: {type: Object, required: true},
   nodeId: {type: String, required: true}
@@ -90,7 +70,6 @@ const generateNodeDetails = (nodeId) => {
 }
 
 
-const openNodes = (nodeId) => {
-  console.log(nodeId)
-}
+const openNodes = (nodeId) => navigateTo(`/lecture/${nodeId}`);
+
 </script>
