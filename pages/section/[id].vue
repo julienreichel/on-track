@@ -1,7 +1,7 @@
 <template>
   <div v-if="section" class="q-pa-sm">
     <h1>{{ section.name[locale] }}</h1>
-    <rich-text-renderer :markdown-content="section.introduction[locale]" />
+    <rich-text-renderer v-if="section.introduction" :markdown-content="section.introduction[locale]" />
 
     <div v-if="section.objectives?.length">
       <h3>Objectives</h3>
