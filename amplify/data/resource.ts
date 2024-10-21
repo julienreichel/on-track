@@ -47,6 +47,7 @@ const schema = a.schema({
     lectureId: a.id().required(),
     name: a.ref("LocalizedText"),
     introduction: a.ref("LocalizedText"),
+    objectives: a.ref("LocalizedText").array(),
     theory: a.ref("LocalizedText"),
     examples: a.ref("LocalizedText"),
     questions: a.ref("Question").array(),
