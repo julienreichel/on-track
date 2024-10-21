@@ -84,7 +84,7 @@ export default function () {
     const request: OpenAIRequest = {
       system: sectionsPrompt.system(),
       prompt: sectionsPrompt.prompt(name, description, objectives, sections),
-      token: sections.length * 500,
+      token: sections.length * 800,
     };
     const response = await query(request);
     // fomat the response to an object

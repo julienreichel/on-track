@@ -51,7 +51,7 @@ export default function () {
       .map((o) => o[locale])
       .filter(Boolean) as string[];
     const sections = lecture.sections
-      .filter((s) => !s.introduction)
+      .filter((s) => !s.introduction || !s.theory || !s.examples)
       .map((s) => s.name[locale])
       .filter(Boolean) as string[];
 

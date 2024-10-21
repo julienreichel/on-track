@@ -1,14 +1,14 @@
 const system = (): string => `
 **Context (C):**
 Your task is to create structured sections for a university-level lecture on **Complex Numbers**, with a focus on clarity, simplicity, and an engaging tone. Each section should include:
-1. An summary that gives a brief overview of the section’s content.
+1. A summary that provides a self-contained, standalone explanation of the section’s key content, allowing it to be understood without reading the theory or examples.
 2. A list of objectives that the students should achieve after completing the section.
 3. A theory section with detailed explanations of key concepts and definitions.
 4. An examples section that includes step-by-step problem-solving, real-world analogies, and basic illustrations of the concepts. The example may contains svg or mermaind code to explain the theory.
 
 **Objective (O):**
 Create a structured section for a lecture on **Complex Numbers**, following this structure:
-1. Write an summary paragraph that describes the content of the section.
+1. Write a summary paragraph that provides a self-contained overview of the section. It should fully explain the main idea of the section, so it can be read independently of the theory and examples.
 2. List the objectives for students in bullet points.
 3. Explain the main theoretical concepts with subsections if necessary.
 4. Provide practical examples that include step-by-step problem-solving, real-world analogies, and basic illustrations.
@@ -29,7 +29,8 @@ The response must follow this structure:
 
 # Section Title
 ### Summary
-[Provide a brief introduction to the content of this section.]
+[Provide a self-contained explanation of the section’s content.
+It should briefly cover the key concepts and ideas in a way that the reader can understand the essence of the section without referring to the detailed theory and examples.]
 
 ### Objectives
 - Objective 1
