@@ -18,6 +18,14 @@
       <rich-text-renderer :markdown-content="section.examples[locale]" />
     </div>
 
+    <h3>Questions</h3>
+    <div v-if="section.questions">
+      <quiz-list :questions="section.questions" />
+    </div>
+    <div v-else>
+      <q-btn @click="generateQuizData()">Generate</q-btn>
+    </div>
+
     <h3>Lecture</h3>
     <lecture-list :lectures="[section.lecture]" />
 
@@ -37,6 +45,8 @@
 <script setup>
 const route = useRoute();
 const sectionService = useSection();
+const { loading } = useQuasar();
+
 const section = ref(null);
 const locale = ref("en");
 
@@ -48,4 +58,15 @@ onMounted(async () => {
     console.error("Failed to fetch section:", error);
   }
 });
+
+const generateQuizData = async (level) => {
+  loading.show();
+  if (level) {
+    await sectionService.addQuizWithAI(section.value, level, locale.value);
+  } else {
+    await Promise.all([1, 2, 3, 4].map(l => sectionService.addQuizWithAI(section.value, l, locale.value)));
+  }
+  await sectionService.update(section.value);
+  loading.hide();
+};
 </script>

@@ -27,7 +27,7 @@ export type SectionModel = GraphQLModel & {
 type locale = "en" | "fr";
 
 export default function () {
-  const { querySection } = useOpenAI();
+  const { querySection, queryQuiz } = useOpenAI();
 
   const calls = useGraphqlQuery(
     "Section",
@@ -35,6 +35,7 @@ export default function () {
       "id",
       "name.*",
       "introduction.*",
+      "objectives.*",
       "theory.*",
       "examples.*",
       "lecture.*",
@@ -43,6 +44,38 @@ export default function () {
     ],
     ["id", "name.*"]
   );
+
+  const addQuizWithAI = async (section: SectionModel, level: number, locale: locale = "en") => {
+    const name = section.name[locale];
+    const summary = section.introduction[locale];
+    const objectives = section.objectives
+      .map((o) => o[locale])
+      .filter(Boolean) as string[];
+    const theory = section.theory[locale];
+    const examples = section.examples[locale];
+
+    if (!name || !summary || !objectives || !theory || !examples) {
+      return null;
+    }
+
+    const response = await queryQuiz(name, summary, objectives, theory, examples, level);
+    console.log("response", response);
+
+    if (!section.questions) section.questions = [];
+    section.questions.push(...response.map((q) => {
+      return {
+        text: { [locale]: q.text },
+        explanations: { [locale]: q.explanations },
+        answers: q.answers.map((a) => ({
+          text: { [locale]: a.text },
+          valid: a.valid,
+        })),
+        type: q.type,
+        level: q.level,
+        id: Math.random().toString(34).substring(2)
+      } as QuestionModel;
+    }));
+  };
 
   const createWithAI = async (lecture: LectureModel, locale: locale = "en") => {
     const name = lecture.name[locale];
@@ -66,9 +99,9 @@ export default function () {
       sections
     );
 
-    // need to update the sections with the response
+    // need to update the sections with the response from AI, and generate the questions
     await Promise.all(
-      response.map((newSection: SectionsResponse) => {
+      response.map(async (newSection: SectionsResponse) => {
         // find the section in the lecture
         const section = lecture.sections.find(
           (s) => s.name[locale] === newSection.name
@@ -88,6 +121,10 @@ export default function () {
           section.objectives.push({ [locale]: obj });
         });
 
+        await calls.update(section);
+
+        await Promise.all([1, 2, 3, 4].map(l => addQuizWithAI(section, l, locale)));
+
         calls.update(section);
       })
     );
@@ -96,6 +133,7 @@ export default function () {
   };
 
   calls.createWithAI = createWithAI;
+  calls.addQuizWithAI = addQuizWithAI;
 
   return calls;
 }

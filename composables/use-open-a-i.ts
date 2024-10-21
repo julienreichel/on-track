@@ -1,6 +1,7 @@
 import { jsonrepair } from "jsonrepair";
-import prerequisitePrompt from "./prompts/prerequisites.js";
-import sectionsPrompt from "./prompts/sections.js";
+import prerequisitePrompt from "./prompts/prerequisites";
+import sectionsPrompt from "./prompts/sections";
+import quizPrompt from "./prompts/quiz";
 
 export type OpenAIRequest = GraphQLModel & {
   system?: string;
@@ -15,6 +16,15 @@ export type SectionsResponse = {
   objectives: (string | undefined)[];
   theory: string | undefined;
   examples: string | undefined;
+}
+
+export type QuizResponse = {
+  id: string;
+  type: string;
+  text: string;
+  answers: { text: string; valid: boolean }[];
+  level: string;
+  explanations: string;
 }
 
 export default function () {
@@ -139,5 +149,20 @@ export default function () {
     return jsonResponse;
   };
 
-  return { query, queryPrerequisites, querySection };
+  const queryQuiz = async (
+    name: string, summary: string, objectives: string[], theory: string, examples: string, difficultyLevel: number
+  ): Promise<QuizResponse[]> => {
+
+    const request: OpenAIRequest = {
+      system: quizPrompt.system(difficultyLevel),
+      prompt: quizPrompt.prompt(name, summary, objectives, theory, examples),
+      token: 10 * 250,
+      format: "json",
+    };
+    const response = await query(request);
+
+    return response.questions;
+  }
+
+  return { query, queryPrerequisites, querySection, queryQuiz };
 }
