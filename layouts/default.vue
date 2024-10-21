@@ -64,8 +64,27 @@ h5 {
   margin-block-start: 0.5em;
   margin-block-end: 0.5em;
 }
-ul {
+ul, ol {
     margin: 0 0 16px;
 }
+
+.rich-text th {
+  min-width: 100px;
+  text-align: center;
+  border: 1px solid;
+  background: lightgray;
+}
+
+.rich-text td {
+  min-width: 100px;
+  text-align: center;
+  border: 1px solid;
+}
+
+.rich-text table {
+  border-collapse: collapse;
+  margin: 0 0 16px;
+}
+
 </style>
 

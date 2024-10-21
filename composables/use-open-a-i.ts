@@ -100,7 +100,7 @@ export default function () {
     // fomat the response to an object
 
     function convertMarkdownToJSON(markdown: string): SectionsResponse[] {
-      const sectionsText = markdown.split(/---/).filter(Boolean); // Split by '---' and filter out empty strings
+      const sectionsText = markdown.split(/\n---\n/).filter(Boolean); // Split by '---' and filter out empty strings
       const output = [] as SectionsResponse[];
 
       sectionsText.forEach((section) => {

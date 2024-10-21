@@ -1,6 +1,6 @@
 <template>
   <!-- eslint-disable vue/no-v-html -->
-  <div ref="contentContainer" style="max-width:800px" v-html="renderedHtml" />
+  <div ref="contentContainer" class="rich-text" style="max-width:800px" v-html="renderedHtml" />
 </template>
 
 <script setup>
