@@ -1,14 +1,14 @@
 <template>
   <div v-if="lecture" class="q-pa-sm">
+    <lecture-flow
+      :lectures="relatedLectures"
+      :prerequisites="relatedLinks"
+      direction="LR"
+      :style="{height: `${height}px`, width: '100%' }"
+    />
     <h1>{{ lecture.name[locale] }}</h1>
     <q-btn v-if="!lecture.description" @click="generateLectureData()">Generate</q-btn>
     <p v-if="lecture.description" style="max-width:600px" >{{ lecture.description[locale] }}</p>
-    <div v-if="lecture.prerequisites?.length">
-      <h3>Prerequisites</h3>
-      <lecture-list
-        :lectures="lecture.prerequisites.map((p) => p.prerequisite)"
-      />
-    </div>
     <div v-if="lecture.objectives?.length">
       <h3>Objective</h3>
       <objective-list :objectives="lecture.objectives" :locale="locale"/>
@@ -17,10 +17,6 @@
       <h3>Sections</h3>
       <section-list :sections="lecture.sections" :locale="locale" allow-delete @delete="deleteSection"/>
       <q-btn v-if="lecture.sections.some(s => !s.introduction)" @click="generateSectionsData()">Generate</q-btn>
-    </div>
-    <div v-if="lecture.followUps?.length">
-      <h3>Follow up</h3>
-      <lecture-list :lectures="lecture.followUps.map((f) => f.lecture)" :locale="locale"/>
     </div>
   </div>
   <div v-else>
@@ -55,6 +51,34 @@ onMounted(async () => {
   } catch (error) {
     console.error("Failed to fetch lecture:", error);
   }
+});
+
+const relatedLectures = computed(() => {
+  const relatedLectures = [lecture.value];
+  if (lecture.value?.prerequisites){
+    lecture.value.prerequisites.forEach((p) => relatedLectures.push(p.prerequisite));
+  }
+  if (lecture.value?.followUps){
+    lecture.value.followUps.forEach((f) => relatedLectures.push(f.lecture));
+  }
+  console.log(relatedLectures);
+  return relatedLectures;
+});
+const relatedLinks = computed(() => {
+  const relatedLinks = [];
+  console.log(lecture.value);
+  if (lecture.value?.prerequisites){
+    lecture.value.prerequisites.forEach((p) => relatedLinks.push({ id: p.prerequisite.id, prerequisiteId: p.prerequisite.id, lectureId: lecture.value.id}));
+  }
+  if (lecture.value?.followUps){
+    lecture.value.followUps.forEach((f) => relatedLinks.push({ id: f.lecture.id, prerequisiteId: lecture.value.id, lectureId: f.lecture.id}));
+  }
+  console.log(relatedLinks);
+  return relatedLinks;
+});
+
+const height = computed(() => {
+  return Math.max(lecture.value?.prerequisites?.length || 0, lecture.value?.followUps?.length || 0) * 100;
 });
 
 const generateLectureData = async () => {

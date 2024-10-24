@@ -3,6 +3,7 @@
     <lecture-flow
       :lectures="lectures"
       :prerequisites="prerequisites"
+      direction="TB"
     />
   </div>
 </template>

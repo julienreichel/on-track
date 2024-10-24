@@ -17,10 +17,10 @@
               {{ data.description || "No description" }}
             </q-tab-panel>
             <q-tab-panel name="objectives">
-              <objective-list :objectives="data.objectives" />
+              <objective-list :objectives="data.objectives" :locale="locale"/>
             </q-tab-panel>
             <q-tab-panel name="sections">
-              <section-list :sections="data.sections" />
+              <section-list :sections="data.sections" :locale="locale"/>
             </q-tab-panel>
           </q-tab-panels>
           <div class="row q-gutter-sm q-pa-sm">
@@ -41,8 +41,8 @@
       </q-card-section>
     </q-card>
 
-    <Handle type="target" :position="Position.Top" />
-    <Handle type="source" :position="Position.Bottom" />
+    <Handle type="target" :position="targetPosition" />
+    <Handle type="source" :position="sourcePosition" />
   </div>
 </template>
 
@@ -52,12 +52,12 @@ const { removeNodes } = useVueFlow()
 
 const props = defineProps({
   data: {type: Object, required: true},
-  nodeId: {type: String, required: true}
+  nodeId: {type: String, required: true},
+  locale: {type: String, default: 'en'},
+  direction: {type: String, default: 'TB'}
 })
 
 const emits = defineEmits(['generateNodeData'])
-
-const check = ref(props.data.objectives?.map(() => false));
 const tab = ref('description');
 
 const showPopup = ref(false);
@@ -65,10 +65,28 @@ watch(() => props.data.selected, (selected) => {
   showPopup.value = selected && !props.data.processing
 })
 
+const targetPosition = computed(() => {
+  const map = {
+    TB: Position.Top,
+    BT: Position.Bottom,
+    LR: Position.Left,
+    RL: Position.Right
+  }
+  return map[props.direction];
+});
+const sourcePosition = computed(() => {
+  const map = {
+    TB: Position.Bottom,
+    BT: Position.Top,
+    LR: Position.Right,
+    RL: Position.Left
+  }
+  return map[props.direction];
+});
+
 const generateNodeDetails = (nodeId) => {
   emits('generateNodeData', nodeId);
 }
-
 
 const openNodes = (nodeId) => navigateTo(`/lecture/${nodeId}`);
 

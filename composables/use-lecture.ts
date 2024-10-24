@@ -31,7 +31,7 @@ export default function () {
       "followUps.id",
       "followUps.lecture.*",
     ],
-    ["id", "name.*"]
+    ["id", "name.*", "description.*", "objectives.*"]
   );
 
   /**

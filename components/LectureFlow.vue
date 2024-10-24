@@ -9,6 +9,7 @@
         <FlowLectureNode
           :data="nodeProps.data"
           :node-id="nodeProps.id"
+          :direction="direction"
           @generate-node-data="generateNodeData"
         />
       </template>
@@ -25,6 +26,8 @@ const { layout } = useLayout()
 const props = defineProps({
   lectures: { type: Array, required: true },
   prerequisites: { type: Array, required: true },
+  locale: { type: String, default: "en" },
+  direction: { type: String, default: "TB" },
 });
 const lectureService = useLecture();
 const prerequisiteService = useLecturePrerequisite();
@@ -40,13 +43,13 @@ watch(() => props.lectures, async (lectures) => {
     type: 'lecture',
     data: {
       label: lecture.name?.en,
-      description: lecture.description?.en,
+      description: lecture.description?.[props.locale],
       objectives: lecture.objectives || [],
       sections: [],
     },
   }));
   nextTick(() => {
-    nodes.value = layout(nodes.value, edges.value, 'TB');
+    nodes.value = layout(nodes.value, edges.value, props.direction);
   });
 }, { immediate: true });
 
@@ -58,7 +61,7 @@ watch(() => props.prerequisites, async (prerequisites) => {
     target: prerequisite.lectureId,
   }));
   nextTick(() => {
-    nodes.value = layout(nodes.value, edges.value, 'TB');
+    nodes.value = layout(nodes.value, edges.value, props.direction);
   });
 }, { immediate: true });
 
@@ -92,12 +95,12 @@ onNodesChange(async (changes) => {
       if (change.type === "select") {
         if (change.selected) {
           const node = nodes.value.find(node => node.id === change.id);
-          console.log(node.data)
           if (node && !node.data.sections?.length) {
             const model = await lectureService.get(change.id);
             node.data.sections = model?.sections;
+            node.data.description = model.description?.[props.locale];
+            node.data.objectives = model.objectives || [];
           }
-
         }
         updateNodeData(change.id, { selected: change.selected });
       }
