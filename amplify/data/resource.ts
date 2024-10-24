@@ -21,7 +21,7 @@ const schema = a.schema({
       finish_reason: a.string(),
       ttl: a.integer(),
     })
-    .authorization((allow) => [allow.guest()]),
+    .authorization((allow) => [allow.authenticated()]),
 
   LocalizedText: a.customType({
     en: a.string(),
@@ -42,17 +42,19 @@ const schema = a.schema({
     answers: a.ref("QuestionAnswer").array(),
   }),
 
-  Section: a.model({
-    id: a.id().required(),
-    lectureId: a.id().required(),
-    name: a.ref("LocalizedText"),
-    introduction: a.ref("LocalizedText"),
-    objectives: a.ref("LocalizedText").array(),
-    theory: a.ref("LocalizedText"),
-    examples: a.ref("LocalizedText"),
-    questions: a.ref("Question").array(),
-    lecture: a.belongsTo("Lecture", "lectureId"),
-  }).authorization((allow) => [allow.guest()]),
+  Section: a
+    .model({
+      id: a.id().required(),
+      lectureId: a.id().required(),
+      name: a.ref("LocalizedText"),
+      introduction: a.ref("LocalizedText"),
+      objectives: a.ref("LocalizedText").array(),
+      theory: a.ref("LocalizedText"),
+      examples: a.ref("LocalizedText"),
+      questions: a.ref("Question").array(),
+      lecture: a.belongsTo("Lecture", "lectureId"),
+    })
+    .authorization((allow) => [allow.authenticated()]),
 
   LecturePrerequisite: a
     .model({
@@ -61,7 +63,7 @@ const schema = a.schema({
       prerequisite: a.belongsTo("Lecture", "prerequisiteId"),
       lecture: a.belongsTo("Lecture", "lectureId"),
     })
-    .authorization((allow) => [allow.guest()]),
+    .authorization((allow) => [allow.authenticated()]),
 
   Lecture: a
     .model({
@@ -73,7 +75,7 @@ const schema = a.schema({
       followUps: a.hasMany("LecturePrerequisite", "prerequisiteId"),
       sections: a.hasMany("Section", "lectureId"),
     })
-    .authorization((allow) => [allow.guest()]),
+    .authorization((allow) => [allow.guest(), allow.authenticated()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

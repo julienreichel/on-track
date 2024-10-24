@@ -30,7 +30,7 @@ export default function (
   listSelectionSet?: string[]
 ) {
   const defaultOptions = {
-    //authMode: "userPool",
+    authMode: "userPool",
     selectionSet,
   };
   const provider = useNuxtApp().$Amplify.GraphQL.client.models[model];
@@ -51,6 +51,13 @@ export default function (
       ...defaultOptions,
       ...options,
     };
+    console.log("useGraphqlQuery", request, options);
+    if (request === "list") {
+      input = {
+        ...options,
+        ...input
+      }
+    }
     const { data } = await provider[request](input, options);
     return data;
   };
