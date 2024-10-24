@@ -1,20 +1,36 @@
 <template>
   <q-list>
-    <q-item
-      v-for="(question, idx) in questions"
-      :key="idx"
+    <q-expansion-item
+      v-for="(question) in questions"
+      :key="question.id"
       class="q-pa-none"
+      group="quiz"
+      :label="question.text[locale]"
     >
-      <q-item-section>{{ question.text[locale] }}</q-item-section>
-    </q-item>
+      <template #header>
+        <q-item-section>{{ question.text[locale] }}</q-item-section>
+      </template>
+
+      <!-- Dynamically load the question type component -->
+      <template v-if="question.type === 'radio'">
+        <quiz-radio-question :question="question" :locale="locale" />
+      </template>
+
+      <template v-if="question.type === 'checkbox'">
+        <quiz-checkbox-question :question="question" :locale="locale" />
+      </template>
+
+      <template v-if="question.type === 'word'">
+        <quiz-word-question :question="question" :locale="locale" />
+      </template>
+    </q-expansion-item>
   </q-list>
 </template>
 
 <script setup>
+
 defineProps({
   questions: { type: Array, required: true },
   locale: { type: String, default: "en" },
 });
-
-defineEmits(["delete"]);
 </script>

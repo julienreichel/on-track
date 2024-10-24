@@ -20,7 +20,7 @@
 
     <h3>Questions</h3>
     <div v-if="section.questions">
-      <quiz-list :questions="section.questions" />
+      <quiz-list :questions="section.questions.sort(() => Math.random() - 0.5)" />
     </div>
     <div v-else>
       <q-btn @click="generateQuizData()">Generate</q-btn>
