@@ -20,7 +20,7 @@
 
     <h3>Questions</h3>
     <div v-if="section.questions">
-      <quiz-list :questions="section.questions.sort(() => Math.random() - 0.5)" />
+      <question-list :questions="randomizedQuestions" />
     </div>
     <div v-else>
       <q-btn @click="generateQuizData()">Generate</q-btn>
@@ -57,6 +57,10 @@ onMounted(async () => {
   } catch (error) {
     console.error("Failed to fetch section:", error);
   }
+});
+
+const randomizedQuestions = computed(() => {
+  return [...section.value.questions].sort(() => Math.random() - 0.5);
 });
 
 const generateQuizData = async (level) => {

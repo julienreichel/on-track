@@ -11,7 +11,6 @@
         <q-item-section>{{ question.text[locale] }}</q-item-section>
       </template>
 
-      <!-- Dynamically load the question type component -->
       <template v-if="question.type === 'radio'">
         <quiz-radio-question :question="question" :locale="locale" />
       </template>
