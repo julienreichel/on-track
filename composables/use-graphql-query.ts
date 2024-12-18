@@ -2,10 +2,7 @@
  * @type {import('aws-amplify/data').Client<import('../amplify/data/resource').Schema>}
  */
 
-export type LocalizedText = {
-  en?: string;
-  fr?: string
-}
+export type Locale = "en" | "fr";
 
 export type GraphQLModel = {
   id?: string;

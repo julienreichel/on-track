@@ -10,17 +10,13 @@
           <q-tabs v-model="tab" dense narrow-indicator>
             <q-tab name="description" label="Description" />
             <q-tab name="objectives" label="Objectives" />
-            <q-tab name="sections" label="Sections" />
           </q-tabs>
           <q-tab-panels v-model="tab" animated>
             <q-tab-panel name="description">
               {{ data.description || "No description" }}
             </q-tab-panel>
             <q-tab-panel name="objectives">
-              <objective-list :objectives="data.objectives" :locale="locale"/>
-            </q-tab-panel>
-            <q-tab-panel name="sections">
-              <section-list :sections="data.sections" :locale="locale"/>
+              <objective-list :objectives="data.objectives"/>
             </q-tab-panel>
           </q-tab-panels>
           <div class="row q-gutter-sm q-pa-sm">
@@ -53,7 +49,6 @@ const { removeNodes } = useVueFlow()
 const props = defineProps({
   data: {type: Object, required: true},
   nodeId: {type: String, required: true},
-  locale: {type: String, default: 'en'},
   direction: {type: String, default: 'TB'}
 })
 
@@ -88,6 +83,6 @@ const generateNodeDetails = (nodeId) => {
   emits('generateNodeData', nodeId);
 }
 
-const openNodes = (nodeId) => navigateTo(`/lecture/${nodeId}`);
+const openNodes = (nodeId) => navigateTo(`/concept/${nodeId}`);
 
 </script>

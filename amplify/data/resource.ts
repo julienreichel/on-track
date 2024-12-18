@@ -23,59 +23,91 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.authenticated()]),
 
-  LocalizedText: a.customType({
-    en: a.string(),
-    fr: a.string(),
-  }),
-
   QuestionAnswer: a.customType({
-    text: a.ref("LocalizedText"),
+    text: a.string(),
     valid: a.boolean(),
   }),
 
-  Question: a.customType({
-    id: a.id().required(),
-    type: a.string(),
-    text: a.ref("LocalizedText"),
-    explanations: a.ref("LocalizedText"),
-    level: a.string(),
-    answers: a.ref("QuestionAnswer").array(),
-  }),
-
-  Section: a
+  Question: a
     .model({
       id: a.id().required(),
-      lectureId: a.id().required(),
-      name: a.ref("LocalizedText"),
-      introduction: a.ref("LocalizedText"),
-      objectives: a.ref("LocalizedText").array(),
-      theory: a.ref("LocalizedText"),
-      examples: a.ref("LocalizedText"),
-      questions: a.ref("Question").array(),
-      lecture: a.belongsTo("Lecture", "lectureId"),
+      type: a.string(),
+      text: a.string(),
+      explanations: a.string(),
+      level: a.string(),
+      answers: a.ref("QuestionAnswer").array(),
+      conceptId: a.id().required(),
+      concept: a.belongsTo("Concept", "conceptId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
-  LecturePrerequisite: a
+  FlashCard: a
     .model({
+      id: a.id().required(),
+      frontText: a.string(),
+      backText: a.string(),
+      conceptId: a.id().required(),
+      concept: a.belongsTo("Concept", "conceptId"),
+    })
+    .authorization((allow) => [allow.authenticated()]),
+
+  Concept: a
+    .model({
+      id: a.id().required(),
+      name: a.string(),
+      description: a.string(),
+      objectives: a.string().array(),
+      theory: a.string(),
+      examples: a.string(),
+      questions: a.hasMany("Question", "conceptId"),
+      flashCards: a.hasMany("FlashCard", "conceptId"),
+      prerequisites: a.hasMany("ConceptDependency", "conceptId"),
+      followUps: a.hasMany("ConceptDependency", "prerequisiteId"),
+      competencyId: a.id().required(),
+      competency: a.belongsTo("Competency", "competencyId"),
+    })
+    .authorization((allow) => [allow.authenticated()]),
+
+  ConceptDependency: a
+    .model({
+      conceptId: a.id().required(),
       prerequisiteId: a.id().required(),
-      lectureId: a.id().required(),
-      prerequisite: a.belongsTo("Lecture", "prerequisiteId"),
-      lecture: a.belongsTo("Lecture", "lectureId"),
+      concept: a.belongsTo("Concept", "conceptId"),
+      prerequisite: a.belongsTo("Concept", "prerequisiteId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
-  Lecture: a
+  Competency: a
     .model({
       id: a.id().required(),
-      name: a.ref("LocalizedText"),
-      description: a.ref("LocalizedText"),
-      objectives: a.ref("LocalizedText").array(),
-      prerequisites: a.hasMany("LecturePrerequisite", "lectureId"),
-      followUps: a.hasMany("LecturePrerequisite", "prerequisiteId"),
-      sections: a.hasMany("Section", "lectureId"),
+      name: a.string(),
+      description: a.string(),
+      objectives: a.string().array(),
+      subjectId: a.id().required(),
+      subject: a.belongsTo("Subject", "subjectId"),
+      concepts: a.hasMany("Concept", "competencyId"),
+      prerequisites: a.hasMany("CompetencyDependency", "competencyId"),
+      followUps: a.hasMany("CompetencyDependency", "prerequisiteId"),
     })
-    .authorization((allow) => [allow.guest(), allow.authenticated()]),
+    .authorization((allow) => [allow.authenticated()]),
+
+  CompetencyDependency: a
+    .model({
+      competencyId: a.id().required(),
+      prerequisiteId: a.id().required(),
+      competency: a.belongsTo("Competency", "competencyId"),
+      prerequisite: a.belongsTo("Competency", "prerequisiteId"),
+    })
+    .authorization((allow) => [allow.authenticated()]),
+
+  Subject: a
+    .model({
+      id: a.id().required(),
+      name: a.string(),
+      description: a.string(),
+      competencies: a.hasMany("Competency", "subjectId"),
+    })
+    .authorization((allow) => [allow.authenticated()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

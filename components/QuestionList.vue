@@ -5,22 +5,22 @@
       :key="question.id"
       class="q-pa-none"
       group="quiz"
-      :label="question.text[locale]"
+      :label="question.text"
     >
       <template #header>
-        <q-item-section>{{ question.text[locale] }}</q-item-section>
+        <q-item-section>{{ question.text }}</q-item-section>
       </template>
 
       <template v-if="question.type === 'radio'">
-        <quiz-radio-question :question="question" :locale="locale" />
+        <quiz-radio-question :question="question" />
       </template>
 
       <template v-if="question.type === 'checkbox'">
-        <quiz-checkbox-question :question="question" :locale="locale" />
+        <quiz-checkbox-question :question="question" />
       </template>
 
       <template v-if="question.type === 'word'">
-        <quiz-word-question :question="question" :locale="locale" />
+        <quiz-word-question :question="question" />
       </template>
     </q-expansion-item>
   </q-list>
@@ -30,6 +30,5 @@
 
 defineProps({
   questions: { type: Array, required: true },
-  locale: { type: String, default: "en" },
 });
 </script>

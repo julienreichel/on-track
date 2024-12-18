@@ -1,12 +1,12 @@
 export type QuestionAnswerModel = {
-  text: LocalizedText;
+  text: string;
   valid: boolean;
 };
 
 export type QuestionModel = {
   id: string;
-  text: LocalizedText;
-  explanations: LocalizedText;
+  text: string;
+  explanations: string;
   answers: QuestionAnswerModel[];
   type: string;
   level: string;
@@ -14,17 +14,15 @@ export type QuestionModel = {
 
 export type SectionModel = GraphQLModel & {
   id: string;
-  name: LocalizedText;
-  introduction: LocalizedText;
-  theory: LocalizedText;
-  examples: LocalizedText;
+  name: string;
+  introduction: string;
+  theory: string;
+  examples: string;
   questions: QuestionModel[];
   lectureId: string;
-  objectives: LocalizedText[];
+  objectives: string[];
   lecture: { id: string };
 };
-
-type locale = "en" | "fr";
 
 export default function () {
   const { querySection, queryQuiz } = useOpenAI();
@@ -45,14 +43,13 @@ export default function () {
     ["id", "name.*"]
   );
 
-  const addQuizWithAI = async (section: SectionModel, level: number, locale: locale = "en") => {
-    const name = section.name[locale];
-    const summary = section.introduction[locale];
+  const addQuizWithAI = async (section: SectionModel, level: number) => {
+    const name = section.name;
+    const summary = section.introduction;
     const objectives = section.objectives
-      .map((o) => o[locale])
       .filter(Boolean) as string[];
-    const theory = section.theory[locale];
-    const examples = section.examples[locale];
+    const theory = section.theory;
+    const examples = section.examples;
 
     if (!name || !summary || !objectives || !theory || !examples) {
       return null;
@@ -64,10 +61,10 @@ export default function () {
     if (!section.questions) section.questions = [];
     section.questions.push(...response.map((q) => {
       return {
-        text: { [locale]: q.text },
-        explanations: { [locale]: q.explanations },
+        text: q.text,
+        explanations: q.explanations,
         answers: q.answers.map((a) => ({
-          text: { [locale]: a.text },
+          text: a.text,
           valid: a.valid,
         })),
         type: q.type,
@@ -77,15 +74,14 @@ export default function () {
     }));
   };
 
-  const createWithAI = async (lecture: LectureModel, locale: locale = "en") => {
-    const name = lecture.name[locale];
-    const description = lecture.description[locale];
+  const createWithAI = async (lecture: LectureModel) => {
+    const name = lecture.name;
+    const description = lecture.description;
     const objectives = lecture.objectives
-      .map((o) => o[locale])
       .filter(Boolean) as string[];
     const sections = lecture.sections
       .filter((s) => !s.introduction || !s.theory || !s.examples)
-      .map((s) => s.name[locale])
+      .map((s) => s.name)
       .filter(Boolean) as string[];
 
     if (!name || !description || !objectives || !sections) {
@@ -104,26 +100,21 @@ export default function () {
       response.map(async (newSection: SectionsResponse) => {
         // find the section in the lecture
         const section = lecture.sections.find(
-          (s) => s.name[locale] === newSection.name
+          (s) => s.name === newSection.name
         );
         if (!section) return;
-        if (!section.introduction) section.introduction = {};
-        section.introduction[locale] = newSection.introduction;
-
-        if (!section.theory) section.theory = {};
-        section.theory[locale] = newSection.theory;
-
-        if (!section.examples) section.examples = {};
-        section.examples[locale] = newSection.examples;
+        section.introduction = newSection.introduction || "";
+        section.theory = newSection.theory || "";
+        section.examples = newSection.examples || "";
 
         if (!section.objectives) section.objectives = [];
         newSection.objectives.forEach((obj) => {
-          section.objectives.push({ [locale]: obj });
+          if (obj) section.objectives.push(obj);
         });
 
         await calls.update(section);
 
-        await Promise.all([1, 2, 3, 4].map(l => addQuizWithAI(section, l, locale)));
+        await Promise.all([1, 2, 3, 4].map(l => addQuizWithAI(section, l)));
 
         calls.update(section);
       })

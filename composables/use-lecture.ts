@@ -2,15 +2,13 @@ import type { SectionModel } from "./use-section";
 
 export type LectureModel = GraphQLModel & {
   id: string;
-  name: LocalizedText;
-  description: LocalizedText;
-  objectives: LocalizedText[];
+  name: string;
+  description: string;
+  objectives: string[];
   sections: SectionModel[];
   prerequisites: { prerequisite: { id: string } }[];
   followUps: { lecture: { id: string } }[];
 };
-
-type locale = "en" | "fr";
 
 export default function () {
   const prerequisiteService = useLecturePrerequisite();
@@ -21,17 +19,17 @@ export default function () {
     "Lecture",
     [
       "id",
-      "name.*",
-      "description.*",
-      "objectives.*",
+      "name",
+      "description",
+      "objectives",
       "sections.id",
-      "sections.name.*",
+      "sections.name",
       "prerequisites.id",
       "prerequisites.prerequisite.*",
       "followUps.id",
       "followUps.lecture.*",
     ],
-    ["id", "name.*", "description.*", "objectives.*"]
+    ["id", "name", "description.*", "objectives.*"]
   );
 
   /**
@@ -66,12 +64,12 @@ export default function () {
     return calls.delete(model, options) as Promise<LectureModel>;
   };
 
-  const createWithAI = async (lectureList: string[], locale: locale = "en") => {
+  const createWithAI = async (lectureList: string[]) => {
     const existingLectures: LectureModel[] = ((await calls.list()) ||
       []) as LectureModel[];
 
     const existingLectureNames: string[] = existingLectures
-      .map((l: LectureModel) => l.name[locale] || "")
+      .map((l: LectureModel) => l.name || "")
       .filter(Boolean);
     const response = await queryPrerequisites(
       existingLectureNames,
@@ -96,18 +94,14 @@ export default function () {
     await Promise.all(
       Object.keys(response).map(async (key) => {
         const existing = existingLectures.find(
-          (l: LectureModel) => l.name[locale] === key
+          (l: LectureModel) => l.name === key
         );
         const data = response[key];
 
         const newLecture = {
-          name: {
-            [locale]: key,
-          },
-          description: {
-            [locale]: data["Description"],
-          },
-          objectives: data["Objectives"].map((o: string) => ({ [locale]: o })),
+          name: key,
+          description: data["Description"],
+          objectives: data["Objectives"],
         } as LectureModel;
         let lecture;
         if (!existing) {
@@ -123,13 +117,11 @@ export default function () {
         // create the sections with only the title so far
         await Promise.all(
           data["Sections Names"].map(async (name: string) => {
-            if (lecture.sections?.find((s) => s.name[locale] === name)) {
+            if (lecture.sections?.find((s) => s.name === name)) {
               return; // already exists
             }
             const section = (await sectionService.create({
-              name: {
-                [locale]: name,
-              },
+              name,
               lectureId: lecture.id,
             })) as SectionModel;
             lecture.sections.push(section);
@@ -150,7 +142,7 @@ export default function () {
     await Promise.all(
       Object.keys(response).map(async (key) => {
         const lecture = existingLectures.find(
-          (l: LectureModel) => l.name[locale] === key
+          (l: LectureModel) => l.name === key
         );
         if (!lecture) {
           return;
@@ -159,7 +151,7 @@ export default function () {
           response[key]["Prerequisite"].map(
             async (prerequisiteName: string) => {
               const prerequisite = existingLectures.find(
-                (l: LectureModel) => l.name[locale] === prerequisiteName
+                (l: LectureModel) => l.name === prerequisiteName
               );
               if (!prerequisite) {
                 return;
@@ -181,7 +173,7 @@ export default function () {
           response[key]["Is Prerequisite Of"].map(
             async (lectureName: string) => {
               const target = existingLectures.find(
-                (l: LectureModel) => l.name[locale] === lectureName
+                (l: LectureModel) => l.name === lectureName
               );
               if (!target) {
                 return;
@@ -207,7 +199,7 @@ export default function () {
         const relatedLectures = response[key]["Related Lectures"]
           .map((lectureName: string) =>
             existingLectures.find(
-              (l: LectureModel) => l.name[locale] === lectureName
+              (l: LectureModel) => l.name === lectureName
             )
           )
           .filter(Boolean);

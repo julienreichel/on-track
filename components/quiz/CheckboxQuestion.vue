@@ -9,7 +9,7 @@
             <q-item-section>
               <q-checkbox
                 v-model="selectedAnswers"
-                :label="answer.text[locale]"
+                :label="answer.text"
                 :val="answer"
                 :disable="showExplanation"
                 :color="getAnswerColor(answer)"
@@ -20,7 +20,7 @@
         </q-list>
         <q-item v-if="showExplanation">
           <rich-text-renderer
-            :markdown-content="question.explanations[locale]"
+            :markdown-content="question.explanations"
           />
         </q-item>
       </q-card-section>
@@ -31,7 +31,6 @@
 <script setup>
 const props = defineProps({
   question: { type: Object, required: true },
-  locale: { type: String, default: "en" },
 });
 
 const selectedAnswers = ref([]);

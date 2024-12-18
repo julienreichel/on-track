@@ -4,7 +4,7 @@
       <q-item-section side>
         <q-checkbox v-model="check[idx]" />
       </q-item-section>
-      <q-item-section>{{ objective[locale] }}</q-item-section>
+      <q-item-section>{{ objective }}</q-item-section>
     </q-item>
   </q-list>
 </template>
@@ -12,7 +12,6 @@
 <script setup>
 const props = defineProps({
   objectives: { type: Array, required: true },
-  locale: { type: String, default: "en" },
 });
 
 const check = ref([]);

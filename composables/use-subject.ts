@@ -1,0 +1,103 @@
+export type SubjectModel = GraphQLModel & {
+  id: string;
+  name: string;
+  description: string;
+  competencies: CompetencyModel[];
+};
+
+export default function () {
+  const competency = useCompetency();
+  const competencyPrerequisite = useCompetencyPrerequisite();
+  const { querySubject } = useOpenAI();
+
+  const calls = useGraphqlQuery("Subject", [
+    "id",
+    "name",
+    "description",
+
+    "competencies.id",
+    "competencies.name.*",
+  ]);
+
+  /**
+   * Delete a subject model
+   *
+   * @param {SubjectModel} model the model
+   * @param {object} options the options
+   * @returns {Promise<SubjectModel>}
+   */
+  const del = async (
+    model: SubjectModel,
+    options: GraphQLOptions = {}
+  ): Promise<SubjectModel> => {
+    if (!model?.id) return model;
+
+    // Fetch related data if not already loaded
+    if (!model.competencies) {
+      model = (await calls.get(model.id)) as SubjectModel;
+    }
+    if (!model) return model;
+
+    // Delete related competencies
+    await Promise.all(
+      model.competencies.map(async (comp) => competency.delete(comp))
+    );
+
+    return calls.delete(model, options) as Promise<SubjectModel>;
+  };
+
+  const createWithAI = async (
+    subjectDescription: string,
+    locale: Locale = "en"
+  ) : Promise<SubjectModel | null> => {
+    const response = await querySubject(subjectDescription, locale);
+    console.log("querySubject", response);
+
+    if (!response) return null;
+
+    // step 1 create the new subject
+    const newSubject = await calls.create({
+      name: response.name,
+      description: response.description,
+    }) as SubjectModel;
+
+    // step 2 create the competencies
+    const competencies = await Promise.all(
+      response.competencies.map((comp: CompetencyResponse) =>
+        competency.create({
+          name: comp.name,
+          description: comp.description,
+          subjectId: newSubject.id,
+        }) as Promise<CompetencyModel>
+      )
+    );
+    newSubject.competencies = competencies;
+
+    // step 3 generate the prerequisites for the competencies
+    await Promise.all(
+      response.competencies.map(async (comp: CompetencyResponse) => {
+        const compId = competencies.find((c) => c.name === comp.name)?.id;
+        const prereqs = comp.prerequisites || [];
+        await Promise.all(
+          prereqs.map(async (prereq: string) => {
+            const existingComp = competencies.find((c) => c.name === prereq);
+            if (existingComp) {
+              await competencyPrerequisite.create({
+                competencyId: compId,
+                prerequisiteId: existingComp.id,
+              });
+            }
+          })
+        );
+      })
+    );
+
+    return newSubject;
+  };
+
+  return {
+    ...calls,
+    delete: del,
+    createWithAI,
+  };
+}

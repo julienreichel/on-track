@@ -5,8 +5,8 @@
       :edges="edges"
       :connection-mode="ConnectionMode.Strict"
     >
-      <template #node-lecture="nodeProps">
-        <FlowLectureNode
+      <template #node-concept="nodeProps">
+        <flow-concept-node
           :data="nodeProps.data"
           :node-id="nodeProps.id"
           :direction="direction"
@@ -24,27 +24,26 @@ const { onConnect, onNodesChange, onEdgesChange, applyNodeChanges, applyEdgeChan
 const { layout } = useLayout()
 
 const props = defineProps({
-  lectures: { type: Array, required: true },
+  concepts: { type: Array, required: true },
   prerequisites: { type: Array, required: true },
-  locale: { type: String, default: "en" },
   direction: { type: String, default: "TB" },
 });
-const lectureService = useLecture();
-const prerequisiteService = useLecturePrerequisite();
+const conceptService = useConcept();
+const prerequisiteService = useConceptPrerequisite();
 
 const nodes = ref([]);
 const edges = ref([]);
 
-watch(() => props.lectures, async (lectures) => {
-  // convert lecture to nodes
-  nodes.value = lectures.map((lecture) => ({
-    id: lecture.id,
+watch(() => props.concepts, async (concepts) => {
+  // convert concept to nodes
+  nodes.value = concepts.map((concept) => ({
+    id: concept.id,
     position: { x:0, y:0 },
-    type: 'lecture',
+    type: 'concept',
     data: {
-      label: lecture.name?.en,
-      description: lecture.description?.[props.locale],
-      objectives: lecture.objectives || [],
+      label: concept.name,
+      description: concept.description,
+      objectives: concept.objectives || [],
       sections: [],
     },
   }));
@@ -58,7 +57,7 @@ watch(() => props.prerequisites, async (prerequisites) => {
   edges.value = prerequisites.map((prerequisite) => ({
     id: prerequisite.id,
     source: prerequisite.prerequisiteId,
-    target: prerequisite.lectureId,
+    target: prerequisite.conceptId,
   }));
   nextTick(() => {
     nodes.value = layout(nodes.value, edges.value, props.direction);
@@ -69,7 +68,7 @@ onConnect( async ({source, target}) => {
 
   // create a new prerequisite
   const prerequisite = await prerequisiteService.create({
-    lectureId: target,
+    conceptId: target,
     prerequisiteId: source
   });
 
@@ -87,18 +86,17 @@ onNodesChange(async (changes) => {
 
   for (const change of changes) {
     if (change.type === 'remove') {
-      // delete the lecture
+      // delete the concept
       edges.value = edges.value.filter(edge => edge.source !== change.id && edge.target !== change.id);
       nodes.value = nodes.value.filter(node => node.id !== change.id);
-      await lectureService.delete({ id: change.id })
+      await conceptService.delete({ id: change.id })
     } else {
       if (change.type === "select") {
         if (change.selected) {
           const node = nodes.value.find(node => node.id === change.id);
           if (node && !node.data.sections?.length) {
-            const model = await lectureService.get(change.id);
-            node.data.sections = model?.sections;
-            node.data.description = model.description?.[props.locale];
+            const model = await conceptService.get(change.id);
+            node.data.description = model.description;
             node.data.objectives = model.objectives || [];
           }
         }
@@ -134,19 +132,18 @@ const generateNodeData = async (nodeId) => {
   });
 
   const node = nodes.value.find(node => node.id === nodeId);
-  const { touchedLectures } = await lectureService.createWithAI( [node.data.label] );
+  const { touchedConcepts } = await conceptService.createWithAI( [node.data.label] );
 
-  if (!touchedLectures.length){
+  if (!touchedConcepts.length){
     updateNodeData(nodeId, {
       processing: false
     });
     return;
   }
-  const model = touchedLectures[0];
+  const model = touchedConcepts[0];
   updateNodeData(nodeId, {
-    description: model.description?.en,
-    objectives: model.objectives?.map(objective => objective.en),
-    sections: model.sections,
+    description: model.description,
+    objectives: model.objectives,
     processing: false
    });
 }

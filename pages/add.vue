@@ -1,28 +1,25 @@
 <template>
   <q-page class="q-gutter-sm q-pa-sm">
-    <p class="text-h6 q-pt-md">Add lectures</p>
+    <p class="text-h6 q-pt-md">Add subjects</p>
     <q-input v-model="prompt" rows="6" type="textarea" />
     <q-btn label="Send Request" @click="sendRequest" />
-    <q-input v-model="response" rows="6" readonly type="textarea" />
     <div style="height: 300px; width: 100%">
-      <lecture-flow
-        :lectures="lectures"
-        :prerequisites="prerequisites"
+      <subject-list
+        :subjects="subjects"
       />
     </div>
   </q-page>
 </template>
 
 <script setup lang="ts">
-const lectureService = useLecture();
+const subjectService = useSubject();
 const { loading } = useQuasar();
 
 
 const prompt = ref("");
 const response = ref("");
 const isLoading = ref(false);
-const lectures = ref([]);
-const prerequisites = ref([]);
+const subjects = ref([]);
 
 
 const sendRequest = async () => {
@@ -30,13 +27,9 @@ const sendRequest = async () => {
   isLoading.value = true;
   response.value = ""; // Clear previous response
 
-  const newLectures = prompt.value.split("\n");
-  const { additionalLectures, touchedLectures, touchedPrerequisites } = await lectureService.createWithAI(newLectures);
+  const subject = await subjectService.createWithAI(prompt.value);
 
-  lectures.value = touchedLectures;
-  prerequisites.value = touchedPrerequisites;
-
-  response.value = additionalLectures.join("\n");
+  subjects.value = [subject];
 
   isLoading.value = false;
   loading.hide();

@@ -1,19 +1,19 @@
 <template>
   <q-list>
     <q-item
-      v-for="(section, idx) in sections"
+      v-for="(concept, idx) in concepts"
       :key="idx"
       class="q-pa-none"
       clickable
-      @click="navigateTo(`/section/${section.id}`)"
+      :to="`/concept/${concept.id}`"
     >
-      <q-item-section>{{ section.name[locale] }}</q-item-section>
+      <q-item-section>{{ concept.name }}</q-item-section>
       <q-item-section avatar>
         <div class="row q-gutter-sm">
           <q-btn
-            v-if="allowDelete && !section.introduction"
+            v-if="allowDelete && !concept.introduction"
             label="delete"
-            @click="$emit('delete', section)"
+            @click="$emit('delete', concept)"
           />
         </div>
       </q-item-section>
@@ -23,8 +23,7 @@
 
 <script setup>
 defineProps({
-  sections: { type: Array, required: true },
-  locale: { type: String, default: "en" },
+  concepts: { type: Array, required: true },
   allowDelete: { type: Boolean, default: false },
 });
 

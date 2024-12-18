@@ -23,7 +23,7 @@
         </q-input>
         <q-item v-if="showExplanation">
           <rich-text-renderer
-            :markdown-content="question.explanations[locale]"
+            :markdown-content="question.explanations"
           />
         </q-item>
       </q-card-section>
@@ -36,7 +36,6 @@ import { ref } from "vue";
 
 const props = defineProps({
   question: { type: Object, required: true },
-  locale: { type: String, default: "en" },
 });
 
 const userAnswer = ref("");
@@ -46,7 +45,7 @@ const showExplanation = ref(false);
 const validateAnswer = () => {
   const validAnswer = props.question.answers.some(
     (answer) =>
-      answer.text[props.locale].toLowerCase() ===
+      answer.text.toLowerCase() ===
         userAnswer.value.toLowerCase() && answer.valid
   );
   isCorrect.value = validAnswer;

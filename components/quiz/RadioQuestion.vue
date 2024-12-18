@@ -9,7 +9,7 @@
             <q-item-section>
               <q-radio
                 v-model="selected"
-                :label="answer.text[locale]"
+                :label="answer.text"
                 :val="answer"
                 :disable="showExplanation"
                 :color="getAnswerColor(answer)"
@@ -19,7 +19,7 @@
           </q-item>
         </q-list>
         <q-item v-if="showExplanation" class="q-pl-sm">
-          <rich-text-renderer :markdown-content="question.explanations[locale]" />
+          <rich-text-renderer :markdown-content="question.explanations" />
         </q-item>
       </q-card-section>
     </q-card-section>
@@ -29,7 +29,6 @@
 <script setup>
 defineProps({
   question: { type: Object, required: true },
-  locale: { type: String, default: "en" },
 });
 
 const selected = ref(null);

@@ -25,11 +25,11 @@
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" bordered>
-      <q-item clickable to="/flow">
+      <q-item clickable to="/">
         <q-item-section avatar>
           <q-icon name="map" />
         </q-item-section>
-        <q-item-section>Lecture Map</q-item-section>
+        <q-item-section>Subject list</q-item-section>
       </q-item>
 
       <!-- Create New Lecture Section -->
@@ -37,7 +37,7 @@
         <q-item-section avatar>
           <q-icon name="create" />
         </q-item-section>
-        <q-item-section>Create New Lecture</q-item-section>
+        <q-item-section>Create New Subject</q-item-section>
       </q-item>
     </q-drawer>
 
