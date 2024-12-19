@@ -1,5 +1,6 @@
 import { jsonrepair } from "jsonrepair";
 import subjectPrompt from "./prompts/subject";
+import competencyPrompt from "./prompts/competency";
 import sectionsPrompt from "./prompts/sections";
 import quizPrompt from "./prompts/quiz";
 
@@ -10,9 +11,19 @@ export type OpenAIRequest = GraphQLModel & {
   format?: string;
 };
 
+export type ConceptResponse = {
+  name: string;
+  description: string;
+  learning_objectives: string[];
+  theory: [string];
+  examples: [string];
+  prerequisites: string[];
+}
+
 export type CompetencyResponse = {
   name: string;
   description: string;
+  learning_objectives: string[];
   prerequisites: string[];
 }
 
@@ -97,6 +108,21 @@ export default function () {
     return query(request);
   };
 
+  const queryCompetency = async (
+    name: string,
+    description: string,
+    objectives: string[],
+    locale: Locale = "en"
+  ): Promise<{concepts: ConceptResponse[]}>  => {
+    const request: OpenAIRequest = {
+      system: competencyPrompt.system(localeMap[locale]),
+      prompt: competencyPrompt.prompt(name, description, objectives),
+      token: 4000,
+      format: "json",
+    };
+    return query(request);
+  };
+
   /**
    *
    * @param name <string>
@@ -105,7 +131,7 @@ export default function () {
    * @param sections <string[]>
    * @returns <Promise<SectionsResponse[]>>
    */
-  const querySection = async (
+  const queryConcept = async (
     name: string,
     description: string,
     objectives: string[],
@@ -184,5 +210,5 @@ export default function () {
     return response.questions;
   }
 
-  return { query, querySubject, querySection, queryQuiz };
+  return { query, querySubject, queryCompetency, queryConcept, queryQuiz };
 }

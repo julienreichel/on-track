@@ -5,13 +5,16 @@ export type CompetencyModel = GraphQLModel & {
   objectives: string[];
   subjectId: string;
   concepts: ConceptModel[];
-  prerequisites: CompetencyModel[];
-  followUps: CompetencyModel[];
+  prerequisites: CompetencyPrerequisiteModel[];
+  followUps: CompetencyPrerequisiteModel[];
 };
 
 export default function () {
   const prerequisite = useCompetencyPrerequisite();
   const concept = useConcept();
+  const conceptPrerequisite = useConceptPrerequisite();
+  const { queryCompetency } = useOpenAI();
+
 
   const calls = useGraphqlQuery('Competency', [
     'id',
@@ -65,8 +68,50 @@ export default function () {
     return calls.delete(model, options) as Promise<CompetencyModel>;
   };
 
-  const createWithAI = async (subject: SubjectModel, locale: Locale = "en") => {
-    return { touchedCompetencies: [] };  // TODO
+  const createWithAI = async (competency: CompetencyModel, locale: Locale = "en") => {
+    const response = await queryCompetency(
+      competency.name,
+      competency.description,
+      competency.objectives,
+      locale
+    );
+    console.log("queryCompetency", response);
+
+    if (!response) return null;
+
+    // step 1: create the concepts
+    const concepts = await Promise.all(
+      response.concepts.map((c: ConceptResponse) =>
+        concept.create({
+          name: c.name,
+          description: c.description,
+          objectives: c.learning_objectives,
+          competencyId: competency.id,
+        }) as Promise<ConceptModel>
+    )) as ConceptModel[];
+    competency.concepts = concepts;
+
+    // step 2: save the prerequisites for the concepts
+    await Promise.all(
+      response.concepts.map(async (conc: ConceptResponse) => {
+        const currentConcept = concepts.find((c) => c.name === conc.name);
+        if (!currentConcept) return;
+        const prereqs = await Promise.all(
+          conc.prerequisites.map((prereq: string) => {
+            const existingConcept = concepts.find((c) => c.name === prereq);
+            if (existingConcept) {
+              return conceptPrerequisite.create({
+                conceptId: currentConcept.id,
+                prerequisiteId: existingConcept.id,
+              });
+            }
+          }
+        ));
+        currentConcept.prerequisites = prereqs.filter(Boolean) as ConceptPrerequisiteModel[];
+      })
+    );
+
+    return competency;
   };
 
 

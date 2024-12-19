@@ -13,7 +13,7 @@
           <q-btn
             v-if="allowDelete && !concept.introduction"
             label="delete"
-            @click="$emit('delete', concept)"
+            @click.stop.prevent="$emit('delete', concept)"
           />
         </div>
       </q-item-section>

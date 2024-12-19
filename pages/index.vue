@@ -13,6 +13,7 @@ const subjects = ref([]);
 
 onMounted(async () => {
   subjects.value = await subjectService.list();
+  console.log("load", subjects.value);
 });
 
 const deleteSubject = async (subject) => {

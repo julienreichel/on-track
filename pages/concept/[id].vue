@@ -1,16 +1,25 @@
 <template>
   <div v-if="concept" class="q-pa-sm">
+
+    <concept-flow
+      :concepts="relatedConcepts"
+      :prerequisites="relatedLinks"
+      direction="LR"
+      :style="{height: `${height}px`, width: '100%' }"
+    />
     <h1>{{ concept.name }}</h1>
-    <rich-text-renderer v-if="concept.introduction" :markdown-content="concept.introduction" />
+
+    <rich-text-renderer v-if="concept.description" :markdown-content="concept.description" />
 
     <div v-if="concept.objectives?.length">
       <h3>Objectives</h3>
       <objective-list :objectives="concept.objectives" />
     </div>
 
-    <div v-if="concept.theory">
+    <div >
       <h3>Theory</h3>
-      <rich-text-renderer :markdown-content="concept.theory" />
+      <rich-text-renderer v-if="concept.theory" :markdown-content="concept.theory" />
+      <q-btn v-else @click="generateConceptData()">Generate</q-btn>
     </div>
 
     <div v-if="concept.examples">
@@ -19,7 +28,7 @@
     </div>
 
     <h3>Questions</h3>
-    <div v-if="concept.questions">
+    <div v-if="concept.questions?.length">
       <q-btn @click="showQuizDialog = true">Run</q-btn>
       <question-list :questions="randomizedQuestions" />
       <quiz-runner-dialog-test
@@ -35,12 +44,6 @@
     <h3>Compentency</h3>
     <competency-list :competencies="[concept.competency]" />
 
-    <div v-if="concept.competency.concepts?.length">
-      <h3>Other Concepts</h3>
-      <concept-list
-        :concepts="concept.competency.concepts.filter((s) => s.id !== concept.id)"
-      />
-    </div>
   </div>
   <div v-else>
     <p>Loading concept data...</p>
@@ -64,9 +67,46 @@ onMounted(async () => {
   }
 });
 
+const relatedConcepts = computed(() => {
+  const relatedConcepts = [concept.value];
+  if (concept.value?.prerequisites){
+    concept.value.prerequisites.forEach((p) => relatedConcepts.push(p.prerequisite));
+  }
+  if (concept.value?.followUps){
+    concept.value.followUps.forEach((f) => relatedConcepts.push(f.concept));
+  }
+  return relatedConcepts;
+});
+
+const relatedLinks = computed(() => {
+  const relatedLinks = [];
+
+  if (concept.value?.prerequisites){
+    concept.value.prerequisites.forEach((p) => relatedLinks.push({ id: p.prerequisite.id, prerequisiteId: p.prerequisite.id, conceptId: concept.value.id}));
+  }
+  if (concept.value?.followUps){
+    concept.value.followUps.forEach((f) => relatedLinks.push({ id: f.concept.id, prerequisiteId: concept.value.id, conceptId: f.concept.id}));
+  }
+  return relatedLinks;
+});
+
+const height = computed(() => {
+  const c = concept.value;
+  if (!c) return 0;
+  return Math.max(c.prerequisites?.length || 0, c.followUps?.length || 0) * 100;
+});
+
 const randomizedQuestions = computed(() => {
   return [...concept.value.questions].sort(() => Math.random() - 0.5);
 });
+
+const generateConceptData = async () => {
+  loading.show();
+
+  await conceptService.createWithAI( concept.value );
+
+  loading.hide();
+}
 
 const generateQuizData = async (level) => {
   loading.show();

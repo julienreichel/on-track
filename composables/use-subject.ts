@@ -15,8 +15,11 @@ export default function () {
     "name",
     "description",
 
-    "competencies.id",
-    "competencies.name.*",
+    "competencies.*",
+  ], [
+    "id",
+    "name",
+    "description"
   ]);
 
   /**
@@ -32,11 +35,14 @@ export default function () {
   ): Promise<SubjectModel> => {
     if (!model?.id) return model;
 
+    console.log("delete subject", JSON.stringify(model, null, 2));
     // Fetch related data if not already loaded
     if (!model.competencies) {
-      model = (await calls.get(model.id)) as SubjectModel;
+      model = await calls.get(model.id) as SubjectModel;
+      console.log("got", JSON.stringify(model, null, 2));
     }
     if (!model) return model;
+
 
     // Delete related competencies
     await Promise.all(
@@ -67,6 +73,7 @@ export default function () {
         competency.create({
           name: comp.name,
           description: comp.description,
+          objectives: comp.learning_objectives,
           subjectId: newSubject.id,
         }) as Promise<CompetencyModel>
       )
@@ -76,19 +83,20 @@ export default function () {
     // step 3 generate the prerequisites for the competencies
     await Promise.all(
       response.competencies.map(async (comp: CompetencyResponse) => {
-        const compId = competencies.find((c) => c.name === comp.name)?.id;
-        const prereqs = comp.prerequisites || [];
-        await Promise.all(
-          prereqs.map(async (prereq: string) => {
+        const currentCompetency = competencies.find((c) => c.name === comp.name);
+        if (!currentCompetency) return;
+        const prereqs = await Promise.all(
+          comp.prerequisites.map((prereq: string) => {
             const existingComp = competencies.find((c) => c.name === prereq);
             if (existingComp) {
-              await competencyPrerequisite.create({
-                competencyId: compId,
+              return competencyPrerequisite.create({
+                competencyId: currentCompetency.id,
                 prerequisiteId: existingComp.id,
               });
             }
           })
         );
+        currentCompetency.prerequisites = prereqs.filter(Boolean) as ConceptPrerequisiteModel[];
       })
     );
 

@@ -8,7 +8,7 @@ The goal is to provide simple, beginner-friendly explanations suitable for stude
 
 **Objective (O):**
 Generate a JSON object describing a new subject, including its name, a one-paragraph description, and a list of competencies.
-Each competency should include a name, a description (3-4 sentences), and a list of prerequisites representing dependencies between competencies.
+Each competency should include a name, a description (3-4 sentences), a list of 5 learning objectives and a list of prerequisites representing dependencies between competencies.
 
 **Style (S):**
 Write in a concise, simple style suitable for students, avoiding jargon but ensuring clarity and relevance.
@@ -28,6 +28,11 @@ Provide output in the form of a JSON object with the following structure:
     {
       "name": "...",
       "description": "...",
+      "learning_objectives": [
+        "Objective 1",
+        "Objective 2",
+        ...
+      ],
       "prerequisites": ["...", ...]
     }
   ]
@@ -37,12 +42,13 @@ ${language}
 `;
 
 const prompt = (subjectDescription: string): string => `
-Your task is to create a new [subject] and its related competencies.
+Your task is to create a new subject and its related competencies.
 The subject name and a brief description (3-4 sentences) should explain the purpose of the subject and its relevance.
 
 Next, generate a list of seven to ten competencies for the subject, where each competency includes:
 - A name that clearly identifies the competency.
 - A description (3-4 sentences) that provides a simple, beginner-friendly explanation of the competency.
+- A list of **five objectives** that must be achieved to consider the competency mastered. Each objective should focus on measurable outcomes or milestones.
 - A 'prerequisites' field listing the names of other competencies within the subject that are required for understanding.
 
 The JSON output must be well-structured and follow the schema below:
@@ -53,6 +59,11 @@ The JSON output must be well-structured and follow the schema below:
     {
       "name": "Competency Name",
       "description": "Beginner-friendly explanation of the competency in 3-4 sentences.",
+      "learning_objectives": [
+        "Objective 1",
+        "Objective 2",
+        ...
+      ],
       "prerequisites": ["Other Competency Name", "Another Competency Name"]
     },
     ...

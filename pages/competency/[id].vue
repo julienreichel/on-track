@@ -9,17 +9,19 @@
     <h1>{{ competency.name }}</h1>
 
     <p v-if="competency.description" style="max-width:600px" >{{ competency.description }}</p>
-    <q-btn v-else @click="generateCompetencyData()">Generate</q-btn>
 
     <div v-if="competency.objectives?.length">
       <h3>Objective</h3>
       <objective-list :objectives="competency.objectives" />
     </div>
 
+    <h3>Concepts</h3>
     <div v-if="competency.concepts?.length">
-      <h3>Concepts</h3>
       <concept-list :concepts="competency.concepts" allow-delete @delete="deleteConcept"/>
-      <q-btn v-if="competency.concepts.some(s => !s.introduction)" @click="generateConceptsData()">Generate</q-btn>
+      <q-btn v-if="competency.concepts.some(s => !s.theory)" @click="generateConceptsData()">Populate</q-btn>
+    </div>
+    <div v-else>
+      <q-btn @click="generateCompetencyData()">Generate</q-btn>
     </div>
 
     <h3>Subject</h3>
@@ -60,7 +62,7 @@ const relatedCompetencies = computed(() => {
 });
 const relatedLinks = computed(() => {
   const relatedLinks = [];
-  console.log(competency.value);
+
   if (competency.value?.prerequisites){
     competency.value.prerequisites.forEach((p) => relatedLinks.push({ id: p.prerequisite.id, prerequisiteId: p.prerequisite.id, competencyId: competency.value.id}));
   }
@@ -77,13 +79,7 @@ const height = computed(() => {
 const generateCompetencyData = async () => {
   loading.show();
 
-  const { touchedCompetencies } = await competencyService.createWithAI( competency.value.subject );
-
-  if (!touchedCompetencies.length){
-    loading.hide();
-    return;
-  }
-  competency.value = touchedCompetencies[0];
+  competency.value = await competencyService.createWithAI( competency.value );
 
   loading.hide();
 }
@@ -101,9 +97,11 @@ const deleteConcept = async (concept) => {
 const generateConceptsData = async () => {
   loading.show();
 
-  const concepts = await conceptService.createWithAI( competency.value );
-
-  console.log(concepts);
+  await Promise.all( competency.value.concepts.map((c) => {
+    if (!c.theory){
+      return conceptService.createWithAI( c );
+    }
+  }));
 
   loading.hide();
 }

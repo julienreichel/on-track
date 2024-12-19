@@ -8,8 +8,8 @@ export type ConceptModel = GraphQLModel & {
   examples: string;
   questions: QuestionModel[];
   flashCards: FlashCardModel[];
-  prerequisites: ConceptModel[];
-  followUps: ConceptModel[];
+  prerequisites: ConceptPrerequisiteModel[];
+  followUps: ConceptPrerequisiteModel[];
   competencyId: string;
 };
 
@@ -34,7 +34,7 @@ export default function () {
     "followUps.id",
     "followUps.concept.*",
 
-    'competencyId'
+    'competency.*'
   ]);
 
   /**

@@ -7,7 +7,7 @@
     <div v-if="subject.competencies?.length">
       <h3>Competencies</h3>
       <competency-list :competencies="subject.competencies" allow-delete @delete="deleteCompetency"/>
-      <q-btn v-if="subject.competencies.some(s => !s.introduction)" @click="generateCompetenciesData()">Generate</q-btn>
+      <q-btn v-if="subject.competencies.some(s => !s.introduction)" @click="generateCompetenciesData()">Populate</q-btn>
     </div>
   </div>
   <div v-else>
@@ -59,9 +59,11 @@ const deleteCompetency = async (competency) => {
 const generateCompetenciesData = async () => {
   loading.show();
 
-  const competencies = await competencyService.createWithAI( subject.value );
-
-  console.log(competencies);
+  await Promise.all( subject.value.competencies.map((c) => {
+    if (!c.concepts.length){
+      return competencyService.createWithAI( c );
+    }
+  }));
 
   loading.hide();
 }
