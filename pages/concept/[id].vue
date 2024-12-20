@@ -26,7 +26,14 @@
       <h3>Examples</h3>
       <rich-text-renderer :markdown-content="concept.examples" />
     </div>
-
+    <div v-if="concept.flashCards?.length">
+      <h3>Flashcards</h3>
+      <div class="row q-col-gutter-sm">
+        <div v-for="flashCard in concept.flashCards" :key="flashCard.id" class="col">
+          <flashcard-view :flash-card="flashCard" />
+        </div>
+      </div>
+    </div>
     <h3>Questions</h3>
     <div v-if="concept.questions?.length">
       <q-btn @click="showQuizDialog = true">Run</q-btn>

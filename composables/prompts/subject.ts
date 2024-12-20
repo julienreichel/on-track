@@ -1,4 +1,4 @@
-const system = (language): string => `
+const system = (language: string): string => `
 
 **Context (C):**
 You are an expert in educational curriculum development and competency design.

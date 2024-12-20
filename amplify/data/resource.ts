@@ -44,8 +44,9 @@ const schema = a.schema({
   FlashCard: a
     .model({
       id: a.id().required(),
-      frontText: a.string(),
-      backText: a.string(),
+      question: a.string(),
+      answer: a.string(),
+      notes: a.string(),
       conceptId: a.id().required(),
       concept: a.belongsTo("Concept", "conceptId"),
     })

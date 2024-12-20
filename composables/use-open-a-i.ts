@@ -1,8 +1,9 @@
 import { jsonrepair } from "jsonrepair";
 import subjectPrompt from "./prompts/subject";
 import competencyPrompt from "./prompts/competency";
-import sectionsPrompt from "./prompts/sections";
+import conceptPrompt from "./prompts/concept";
 import quizPrompt from "./prompts/quiz";
+
 
 export type OpenAIRequest = GraphQLModel & {
   system?: string;
@@ -11,13 +12,20 @@ export type OpenAIRequest = GraphQLModel & {
   format?: string;
 };
 
+export type FlashCardResponse = {
+  question: string;
+  answer: string;
+  notes?: string;
+}
+
 export type ConceptResponse = {
   name: string;
   description: string;
   learning_objectives: string[];
-  theory: [string];
-  examples: [string];
+  theory?: string;
+  examples?: string;
   prerequisites: string[];
+  flashcards: FlashCardResponse[];
 }
 
 export type CompetencyResponse = {
@@ -36,7 +44,7 @@ export type SubjectResponse = {
 
 export type SectionsResponse = {
   name: string;
-  introduction: string | undefined;
+  description: string | undefined;
   objectives: (string | undefined)[];
   theory: string | undefined;
   examples: string | undefined;
@@ -135,57 +143,68 @@ export default function () {
     name: string,
     description: string,
     objectives: string[],
-    sections: string[]
-  ): Promise<SectionsResponse[]> => {
+    locale: Locale = "en"
+  ): Promise<ConceptResponse> => {
     const request: OpenAIRequest = {
-      system: sectionsPrompt.system(),
-      prompt: sectionsPrompt.prompt(name, description, objectives, sections),
-      token: sections.length * 800,
+      system: conceptPrompt.system(localeMap[locale]),
+      prompt: conceptPrompt.prompt(name, description, objectives),
+      token: 2000,
     };
     const response = await query(request);
-    // fomat the response to an object
 
-    function convertMarkdownToJSON(markdown: string): SectionsResponse[] {
-      const sectionsText = markdown.split(/\n---\n/).filter(Boolean); // Split by '---' and filter out empty strings
-      const output = [] as SectionsResponse[];
+    function convertMarkdownToJSON(markdown: string): ConceptResponse {
+      const lines = markdown.split('\n');
+      const response: ConceptResponse = {
+        name: "",
+        description: "",
+        learning_objectives: [],
+        theory: "",
+        examples: "",
+        prerequisites: [],
+        flashcards: [],
+      };
 
-      sectionsText.forEach((section) => {
-        const nameMatch = section.match(/# (.+)/);
-        const introductionMatch = section.match(
-          /### Summary\n(.+?)(?=\n### Objectives)/s
-        );
-        const objectivesMatch = section.match(
-          /### Objectives\n- (.+?)(?=\n### Theory)/s
-        );
-        const theoryMatch = section.match(
-          /### Theory\n(.+?)(?=\n### Examples)/s
-        );
-        const examplesMatch = section.match(/### Examples\n(.+)/s);
+      let currentSection: 'description' | 'objectives' | 'theory' | 'examples' | 'flashcards' | null = null;
+      let currentFlashcard: { question: string; answer: string; notes?: string } | null = null;
 
-        if (nameMatch) {
-          const name = nameMatch[1].trim();
-          const introduction = introductionMatch && introductionMatch[1].trim() || undefined;
-
-          const objectives = objectivesMatch
-            ? objectivesMatch[0]
-                .split(/\n- /)
-                .slice(1)
-                .map((obj) => obj.trim())
-            : [];
-          const theory = theoryMatch && theoryMatch[1].trim() || undefined;
-          const examples = examplesMatch && examplesMatch[1].trim() || undefined;
-
-          output.push({
-            name,
-            introduction,
-            objectives,
-            theory,
-            examples,
-          });
+      lines.forEach((line) => {
+        if (line.startsWith('# ')) {
+          response.name = line.replace('# ', '').trim();
+        } else if (line.startsWith('### ')) {
+          currentSection = line.replace('### ', '').trim().toLowerCase() as 'description' | 'objectives' | 'theory' | 'examples' | 'flashcards';
+        } else if(currentSection === 'objectives'){
+          if (line.startsWith('- ')) {
+            response.learning_objectives.push(line.replace('- ', '').trim());
+          }
+        } else if(currentSection === 'flashcards') {
+          if (line.startsWith('- **Question:**')) {
+            if (currentFlashcard) {
+              response.flashcards.push(currentFlashcard);
+            }
+            currentFlashcard = { question: line.replace('- **Question:**', '').trim(), answer: "" };
+          } else if (currentFlashcard) {
+            if (line.trim().startsWith('**Answer:**')) {
+              currentFlashcard.answer = line.replace('**Answer:**', '').trim();
+            } else if (line.trim().startsWith('**Notes:**')) {
+              currentFlashcard.notes = line.replace('**Notes:**', '').trim();
+            }
+          }
+        } else if (line.trim() && (currentSection === 'theory' || currentSection === 'examples' || currentSection === 'description')) {
+            response[currentSection] += `${line.trim()}\n`;
         }
       });
 
-      return output;
+      // Add the last flashcard if any
+      if (currentFlashcard) {
+        response.flashcards.push(currentFlashcard);
+      }
+
+      // Clean up trailing newlines
+      response.description = response.description?.trim();
+      response.theory = response.theory?.trim();
+      response.examples = response.examples?.trim();
+
+      return response;
     }
 
     // Run the conversion

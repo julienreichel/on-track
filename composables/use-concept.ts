@@ -17,6 +17,7 @@ export default function () {
   const question = useQuestion();
   const flashCard = useFlashCard();
   const prerequisite = useConceptPrerequisite();
+  const { queryConcept } = useOpenAI();
 
   const calls = useGraphqlQuery('Concept', [
     'id',
@@ -72,8 +73,36 @@ export default function () {
     return calls.delete(model, options) as Promise<ConceptModel>;
   };
 
-  const createWithAI = async (competency: CompetencyModel, locale: Locale = "en") => {
-    return { touchedConcepts: [] };  // TODO
+  const createWithAI = async (concept: ConceptModel, locale: Locale = "en") => {
+    const response = await queryConcept(
+      concept.name,
+      concept.description,
+      concept.objectives,
+      locale
+    );
+    console.log("queryConcept", response);
+
+    // Step 1, update the concept from the response ad save it
+    concept.description = response.description;
+    if(response.theory){
+      concept.theory = response.theory;
+    }
+    if (response.examples){
+      concept.examples = response.examples
+    }
+    await calls.update(concept);
+
+    // Step 2 create the flashcards
+    concept.flashCards = await Promise.all(
+      response.flashcards.map((fc: FlashCardResponse) =>
+        flashCard.create({
+          question: fc.question,
+          answer: fc.answer,
+          notes: fc.notes,
+          conceptId: concept.id
+        }) as Promise<FlashCardModel>
+      )
+    );
   };
 
   return {

@@ -1,4 +1,4 @@
-const system = (language): string => `
+const system = (language: string): string => `
 **Context (C):**
 You are an expert curriculum designer tasked with breaking down a competency into its foundational concepts.
 Each concept must include a name, a brief description, learning objectives, and prerequisites to ensure a logical learning progression.

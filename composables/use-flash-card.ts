@@ -1,11 +1,12 @@
 
 export type FlashCardModel = GraphQLModel & {
   id: string;
-  frontText: string;
-  backText: string;
+  question: string;
+  answer: string;
+  notes: string;
   conceptId: string;
 };
 
 export default function () {
-  return useGraphqlQuery('FlashCard', ['id', 'frontText', 'backText', 'conceptId']);
+  return useGraphqlQuery('FlashCard', ['id', 'question', 'answer', 'notes', 'conceptId']);
 }

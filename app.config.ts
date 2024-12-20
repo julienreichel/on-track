@@ -5,5 +5,6 @@ export default defineAppConfig({
     brand: {
       primary: '#3993DD'
     },
+    animations: 'all',
   }
 })
