@@ -23,7 +23,7 @@ export type UserActionModel = GraphQLModel & {
 };
 
 export default function () {
-  return useGraphqlQuery('UserAction', [
+  const calls = useGraphqlQuery('UserAction', [
     'id',
     'createdAt',
     'owner',
@@ -35,4 +35,33 @@ export default function () {
     'usedFlashCards.*',
     'answeredQuestions.*'
   ]);
+
+  const list = (params: GraphQLParams = {}, options: GraphQLOptions = {}) => {
+    if (params.userId && params.username) {
+      params.owner = `${params.userId}::${params.username}`;
+    }
+
+    let query = null;
+    if (params.conceptId) {
+      query = "listUserActionByConceptIdAndOwner";
+      if (params.owner) {
+        params.owner = { eq: params.owner };
+      }
+    } else if (params.owner) {
+      query = "listUserActionByOwnerAndCreatedAt";
+      if (!params.sortDirection) {
+        params.sortDirection = "DESC";
+      }
+    } else {
+      query = "list";
+    }
+
+    return calls.call(query, {...params, ...options}) as unknown as GraphQLModel[];
+  }
+  const update = async (input: GraphQLModel, options: GraphQLOptions = {}) => {
+    // never update the owner
+    delete input.owner;
+    return calls.update(input, options);
+  };
+  return { ...calls, list, update };
 }

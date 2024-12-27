@@ -11,7 +11,7 @@
     <p v-if="competency.description" style="max-width:600px" >{{ competency.description }}</p>
 
     <div v-if="competency.objectives?.length">
-      <h3>Objective</h3>
+      <h3>Objectives</h3>
       <objective-list :objectives="competency.objectives" />
     </div>
 

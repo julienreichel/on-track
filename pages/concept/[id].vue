@@ -21,7 +21,7 @@
         group="concept"
         :content-inset-level="0.5"
       >
-        <objective-list :objectives="concept.objectives" />
+        <objective-list :objectives="concept.objectives" :default-check="userAction?.objectives" @check-objective="updateObjective" />
       </q-expansion-item>
 
       <q-expansion-item
@@ -30,6 +30,7 @@
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
+        @show="markTheoryAsRead"
       >
         <rich-text-renderer
           v-if="concept.theory"
@@ -46,6 +47,7 @@
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
+        @show="markExamplesAsRead"
       >
         <rich-text-renderer :markdown-content="concept.examples" />
       </q-expansion-item>
@@ -106,9 +108,13 @@
 <script setup>
 const route = useRoute();
 const conceptService = useConcept();
+const userActionService = useUserAction();
 const { loading } = useQuasar();
 
+const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
+
 const concept = ref(null);
+const userAction = ref(null);
 const showQuizDialog = ref(false);
 
 const teacherMode = inject("teacherMode");
@@ -117,8 +123,21 @@ onMounted(async () => {
   try {
     const conceptId = route.params.id;
     concept.value = await conceptService.get(conceptId);
+
+    // Check or create UserAction
+    const { userId, username } = await getCurrentUser();
+    const actions = await userActionService.list({conceptId, userId, username});
+    if (actions.length) {
+      userAction.value = actions[0];
+    } else {
+      userAction.value = await userActionService.create({
+        conceptId,
+        inProgress: true,
+        objectives: concept.value.objectives?.map(() => false) || [],
+      });
+    }
   } catch (error) {
-    console.error("Failed to fetch concept:", error);
+    console.error("Failed to fetch concept or user action:", error);
   }
 });
 
@@ -187,5 +206,29 @@ const generateQuizData = async (level) => {
     );
   }
   loading.hide();
+};
+
+const markTheoryAsRead = async () => {
+  console.log("markTheoryAsRead");
+  if (!userAction.value.theory) {
+    userAction.value.theory = true;
+    userAction.value = await userActionService.update(userAction.value);
+  }
+};
+
+const markExamplesAsRead = async () => {
+  if (!userAction.value.examples) {
+    userAction.value.examples = true;
+    userAction.value = await userActionService.update(userAction.value);
+  }
+};
+
+const updateObjective = async (objectives) => {
+  console.log("updateObjective", objectives);
+  console.log("userAction.value.objectives", userAction.value.objectives);
+  if (!userAction.value.objectives.every(function(v, index) { return v === objectives[index]})) {
+    userAction.value.objectives = objectives;
+    userAction.value = await userActionService.update(userAction.value);
+  }
 };
 </script>

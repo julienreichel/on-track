@@ -30,13 +30,22 @@
           @click="turnCard('explanation')"
         />
         <q-btn
-          icon="sync"
+          icon="thumb_up"
           flat
           round
           dense
           class="close-btn"
-          aria-label="Close answer"
-          @click="resetView"
+          aria-label="Correct answer"
+          @click="resetView(true)"
+        />
+        <q-btn
+          icon="thumb_down"
+          flat
+          round
+          dense
+          class="close-btn"
+          aria-label="False answer"
+          @click="resetView(false)"
         />
       </div>
     </q-card-section>
@@ -52,7 +61,7 @@
         dense
         class="close-btn"
         aria-label="Close explanation"
-        @click="resetView"
+        @click="view = 'answer'"
       />
     </q-card-section>
   </q-card>
@@ -67,13 +76,16 @@ defineProps({
   },
 });
 
+const emits = defineEmits(['success'])
+
 const view = ref('question'); // Possible values: 'question', 'answer', 'explanation'
 
 const turnCard = (nextView) => {
   view.value = nextView;
 };
 
-const resetView = () => {
+const resetView = (success) => {
+  emits('success', success);
   view.value = 'question';
 };
 </script>

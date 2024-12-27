@@ -66,6 +66,8 @@ const schema = a.schema({
       followUps: a.hasMany("ConceptDependency", "prerequisiteId"),
       competencyId: a.id().required(),
       competency: a.belongsTo("Competency", "competencyId"),
+
+      userActions: a.hasMany("UserAction", "conceptId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
@@ -109,6 +111,41 @@ const schema = a.schema({
       competencies: a.hasMany("Competency", "subjectId"),
     })
     .authorization((allow) => [allow.authenticated()]),
+
+  FlashCardAction: a.customType({
+    flashCardId: a.id(),
+    isOk: a.boolean(),
+  }),
+
+  QuestionAction: a.customType({
+    questionId: a.id(),
+    userResponse: a.string(),
+    isValid: a.boolean(),
+  }),
+
+  UserAction: a
+    .model({
+      id: a.id().required(),
+      createdAt: a.datetime(),
+      owner: a.string(),
+      conceptId: a.id().required(),
+      concept: a.belongsTo("Concept", "conceptId"),
+
+      inProgress: a.boolean(),
+      objectives: a.boolean().array(),
+      theory: a.boolean(),
+      examples: a.boolean(),
+      usedFlashCards: a.ref("FlashCardAction").array(),
+      answeredQuestions: a.ref("QuestionAction").array(),
+    })
+    .secondaryIndexes((index) => [
+      index("owner").name("byOwner").sortKeys(["createdAt"]),
+      index("conceptId").name("byConcept").sortKeys(["owner"])
+    ])
+    .authorization((allow) => [
+      allow.owner(),
+      allow.authenticated().to(["read"]),
+    ]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
