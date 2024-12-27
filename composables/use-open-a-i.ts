@@ -201,25 +201,23 @@ export default function () {
 
       // Clean up trailing newlines
       response.description = response.description?.trim();
-      response.theory = response.theory?.trim();
-      response.examples = response.examples?.trim();
+      // openAi has a tendancy to not repsect the markdown headers, so we fix it here
+      response.theory = response.theory?.trim().replace("#### ", "##### ");
+      response.examples = response.examples?.trim().replace("#### ", "##### ");
 
       return response;
     }
 
     // Run the conversion
-    const jsonResponse = convertMarkdownToJSON(response);
-    console.log(response, jsonResponse);
-
-    return jsonResponse;
+    return convertMarkdownToJSON(response);
   };
 
   const queryQuiz = async (
-    name: string, summary: string, objectives: string[], theory: string, examples: string, difficultyLevel: number
+    name: string, summary: string, objectives: string[], theory: string, examples: string, difficultyLevel: number, locale: Locale = "en"
   ): Promise<QuizResponse[]> => {
 
     const request: OpenAIRequest = {
-      system: quizPrompt.system(difficultyLevel),
+      system: quizPrompt.system(difficultyLevel, localeMap[locale]),
       prompt: quizPrompt.prompt(name, summary, objectives, theory, examples),
       token: 10 * 250,
       format: "json",

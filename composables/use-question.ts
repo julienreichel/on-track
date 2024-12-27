@@ -15,5 +15,5 @@ export type QuestionModel = GraphQLModel & {
 };
 
 export default function () {
-  return useGraphqlQuery('Question', ['id', 'type', 'text', 'explanations', 'level', 'answers', 'conceptId']);
+  return useGraphqlQuery('Question', ['id', 'type', 'text', 'explanations', 'level', 'answers.*', 'conceptId']);
 }

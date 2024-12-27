@@ -36,7 +36,7 @@
     </div>
     <h3>Questions</h3>
     <div v-if="concept.questions?.length">
-      <q-btn @click="showQuizDialog = true">Run</q-btn>
+      <q-btn v-if="0" @click="showQuizDialog = true">Run</q-btn>
       <question-list :questions="randomizedQuestions" />
       <quiz-runner-dialog-test
           v-model="showQuizDialog"
@@ -122,7 +122,6 @@ const generateQuizData = async (level) => {
   } else {
     await Promise.all([1, 2, 3, 4].map(l => conceptService.addQuizWithAI(concept.value, l)));
   }
-  await conceptService.update(concept.value);
   loading.hide();
 };
 </script>

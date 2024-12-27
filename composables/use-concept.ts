@@ -1,4 +1,6 @@
 
+
+
 export type ConceptModel = GraphQLModel & {
   id: string;
   name: string;
@@ -13,11 +15,13 @@ export type ConceptModel = GraphQLModel & {
   competencyId: string;
 };
 
+
+
 export default function () {
   const question = useQuestion();
   const flashCard = useFlashCard();
   const prerequisite = useConceptPrerequisite();
-  const { queryConcept } = useOpenAI();
+  const { queryConcept, queryQuiz } = useOpenAI();
 
   const calls = useGraphqlQuery('Concept', [
     'id',
@@ -82,8 +86,9 @@ export default function () {
     );
     console.log("queryConcept", response);
 
-    // Step 1, update the concept from the response ad save it
+    // Step 1, update the concept from the response and save it
     concept.description = response.description;
+    concept.objectives = response.learning_objectives;
     if(response.theory){
       concept.theory = response.theory;
     }
@@ -103,11 +108,48 @@ export default function () {
         }) as Promise<FlashCardModel>
       )
     );
+    return concept;
   };
+
+  const addQuizWithAI = async (concept: ConceptModel, level: number, locale: Locale = "en") => {
+    const name = concept.name;
+    const summary = concept.description;
+    const objectives = concept.objectives
+      .filter(Boolean) as string[];
+    const theory = concept.theory;
+    const examples = concept.examples;
+
+    if (!name || !summary || !objectives || !theory || !examples) {
+      return null;
+    }
+
+    const response = await queryQuiz(name, summary, objectives, theory, examples, level, locale);
+    console.log("response", response);
+
+    const questions = await Promise.all(response.map((q) =>
+      question.create({
+        text: q.text,
+        explanations: q.explanations,
+        answers: q.answers.map((a) => ({
+          text: a.text,
+          valid: a.valid,
+        })),
+        type: q.type,
+        level: q.level,
+        conceptId: concept.id
+      }))) as QuestionModel[];
+
+      if (!concept.questions) concept.questions = [];
+      concept.questions = [...concept.questions, ...questions];
+      return concept;
+  };
+
+
 
   return {
     ...calls,
     delete: del,
-    createWithAI
+    createWithAI,
+    addQuizWithAI
   };
 }

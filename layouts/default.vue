@@ -25,7 +25,7 @@
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" bordered>
-      <q-item clickable to="/">
+      <q-item clickable to="/subjects">
         <q-item-section avatar>
           <q-icon name="map" />
         </q-item-section>
