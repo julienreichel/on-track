@@ -4,6 +4,9 @@
       :nodes="nodes"
       :edges="edges"
       :connection-mode="ConnectionMode.Strict"
+      :nodes-draggable="false"
+      :nodes-connectable="false"
+      :pan-on-drag="false"
     >
       <template #node-concept="nodeProps">
         <flow-concept-node
