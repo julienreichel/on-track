@@ -36,19 +36,19 @@ ${language}
 ### Theory
 [Explain the theoretical concepts of the section.]
 
-##### Subsection (if necessary)
+##### Subsection Name (if necessary)
 [Details of a specific concept or idea.]
 
-##### Subsection (if necessary)
+##### Subsection Name (if necessary)
 [Details of a specific concept or idea.]
 
 ### Examples
 [Provide examples that demonstrate the theory. Include step-by-step problem-solving, real-world analogies, and basic illustrations.]
 
-##### Subsection (if necessary)
+##### Subsection Name (if necessary)
 [Details of a specific example.]
 
-##### Subsection (if necessary)
+##### Subsection Name (if necessary)
 [Details of a specific example.]
 
 ### Flashcards

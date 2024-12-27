@@ -33,7 +33,7 @@
       </q-item>
 
       <!-- Create New Lecture Section -->
-      <q-item clickabl to="/add">
+      <q-item v-if="teacherMode" clickable to="/add">
         <q-item-section avatar>
           <q-icon name="create" />
         </q-item-section>
@@ -59,18 +59,8 @@
         <q-separator />
 
         <!-- Profile Links -->
-        <q-item clickable>
-          <q-item-section avatar>
-            <q-icon name="account_circle" />
-          </q-item-section>
-          <q-item-section>Profile</q-item-section>
-        </q-item>
-
-        <q-item clickable>
-          <q-item-section avatar>
-            <q-icon name="settings" />
-          </q-item-section>
-          <q-item-section>Settings</q-item-section>
+        <q-item>
+          <q-toggle v-model="teacherMode" label="Teacher Mode" />
         </q-item>
 
         <!-- Logout Button -->
@@ -88,12 +78,18 @@
     </q-page-container>
   </q-layout>
 </template>
+
 <script setup lang="ts">
 const { notify } = useQuasar();
 const { fetchUserAttributes, signOut } = useNuxtApp().$Amplify.Auth;
 
 const leftDrawerOpen = ref(false);
 const rightDrawerOpen = ref(false);
+const teacherMode = ref(false);
+const userName = ref("");
+const userEmail = ref("");
+
+provide('teacherMode', teacherMode)
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -103,16 +99,25 @@ function toggleRightDrawer() {
   rightDrawerOpen.value = !rightDrawerOpen.value;
 }
 
-const userName = ref("");
-const userEmail = ref("");
+watch(teacherMode, handleTeacherModeToggle);
+function handleTeacherModeToggle() {
+  notify({
+    color: "positive",
+    position: "top",
+    message: teacherMode.value ? "Teacher Mode Activated" : "Teacher Mode Deactivated",
+  });
+  LocalStorage.set('teacherMode', teacherMode.value);
+}
 
 onMounted(async () => {
   try {
     const userAttributes = await fetchUserAttributes();
     userName.value = userAttributes.name;
     userEmail.value = userAttributes.email;
+    // Load stored teacher mode setting
+    teacherMode.value = LocalStorage.getItem('teacherMode') || false;
   } catch (error) {
-    console.error("Failed to fetch section:", error);
+    console.error("Failed to fetch user attributes:", error);
   }
   console.log("Layout mounted");
 });
@@ -121,7 +126,7 @@ const logout = async () => {
   notify({
     color: "secondary",
     position: "top",
-    message: "Loggin out",
+    message: "Logging out",
     icon: "logout",
   });
   signOut();

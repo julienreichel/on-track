@@ -6,8 +6,8 @@
 
     <div v-if="subject.competencies?.length">
       <h3>Competencies</h3>
-      <competency-list :competencies="subject.competencies" allow-delete @delete="deleteCompetency"/>
-      <q-btn v-if="subject.competencies.some(s => !s.introduction)" @click="generateCompetenciesData()">Populate</q-btn>
+      <competency-list :competencies="subject.competencies" :allow-delete="teacherMode" @delete="deleteCompetency"/>
+      <q-btn v-if="teacherMode && subject.competencies.some(s => !s.introduction)" @click="generateCompetenciesData()">Populate</q-btn>
     </div>
   </div>
   <div v-else>
@@ -20,6 +20,8 @@ const subjectService = useSubject();
 const competencyService = useCompetency();
 const route = useRoute();
 const { loading } = useQuasar();
+
+const teacherMode = inject('teacherMode');
 
 const subject = ref(null);
 

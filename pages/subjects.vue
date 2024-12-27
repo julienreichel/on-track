@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1>Subjects</h1>
-    <subject-list :subjects="subjects" allow-delete @delete="deleteSubject"/>
+    <subject-list :subjects="subjects" :allow-delete="teacherMode" @delete="deleteSubject"/>
   </div>
 </template>
 
@@ -9,6 +9,7 @@
 <script setup lang="js">
 const subjectService = useSubject();
 
+const teacherMode = inject('teacherMode');
 const subjects = ref([]);
 
 onMounted(async () => {

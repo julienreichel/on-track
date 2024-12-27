@@ -11,7 +11,7 @@
       <q-item-section avatar>
         <div class="row q-gutter-sm">
           <q-btn
-            v-if="allowDelete && !concept.introduction"
+            v-if="allowDelete"
             label="delete"
             @click.stop.prevent="$emit('delete', concept)"
           />

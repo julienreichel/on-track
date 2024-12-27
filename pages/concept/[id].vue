@@ -19,7 +19,7 @@
     <div >
       <h3>Theory</h3>
       <rich-text-renderer v-if="concept.theory" :markdown-content="concept.theory" />
-      <q-btn v-else @click="generateConceptData()">Generate</q-btn>
+      <q-btn v-else-if="teacherMode" @click="generateConceptData()">Generate</q-btn>
     </div>
 
     <div v-if="concept.examples">
@@ -36,7 +36,7 @@
     </div>
     <h3>Questions</h3>
     <div v-if="concept.questions?.length">
-      <q-btn v-if="0" @click="showQuizDialog = true">Run</q-btn>
+      <q-btn v-if="teacherMode" @click="showQuizDialog = true">Run</q-btn>
       <question-list :questions="randomizedQuestions" />
       <quiz-runner-dialog-test
           v-model="showQuizDialog"
@@ -44,7 +44,7 @@
           :max="3"
        />
     </div>
-    <div v-else>
+    <div v-else-if="teacherMode">
       <q-btn @click="generateQuizData()">Generate</q-btn>
     </div>
 
@@ -64,6 +64,8 @@ const { loading } = useQuasar();
 
 const concept = ref(null);
 const showQuizDialog = ref(false);
+
+const teacherMode = inject('teacherMode');
 
 onMounted(async () => {
   try {

@@ -17,10 +17,10 @@
 
     <h3>Concepts</h3>
     <div v-if="competency.concepts?.length">
-      <concept-list :concepts="competency.concepts" allow-delete @delete="deleteConcept"/>
-      <q-btn v-if="competency.concepts.some(s => !s.theory)" @click="generateConceptsData()">Populate</q-btn>
+      <concept-list :concepts="competency.concepts" :allow-delete="teacherMode" @delete="deleteConcept"/>
+      <q-btn v-if="teacherMode && competency.concepts.some(s => !s.theory)" @click="generateConceptsData()">Populate</q-btn>
     </div>
-    <div v-else>
+    <div v-else-if="teacherMode">
       <q-btn @click="generateCompetencyData()">Generate</q-btn>
     </div>
 
@@ -38,6 +38,8 @@ const competencyService = useCompetency();
 const conceptService = useConcept();
 const route = useRoute();
 const { loading } = useQuasar();
+
+const teacherMode = inject('teacherMode');
 
 const competency = ref(null);
 
