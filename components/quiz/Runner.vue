@@ -9,7 +9,7 @@
     <q-card-section>
       <q-card square>
         <q-card-section v-if="question.text">
-          <rich-text-renderer class="text-h6" :html-content="question.text" />
+          <rich-text-renderer class="text-h6" :markdown-content="question.text" />
         </q-card-section>
         <q-separator inset />
         <q-card-section
@@ -29,7 +29,7 @@
           </q-option-group>
         </q-card-section>
         <q-card-section
-          v-if="question.type === 'shorttext'"
+          v-if="question.type === 'shorttext' || question.type === 'word'"
           class="q-gutter-sm q-pl-lg"
         >
           <q-input
@@ -56,7 +56,7 @@
           class="q-pa-md"
         >
           <q-banner v-if="question.explanations" class="bg-positive">
-            <rich-text-renderer :html-content="question.explanations" />
+            <rich-text-renderer :markdown-content="question.explanations" />
           </q-banner>
         </q-card-section>
       </q-card>
@@ -67,7 +67,7 @@
         square
         size="md"
         :icon="prevActionsIcon"
-        @click="$emit('finished', [])"
+        @click="finished()"
       />
       <q-btn
         v-if="step > 0 && !hasResults"
@@ -95,21 +95,21 @@
       <q-card square>
         <quiz-summary-responses
           :questions="correctQuestions"
-          :title="$t('quiz.well_done')"
+          title="Well done"
           icon="task_alt"
           color="bg-positive"
           @activate="goToQuestion"
         />
         <quiz-summary-responses
           :questions="wrongQuestions"
-          :title="$t('quiz.lets_review')"
+          title="Lets review"
           icon="highlight_off"
           color="bg-negative"
           @activate="goToQuestion"
         />
         <quiz-summary-responses
           :questions="leftOverQuestions"
-          :title="$t('quiz.more_questions')"
+          title="More to go"
           icon="help_outline"
           color="bg-info"
           @activate="goToNextQuestion"
@@ -135,7 +135,7 @@
         :icon="nextActionsIcon"
         color="primary"
         padding="sm 64px"
-        @click="$emit('finished', activeQuestions)"
+        @click="finished()"
       />
     </q-card-actions>
   </q-card>
@@ -152,7 +152,7 @@ const props = defineProps({
   adaptative: { type: Boolean, default: false },
   examMode: { type: Boolean, default: false },
   nextActionsIcon: { type: String, default: "check" },
-  prevActionsIcon: { type: String, default: "close" },
+  prevActionsIcon: { type: String, default: "" },
   title: { type: String, default: null },
 });
 const emit = defineEmits(["finished", "results", "progress"]);
@@ -211,26 +211,24 @@ const nextCliked = () => {
     } else {
       step.value++;
     }
-  } else {
-    if (props.examMode) {
-      step.value++;
-      if (step.value === activeQuestions.value.length) {
-        activeQuestions.value.forEach((question) => {
-          validateAnswers(question);
-        });
-        emit("progress", [...activeQuestions.value]);
-      }
-    } else {
-      const valid = validateAnswers(question.value);
+  } else if (props.examMode) {
+    step.value++;
+    if (step.value === activeQuestions.value.length) {
+      activeQuestions.value.forEach((question) => {
+        validateAnswers(question);
+      });
       emit("progress", [...activeQuestions.value]);
-      if (valid) {
-        step.value++;
-      }
+    }
+  } else {
+    const valid = validateAnswers(question.value);
+    emit("progress", [...activeQuestions.value]);
+    if (valid) {
+      step.value++;
     }
   }
   if (activeQuestions.value.length <= step.value + 1) {
     // we are building question dynamically
-    activeQuestions.value = getActiveQuestions();
+    activeQuestions.value = getActiveQuestions(props);
   }
 };
 
@@ -265,4 +263,12 @@ const leftOverQuestions = computed(() =>
     (_, index) => ({ id: index, text: "...", points: "?" }),
   ),
 );
+
+const finished = () => {
+  step.value = 0;
+  hasValidatedAnswers.value = resetQuestions(props.questions, props.answeredQuestions);
+  activeQuestions.value = getActiveQuestions(props);
+
+  emit('finished', activeQuestions.value);
+}
 </script>

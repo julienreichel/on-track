@@ -19,7 +19,6 @@ const check = ref([]);
 watch(
   () => props.objectives,
   (objectives) => {
-    console.log("objectives", props.defaultCheck);
     if (props.defaultCheck.length) {
       check.value = [...props.defaultCheck];
       return;

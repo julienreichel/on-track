@@ -1,10 +1,11 @@
 export default function () {
   let previousQuestions = [];
+  let questions;
   const levels = ["novice", "beginner", "intermediate", "advanced", "expert"];
 
   let questionsPerLevels = {};
 
-  const getActiveQuestions = ({ questions, adaptative = true, examMode = false, max = 0 }) => {
+  const getActiveQuestions = ({ adaptative = true, examMode = false, max = 0 }) => {
     const realMax = max ? Math.min(max, questions.length) : questions.length;
 
     if (!previousQuestions.length) {
@@ -14,20 +15,20 @@ export default function () {
         .forEach((q) => {
           previousQuestions.push(q);
         });
-      if (previousQuestions.length >= realMax.value) {
+      if (previousQuestions.length >= realMax) {
         return previousQuestions;
       }
     }
 
-    if (previousQuestions.length >= realMax.value) {
+    if (previousQuestions.length >= realMax) {
       return previousQuestions;
     }
     // pick the questions to display
-    if (!adaptative || realMax.value === questions.length) {
+    if (!adaptative || realMax === questions.length) {
       let q = [...questions];
       previousQuestions = q
         .sort((a, b) => a.order - b.order)
-        .slice(0, realMax.value);
+        .slice(0, realMax);
       return previousQuestions;
     }
 
@@ -35,7 +36,7 @@ export default function () {
       // create the final quiz
       let q = [];
       let i = 0;
-      while (q.length < realMax.value) {
+      while (q.length < realMax) {
         const keys = Object.keys(questionsPerLevels.filter((q) => q.length));
         let level = keys[i % keys.length];
         if (questionsPerLevels[level].length) {
@@ -165,8 +166,25 @@ export default function () {
     return questionsPerLevels;
   };
 
-  const resetQuestions = (questions, answeredQuestions = []) => {
+  const initQuestionResponse = (question) => {
+    if (question.response !== undefined)
+      return question.response;
+    return question.type === "checkbox" ? [] : undefined
+  };
+  const initQuestionResponseWithAnswer = (question, answeredQuestion) => {
+    if(question.type === "checkbox") {
+      return answeredQuestion.response.split(",");
+    }
+    if(question.type === "radio") {
+      return Number(answeredQuestion.response);
+    }
+    return answeredQuestion.response;
+  };
+
+  const resetQuestions = (inputQuestions, answeredQuestions = []) => {
     previousQuestions = [];
+    questions = inputQuestions.map((q) => ({ ...q }));
+
     questionsPerLevels = getQuestionsPerLevels(questions);
 
     // pre-populate the questions with the answers
@@ -182,15 +200,9 @@ export default function () {
         if (!question) {
           return;
         }
-        question.response =
-          question.type === "checkbox"
-            ? answeredQuestion.response.split(",")
-            : question.type === "radio"
-              ? Number(answeredQuestion.response)
-              : answeredQuestion.response;
+        question.response = initQuestionResponseWithAnswer(question, answeredQuestion);
         question.validated = true;
         question.valid = answeredQuestion.valid;
-        question.points = answeredQuestion.points;
         question.order = -answeredQuestions.length + idx;
       });
     }
@@ -202,21 +214,15 @@ export default function () {
       if (question.validated) {
         validAnswers++;
       }
-      question.response =
-        question.response === undefined
-          ? question.type === "checkbox"
-            ? []
-            : undefined
-          : question.response;
+      question.response = initQuestionResponse(question);
       question.time = question.time || 0;
       question.level = question.level || "intermediate";
       question.order = question.order || Math.random();
       question.difficulty =
         question.difficulty || levels.indexOf(question.level) + 1 || 3;
-      if (!question.explanations && question.type === "shorttext") {
+      if (!question.explanations && (question.type === "shorttext" || question.type === "word")) {
         question.explanations =
-          t("quiz.question.valid_answers") +
-          " '" +
+          "Valid answers: '" +
           question.answers
             .filter((a) => a.valid)
             .map((a) => a.text)
@@ -224,12 +230,13 @@ export default function () {
           "'";
       }
     });
-    if (validAnswers && validAnswers < questions.length) {
-      return true;
-    }
-    return false
+    return validAnswers ? validAnswers < questions.length : false;
   };
 
+  const getColor = (question, answer) => {
+    if (!question.validated) return undefined;
+    return answer.valid ? "positive" : "negative";
+  }
   const getOptions = (question) => {
     if (!question) return {};
     if (question.type === "radio" || question.type === "checkbox") {
@@ -238,11 +245,7 @@ export default function () {
         label: answer.text,
         value: index,
         checkedIcon: question.type === "radio" ? "task_alt" : undefined,
-        color: question.validated
-          ? answer.valid
-            ? "positive"
-            : "negative"
-          : undefined,
+        color: getColor(question, answer)
       }));
       // randomize order of options
       options.sort((a, b) => a.order - b.order);
@@ -274,7 +277,7 @@ export default function () {
         if (!found && answer.valid) valid = false;
       });
     }
-    if (question.type === "shorttext") {
+    if (question.type === "shorttext" || question.type === "word") {
       valid = false;
       question.answers.forEach((answer) => {
         if (question.response?.toLowerCase() === answer.text.toLowerCase()) {
@@ -283,7 +286,6 @@ export default function () {
       });
     }
     question.valid = valid;
-    question.points = valid ? 5 : 0;
 
     return valid;
   };

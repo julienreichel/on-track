@@ -70,20 +70,22 @@
       </q-expansion-item>
 
       <q-expansion-item
-        v-if="teacherMode || concept.theory"
+        v-if="teacherMode || concept.questions?.length"
         label="Questions"
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
       >
         <div v-if="concept.questions?.length">
-          <q-btn v-if="teacherMode" @click="showQuizDialog = true">Run</q-btn>
-          <question-list :questions="randomizedQuestions" @answer-selected= "updateQuestions"/>
-          <quiz-runner-dialog-test
-            v-model="showQuizDialog"
+          <quiz-runner
+            v-if="!teacherMode"
             :questions="concept.questions"
-            :max="3"
+            :max="10"
+            @finished="updateQuestionsFinished"
+            @results="updateQuestionsResults"
+            @progress="updateQuestionsProgress"
           />
+          <question-list v-else :questions="randomizedQuestions" @answer-selected= "updateQuestions"/>
         </div>
         <div v-else-if="teacherMode">
           <q-btn @click="generateQuizData()">Generate</q-btn>
@@ -280,4 +282,45 @@ const updateQuestions = async ({questionId, userResponse, isValid}) => {
   answeredQuestion.isValid = isValid;
   conceptAction.value = await conceptActionService.update(conceptAction.value);
 };
+
+const updateQuestionsFinished = (p) => {
+  console.log("Finished", p);
+}
+const updateQuestionsProgress = async (questions) => {
+  if (teacherMode.value || !conceptAction.value){
+    return;
+  }
+  const validatedQuestions = questions.filter((q) => q.validated).map((q) => ({
+    questionId: q.id,
+    userResponse: q.type === "checkbox" ? q.response.join(",") : q.response.toString(),
+    isValid: q.valid,
+  }));
+
+  if (!conceptAction.value.answeredQuestions) {
+    conceptAction.value.answeredQuestions = [];
+  }
+
+  let hasChanges = false;
+  validatedQuestions.forEach((q) => {
+    const answeredQuestion = conceptAction.value.answeredQuestions.find((aq) => aq.questionId === q.questionId);
+    if (answeredQuestion) {
+      if (answeredQuestion.userResponse === q.userResponse ) {
+        return;
+      }
+      hasChanges = true;
+      answeredQuestion.userResponse = q.userResponse;
+      answeredQuestion.isValid = q.isValid;
+      return;
+    }
+    hasChanges = true;
+    conceptAction.value.answeredQuestions.push(q);
+  });
+
+  if (hasChanges) {
+    conceptAction.value = await conceptActionService.update(conceptAction.value);
+  }
+}
+const updateQuestionsResults = (p) => {
+  console.log("Results", p);
+}
 </script>
