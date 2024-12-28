@@ -125,16 +125,18 @@ onMounted(async () => {
     concept.value = await conceptService.get(conceptId);
 
     // Check or create UserAction
-    const { userId, username } = await getCurrentUser();
-    const actions = await userActionService.list({conceptId, userId, username});
-    if (actions.length) {
-      userAction.value = actions[0];
-    } else {
-      userAction.value = await userActionService.create({
-        conceptId,
-        inProgress: true,
-        objectives: concept.value.objectives?.map(() => false) || [],
-      });
+    if (!teacherMode.value){
+      const { userId, username } = await getCurrentUser();
+      const actions = await userActionService.list({conceptId, userId, username});
+      if (actions.length) {
+        userAction.value = actions[0];
+      } else {
+        userAction.value = await userActionService.create({
+          conceptId,
+          inProgress: true,
+          objectives: concept.value.objectives?.map(() => false) || [],
+        });
+      }
     }
   } catch (error) {
     console.error("Failed to fetch concept or user action:", error);
@@ -209,7 +211,9 @@ const generateQuizData = async (level) => {
 };
 
 const markTheoryAsRead = async () => {
-  console.log("markTheoryAsRead");
+  if (teacherMode.value || !userAction.value){
+    return;
+  }
   if (!userAction.value.theory) {
     userAction.value.theory = true;
     userAction.value = await userActionService.update(userAction.value);
@@ -217,6 +221,9 @@ const markTheoryAsRead = async () => {
 };
 
 const markExamplesAsRead = async () => {
+  if (teacherMode.value || !userAction.value){
+    return;
+  }
   if (!userAction.value.examples) {
     userAction.value.examples = true;
     userAction.value = await userActionService.update(userAction.value);
@@ -224,6 +231,9 @@ const markExamplesAsRead = async () => {
 };
 
 const updateObjective = async (objectives) => {
+  if (teacherMode.value || !userAction.value){
+    return;
+  }
   console.log("updateObjective", objectives);
   console.log("userAction.value.objectives", userAction.value.objectives);
   if (!userAction.value.objectives.every(function(v, index) { return v === objectives[index]})) {
