@@ -67,7 +67,7 @@ const schema = a.schema({
       competencyId: a.id().required(),
       competency: a.belongsTo("Competency", "competencyId"),
 
-      userActions: a.hasMany("UserAction", "conceptId"),
+      conceptActions: a.hasMany("ConceptAction", "conceptId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
@@ -123,7 +123,7 @@ const schema = a.schema({
     isValid: a.boolean(),
   }),
 
-  UserAction: a
+  ConceptAction: a
     .model({
       id: a.id().required(),
       createdAt: a.datetime(),

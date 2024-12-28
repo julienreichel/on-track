@@ -29,7 +29,7 @@
             >
             <q-btn @click="openNodes(nodeId)">Open</q-btn>
             <q-space />
-            <q-btn @click="removeNodes([nodeId])">Delete</q-btn>
+            <q-btn v-if="teacherMode" @click="removeNodes([nodeId])">Delete</q-btn>
           </div>
         </div>
       </q-menu>
@@ -49,6 +49,8 @@
 <script lang="js" setup>
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
 const { removeNodes } = useVueFlow()
+
+const teacherMode = inject("teacherMode");
 
 const props = defineProps({
   data: {type: Object, required: true},

@@ -33,6 +33,8 @@ const props = defineProps({
   question: { type: Object, required: true },
 });
 
+const emit = defineEmits(["answer-selected"]);
+
 const selectedAnswers = ref([]);
 const showExplanation = ref(false);
 
@@ -52,7 +54,16 @@ const onAnswerSelected = () => {
   );
 
   // Show explanation if either condition is met
-  showExplanation.value = allValidSelected || anyInvalidSelected;
+  if(allValidSelected || anyInvalidSelected){
+    showExplanation.value = true;
+
+    // Emit the event with the selected answer and its validity
+    emit("answer-selected", {
+      questionId: props.question.id,
+      userResponse: selectedAnswers.value.map((answer) => props.question.answers.indexOf(answer)).sort().join(","),
+      isValid: allValidSelected && !anyInvalidSelected,
+    });
+  }
 };
 
 const getAnswerColor = (answer) => {

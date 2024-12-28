@@ -34,6 +34,8 @@
 <script setup>
 import { ref } from "vue";
 
+const emit = defineEmits(["answer-selected"]);
+
 const props = defineProps({
   question: { type: Object, required: true },
 });
@@ -50,6 +52,12 @@ const validateAnswer = () => {
   );
   isCorrect.value = validAnswer;
   showExplanation.value = true;
+
+  emit("answer-selected", {
+    questionId: props.question.id,
+    userResponse: userAnswer.value.toLowerCase(),
+    isValid: isCorrect.value,
+  });
 };
 
 const getInputColor = () => {

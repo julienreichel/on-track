@@ -21,7 +21,7 @@
         group="concept"
         :content-inset-level="0.5"
       >
-        <objective-list :objectives="concept.objectives" :default-check="userAction?.objectives" @check-objective="updateObjective" />
+        <objective-list :objectives="concept.objectives" :default-check="conceptAction?.objectives" @check-objective="updateObjective" />
       </q-expansion-item>
 
       <q-expansion-item
@@ -64,7 +64,7 @@
             :key="flashCard.id"
             class="col"
           >
-            <flashcard-view :flash-card="flashCard" />
+            <flashcard-view :flash-card="flashCard" @success="(status) => updateFlashCard(flashCard.id, status)"/>
           </div>
         </div>
       </q-expansion-item>
@@ -78,7 +78,7 @@
       >
         <div v-if="concept.questions?.length">
           <q-btn v-if="teacherMode" @click="showQuizDialog = true">Run</q-btn>
-          <question-list :questions="randomizedQuestions" />
+          <question-list :questions="randomizedQuestions" @answer-selected= "updateQuestions"/>
           <quiz-runner-dialog-test
             v-model="showQuizDialog"
             :questions="concept.questions"
@@ -108,13 +108,13 @@
 <script setup>
 const route = useRoute();
 const conceptService = useConcept();
-const userActionService = useUserAction();
+const conceptActionService = useConceptAction();
 const { loading } = useQuasar();
 
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
 const concept = ref(null);
-const userAction = ref(null);
+const conceptAction = ref(null);
 const showQuizDialog = ref(false);
 
 const teacherMode = inject("teacherMode");
@@ -124,14 +124,14 @@ onMounted(async () => {
     const conceptId = route.params.id;
     concept.value = await conceptService.get(conceptId);
 
-    // Check or create UserAction
+    // Check or create ConceptAction
     if (!teacherMode.value){
       const { userId, username } = await getCurrentUser();
-      const actions = await userActionService.list({conceptId, userId, username});
+      const actions = await conceptActionService.list({conceptId, userId, username});
       if (actions.length) {
-        userAction.value = actions[0];
+        conceptAction.value = actions[0];
       } else {
-        userAction.value = await userActionService.create({
+        conceptAction.value = await conceptActionService.create({
           conceptId,
           inProgress: true,
           objectives: concept.value.objectives?.map(() => false) || [],
@@ -211,34 +211,73 @@ const generateQuizData = async (level) => {
 };
 
 const markTheoryAsRead = async () => {
-  if (teacherMode.value || !userAction.value){
+  if (teacherMode.value || !conceptAction.value){
     return;
   }
-  if (!userAction.value.theory) {
-    userAction.value.theory = true;
-    userAction.value = await userActionService.update(userAction.value);
+  if (!conceptAction.value.theory) {
+    conceptAction.value.theory = true;
+    conceptAction.value = await conceptActionService.update(conceptAction.value);
   }
 };
 
 const markExamplesAsRead = async () => {
-  if (teacherMode.value || !userAction.value){
+  if (teacherMode.value || !conceptAction.value){
     return;
   }
-  if (!userAction.value.examples) {
-    userAction.value.examples = true;
-    userAction.value = await userActionService.update(userAction.value);
+  if (!conceptAction.value.examples) {
+    conceptAction.value.examples = true;
+    conceptAction.value = await conceptActionService.update(conceptAction.value);
   }
 };
 
 const updateObjective = async (objectives) => {
-  if (teacherMode.value || !userAction.value){
+  if (teacherMode.value || !conceptAction.value){
     return;
   }
-  console.log("updateObjective", objectives);
-  console.log("userAction.value.objectives", userAction.value.objectives);
-  if (!userAction.value.objectives.every(function(v, index) { return v === objectives[index]})) {
-    userAction.value.objectives = objectives;
-    userAction.value = await userActionService.update(userAction.value);
+  if (!conceptAction.value.objectives.every(function(v, index) { return v === objectives[index]})) {
+    conceptAction.value.objectives = objectives;
+    conceptAction.value = await conceptActionService.update(conceptAction.value);
   }
+};
+
+const updateFlashCard = async (flashCardId, status) => {
+  if (teacherMode.value || !conceptAction.value){
+    return;
+  }
+  if (!conceptAction.value.usedFlashCards) {
+    conceptAction.value.usedFlashCards = [];
+  }
+  let flashCard = conceptAction.value.usedFlashCards.find((f) => f.flashCardId === flashCardId);
+  if (flashCard && flashCard.status === status) {
+    return;
+  }
+  if (!flashCard) {
+    flashCard = { flashCardId };
+    conceptAction.value.usedFlashCards.push(flashCard);
+  }
+  flashCard.isOk = status;
+  conceptAction.value = await conceptActionService.update(conceptAction.value);
+
+};
+
+const updateQuestions = async ({questionId, userResponse, isValid}) => {
+  if (teacherMode.value || !conceptAction.value){
+    return;
+  }
+  if (!conceptAction.value.answeredQuestions) {
+    conceptAction.value.answeredQuestions = [];
+  }
+  let answeredQuestion = conceptAction.value.answeredQuestions.find((q) => q.questionId === questionId);
+  console.log("answeredQuestion", answeredQuestion, userResponse);
+  if (answeredQuestion && answeredQuestion.userResponse === userResponse) {
+    return;
+  }
+  if (!answeredQuestion) {
+    answeredQuestion = { questionId };
+    conceptAction.value.answeredQuestions.push(answeredQuestion);
+  }
+  answeredQuestion.userResponse = userResponse;
+  answeredQuestion.isValid = isValid;
+  conceptAction.value = await conceptActionService.update(conceptAction.value);
 };
 </script>

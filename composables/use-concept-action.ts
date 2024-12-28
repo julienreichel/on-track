@@ -9,7 +9,7 @@ export type QuestionActionModel = {
   isValid: boolean;
 };
 
-export type UserActionModel = GraphQLModel & {
+export type ConceptActionModel = GraphQLModel & {
   id: string;
   createdAt: string;
   owner: string;
@@ -23,7 +23,7 @@ export type UserActionModel = GraphQLModel & {
 };
 
 export default function () {
-  const calls = useGraphqlQuery('UserAction', [
+  const calls = useGraphqlQuery('ConceptAction', [
     'id',
     'createdAt',
     'owner',
@@ -43,12 +43,12 @@ export default function () {
 
     let query = null;
     if (params.conceptId) {
-      query = "listUserActionByConceptIdAndOwner";
+      query = "listConceptActionByConceptIdAndOwner";
       if (params.owner) {
         params.owner = { eq: params.owner };
       }
     } else if (params.owner) {
-      query = "listUserActionByOwnerAndCreatedAt";
+      query = "listConceptActionByOwnerAndCreatedAt";
       if (!params.sortDirection) {
         params.sortDirection = "DESC";
       }

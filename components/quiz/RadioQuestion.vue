@@ -27,15 +27,22 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   question: { type: Object, required: true },
 });
+
+const emit = defineEmits(["answer-selected"]);
 
 const selected = ref(null);
 const showExplanation = ref(false);
 
 const onAnswerSelected = () => {
   showExplanation.value = true;
+  emit("answer-selected", {
+    questionId: props.question.id,
+    userResponse: props.question.answers.indexOf(selected.value).toString(),
+    isValid:selected.value.valid,
+  });
 };
 
 const getAnswerColor = (answer) => {

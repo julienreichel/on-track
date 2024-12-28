@@ -19,7 +19,16 @@
       <div class="answer">
         {{ flashCard.answer }}
       </div>
-      <div>
+      <div class="row full-width justify-between">
+        <q-btn
+          icon="close"
+          flat
+          round
+          dense
+          class="close-btn text-negative"
+          aria-label="False answer"
+          @click="resetView(false)"
+        />
         <q-btn
           icon="question_mark"
           flat
@@ -30,23 +39,15 @@
           @click="turnCard('explanation')"
         />
         <q-btn
-          icon="thumb_up"
+          icon="done"
           flat
           round
           dense
-          class="close-btn"
+          class="close-btn text-positive"
           aria-label="Correct answer"
           @click="resetView(true)"
         />
-        <q-btn
-          icon="thumb_down"
-          flat
-          round
-          dense
-          class="close-btn"
-          aria-label="False answer"
-          @click="resetView(false)"
-        />
+
       </div>
     </q-card-section>
 
