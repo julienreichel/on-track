@@ -2,7 +2,7 @@
   <q-list>
     <q-item v-for="(objective, idx) in objectives" :key="idx" class="q-pa-none">
       <q-item-section side>
-        <q-checkbox v-model="check[idx]" />
+        <q-checkbox v-model="check[idx]" :disable="disabled"/>
       </q-item-section>
       <q-item-section>{{ objective }}</q-item-section>
     </q-item>
@@ -13,6 +13,7 @@
 const props = defineProps({
   objectives: { type: Array, required: true },
   defaultCheck: { type: Array, default: () => [] },
+  disabled: { type: Boolean, default: false },
 });
 
 const check = ref([]);

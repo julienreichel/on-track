@@ -1,5 +1,6 @@
 <template>
   <div v-if="concept" class="q-pa-sm">
+    <concept-status :concept="concept" :concept-action="conceptAction" @finished="conceptDone"/>
     <concept-flow
       :concepts="relatedConcepts"
       :prerequisites="relatedLinks"
@@ -21,7 +22,7 @@
         group="concept"
         :content-inset-level="0.5"
       >
-        <objective-list :objectives="concept.objectives" :default-check="conceptAction?.objectives" @check-objective="updateObjective" />
+        <objective-list :objectives="concept.objectives" :default-check="conceptAction?.objectives" :disabled="disableObjectives" @check-objective="updateObjective" />
       </q-expansion-item>
 
       <q-expansion-item
@@ -30,7 +31,8 @@
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
-        @show="markTheoryAsRead"
+        @show="openTab('theory')"
+        @hide="closeTab('theory')"
       >
         <rich-text-renderer
           v-if="concept.theory"
@@ -47,7 +49,8 @@
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
-        @show="markExamplesAsRead"
+        @show="openTab('examples')"
+        @hide="closeTab('examples')"
       >
         <rich-text-renderer :markdown-content="concept.examples" />
       </q-expansion-item>
@@ -117,7 +120,6 @@ const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
 const concept = ref(null);
 const conceptAction = ref(null);
-const showQuizDialog = ref(false);
 
 const teacherMode = inject("teacherMode");
 
@@ -212,22 +214,29 @@ const generateQuizData = async (level) => {
   loading.hide();
 };
 
-const markTheoryAsRead = async () => {
+const timers = {
+  theory: null,
+  examples: null,
+}
+const openTab = (tab) => {
   if (teacherMode.value || !conceptAction.value){
     return;
   }
-  if (!conceptAction.value.theory) {
-    conceptAction.value.theory = true;
-    conceptAction.value = await conceptActionService.update(conceptAction.value);
+  // genereate a timeout in 30s to trigger the mark as read
+  timers[tab] = setTimeout(() => markAsRead(tab), 30000);
+};
+const closeTab = (tab) => {
+  if(timers[tab]){
+    clearTimeout(timers[tab]);
   }
 };
 
-const markExamplesAsRead = async () => {
+const markAsRead = async (field) => {
   if (teacherMode.value || !conceptAction.value){
     return;
   }
-  if (!conceptAction.value.examples) {
-    conceptAction.value.examples = true;
+  if (!conceptAction.value[field]) {
+    conceptAction.value[field] = true;
     conceptAction.value = await conceptActionService.update(conceptAction.value);
   }
 };
@@ -323,4 +332,14 @@ const updateQuestionsProgress = async (questions) => {
 const updateQuestionsResults = (p) => {
   console.log("Results", p);
 }
+
+const conceptDone = async () => {
+  console.log("Concept done");
+  if (teacherMode.value || !conceptAction.value || !conceptAction.value.inProgress){
+    return;
+  }
+  conceptAction.value.inProgress = false;
+  conceptAction.value = await conceptActionService.update(conceptAction.value);
+}
+const disableObjectives = computed(() => conceptAction.value?.inProgress);
 </script>

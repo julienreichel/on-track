@@ -123,6 +123,11 @@ const schema = a.schema({
     isValid: a.boolean(),
   }),
 
+  ActionTimestamp: a.customType({
+    createdAt: a.datetime(),
+    actionType: a.string(),
+  }),
+
   ConceptAction: a
     .model({
       id: a.id().required(),
@@ -137,6 +142,7 @@ const schema = a.schema({
       examples: a.boolean(),
       usedFlashCards: a.ref("FlashCardAction").array(),
       answeredQuestions: a.ref("QuestionAction").array(),
+      actionTimestamps: a.ref("ActionTimestamp").array(),
     })
     .secondaryIndexes((index) => [
       index("owner").name("byOwner").sortKeys(["createdAt"]),

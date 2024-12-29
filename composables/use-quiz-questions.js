@@ -286,7 +286,7 @@ export default function () {
       });
     }
     question.valid = valid;
-
+    question.points = valid ? 5 : 0;
     return valid;
   };
   return { getActiveQuestions, resetQuestions, getOptions, validateAnswers };

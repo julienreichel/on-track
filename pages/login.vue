@@ -20,7 +20,7 @@ const router = useRouter()
 
 watch(auth, () => {
   if (auth.authStatus === "authenticated") {
-    router.push("/flow");
+    router.push("/");
   }
 });
 </script>
