@@ -9,6 +9,11 @@ export type QuestionActionModel = {
   isValid: boolean;
 };
 
+export type ActionTimestampsModel = {
+  timestamp: string;
+  action: string;
+}
+
 export type ConceptActionModel = GraphQLModel & {
   id: string;
   createdAt: string;
@@ -20,6 +25,7 @@ export type ConceptActionModel = GraphQLModel & {
   examples: boolean;
   usedFlashCards: FlashCardActionModel[];
   answeredQuestions: QuestionActionModel[];
+  actionTimestamps: ActionTimestampsModel[];
 };
 
 export default function () {
@@ -33,7 +39,8 @@ export default function () {
     'theory',
     'examples',
     'usedFlashCards.*',
-    'answeredQuestions.*'
+    'answeredQuestions.*',
+    'actionTimestamps.*'
   ]);
 
   const list = (params: GraphQLParams = {}, options: GraphQLOptions = {}) => {

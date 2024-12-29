@@ -83,7 +83,7 @@
           <quiz-runner
             v-if="!teacherMode"
             :questions="concept.questions"
-            :max="10"
+            :max="3"
             @finished="updateQuestionsFinished"
             @results="updateQuestionsResults"
             @progress="updateQuestionsProgress"
@@ -279,7 +279,6 @@ const updateQuestions = async ({questionId, userResponse, isValid}) => {
     conceptAction.value.answeredQuestions = [];
   }
   let answeredQuestion = conceptAction.value.answeredQuestions.find((q) => q.questionId === questionId);
-  console.log("answeredQuestion", answeredQuestion, userResponse);
   if (answeredQuestion && answeredQuestion.userResponse === userResponse) {
     return;
   }
@@ -293,13 +292,13 @@ const updateQuestions = async ({questionId, userResponse, isValid}) => {
 };
 
 const updateQuestionsFinished = (p) => {
-  console.log("Finished", p);
+  console.log("Questions finished", p);
 }
 const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !conceptAction.value){
     return;
   }
-  const validatedQuestions = questions.filter((q) => q.validated).map((q) => ({
+  const validatedQuestions = questions.filter((q) => q.validated && q.response).map((q) => ({
     questionId: q.id,
     userResponse: q.type === "checkbox" ? q.response.join(",") : q.response.toString(),
     isValid: q.valid,
@@ -329,8 +328,19 @@ const updateQuestionsProgress = async (questions) => {
     conceptAction.value = await conceptActionService.update(conceptAction.value);
   }
 }
-const updateQuestionsResults = (p) => {
-  console.log("Results", p);
+const updateQuestionsResults = async () => {
+  console.log("Questions results");
+  if (teacherMode.value || !conceptAction.value){
+    return;
+  }
+  if (!conceptAction.value.actionTimestamps) {
+    conceptAction.value.actionTimestamps = [];
+  }
+  conceptAction.value.actionTimestamps.push({
+    actionType: "quiz",
+    createdAt: new Date().toISOString(),
+  });
+  conceptAction.value = await conceptActionService.update(conceptAction.value);
 }
 
 const conceptDone = async () => {

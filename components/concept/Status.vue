@@ -29,7 +29,7 @@ const props = defineProps({
 const progress = computed(() => {
   if (!props.conceptAction) return 0;
 
-  const { theory, examples, usedFlashCards, answeredQuestions } =
+  const { theory, examples, usedFlashCards, answeredQuestions, actionTimestamps } =
     props.conceptAction;
   let progress = 0;
 
@@ -40,7 +40,7 @@ const progress = computed(() => {
       .map((f) => (f.isOk ? 10 : 5))
       .reduce((a, b) => a + b, 0);
   }
-  if (answeredQuestions) {
+  if (answeredQuestions && actionTimestamps && actionTimestamps.some((as) => as.actionType === "quiz")) {
     progress += answeredQuestions.filter((q) => q.isValid).length * 5;
   }
   return progress;
@@ -54,7 +54,7 @@ const success = ref(Math.max(12.5 + 12.5 + 5 * nbFlashCards.value + 5 * nbQuesti
 
 const finished = computed(() => progress.value >= success.value);
 const color = computed(() => (finished.value ? "primary" : "secondary"));
-const progressPercent = computed(() => ((progress.value / success.value) * 100).toFixed(0));
+const progressPercent = computed(() => (Math.floor(progress.value / success.value * 10) * 10));
 
 const emit = defineEmits(["finished"]);
 
