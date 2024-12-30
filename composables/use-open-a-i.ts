@@ -202,8 +202,8 @@ export default function () {
       // Clean up trailing newlines
       response.description = response.description?.trim();
       // openAi has a tendancy to not repsect the markdown headers, so we fix it here
-      response.theory = response.theory?.trim().replace("#### ", "##### ");
-      response.examples = response.examples?.trim().replace("#### ", "##### ");
+      response.theory = response.theory?.trim().replaceAll("#### ", "##### ");
+      response.examples = response.examples?.trim().replaceAll("#### ", "##### ");
 
       return response;
     }

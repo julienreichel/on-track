@@ -88,6 +88,7 @@
 <script setup lang="ts">
 const { notify } = useQuasar();
 const { fetchUserAttributes, signOut } = useNuxtApp().$Amplify.Auth;
+const router = useRouter();
 
 const leftDrawerOpen = ref(false);
 const rightDrawerOpen = ref(false);
@@ -136,6 +137,7 @@ const logout = async () => {
     icon: "logout",
   });
   signOut();
+  router.push("/login");
 };
 </script>
 

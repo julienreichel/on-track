@@ -10,7 +10,7 @@ export default defineNuxtPlugin({
 
           // If the request is not associated with a valid user session
           // redirect to the `/login` route.
-          const whiteList = ['/login', '/'];
+          const whiteList = ['/login'];
           if (session.tokens === undefined && !whiteList.includes(to.path)) {
             return navigateTo('/login');
           }

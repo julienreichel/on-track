@@ -10,8 +10,8 @@ export type QuestionActionModel = {
 };
 
 export type ActionTimestampsModel = {
-  timestamp: string;
-  action: string;
+  createdAt: string;
+  actionType: string;
 }
 
 export type ConceptActionModel = GraphQLModel & {
