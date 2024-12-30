@@ -38,7 +38,7 @@ ${language}
 `;
 
 const prompt = (name: string, description: string, objectives: string[]): string => `
-Your task is to break down the provided competency into 5-10 foundational concepts.
+Your task is to break down the provided competency into three to seven foundational concepts.
 
 For each concept:
 1. Provide a **name** that clearly identifies the concept.

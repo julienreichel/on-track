@@ -45,7 +45,7 @@ const prompt = (subjectDescription: string): string => `
 Your task is to create a new subject and its related competencies.
 The subject name and a brief description (3-4 sentences) should explain the purpose of the subject and its relevance.
 
-Next, generate a list of seven to ten competencies for the subject, where each competency includes:
+Next, generate a list of seven to five to ten competencies for the subject, where each competency includes:
 - A name that clearly identifies the competency.
 - A description (3-4 sentences) that provides a simple, beginner-friendly explanation of the competency.
 - A list of **five objectives** that must be achieved to consider the competency mastered. Each objective should focus on measurable outcomes or milestones.

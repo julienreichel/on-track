@@ -25,11 +25,17 @@
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" bordered>
+      <q-item clickable to="/">
+        <q-item-section avatar>
+          <q-icon name="home" />
+        </q-item-section>
+        <q-item-section>Home</q-item-section>
+      </q-item>
       <q-item clickable to="/subjects">
         <q-item-section avatar>
           <q-icon name="map" />
         </q-item-section>
-        <q-item-section>Subject list</q-item-section>
+        <q-item-section>Subjects</q-item-section>
       </q-item>
 
       <!-- Create New Lecture Section -->
@@ -112,8 +118,8 @@ function handleTeacherModeToggle() {
 onMounted(async () => {
   try {
     const userAttributes = await fetchUserAttributes();
-    userName.value = userAttributes.name;
-    userEmail.value = userAttributes.email;
+    userName.value = userAttributes.name || "";
+    userEmail.value = userAttributes.email || "";
     // Load stored teacher mode setting
     teacherMode.value = LocalStorage.getItem('teacherMode') || false;
   } catch (error) {
