@@ -83,7 +83,7 @@
           <quiz-runner
             v-if="!teacherMode"
             :questions="concept.questions"
-            :max="3"
+            :max="10"
             @finished="updateQuestionsFinished"
             @results="updateQuestionsResults"
             @progress="updateQuestionsProgress"
@@ -222,8 +222,8 @@ const openTab = (tab) => {
   if (teacherMode.value || !conceptAction.value){
     return;
   }
-  // genereate a timeout in 30s to trigger the mark as read
-  timers[tab] = setTimeout(() => markAsRead(tab), 30000);
+  // genereate a timeout in 15s to trigger the mark as read
+  timers[tab] = setTimeout(() => markAsRead(tab), 15000);
 };
 const closeTab = (tab) => {
   if(timers[tab]){
