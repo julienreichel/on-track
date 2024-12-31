@@ -62,7 +62,7 @@
                             <q-icon
                               v-for="i in 5"
                               :key="i"
-                              :name="getBatteryIcon(concept, i)"
+                              :name="getBatteryIcon(concept.action, i)"
                             />
                         </div>
 
@@ -114,15 +114,15 @@ const hideTask = async (concept) => {
   }
 };
 
-const getBatteryIcon = (concept, index) => {
-  const correctAnswers = concept.action.answeredQuestions?.filter(q => q.isValid).length || 0;
+const getBatteryIcon = (action, index) => {
+  const correctAnswers = action.answeredQuestions?.filter(q => q.isValid).length || 0;
   const fullBatteries = Math.floor(correctAnswers / 4);
   if (index <= fullBatteries) return "battery_full";
   const remaining = correctAnswers % 4;
   if (index === fullBatteries + 1) {
     if (remaining >= 3) return "battery_6_bar";
     if (remaining >= 2) return "battery_4_bar";
-    if (remaining >= 1) return "battery_4_bar";
+    if (remaining >= 1) return "battery_2_bar";
   }
   return "battery_0_bar";
 };

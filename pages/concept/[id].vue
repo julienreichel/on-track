@@ -108,21 +108,14 @@
           <q-item-section> Quiz </q-item-section>
 
           <q-item-section
-            v-if="!conceptAction?.inProgress && !teacherMode"
+            v-if="conceptAction && !conceptAction.inProgress && !teacherMode"
             side
           >
             <div class="row items-center">
               <q-icon
-                :name="ndQuizReview > 0 ? 'battery_full' : 'battery_0_bar'"
-                size="md"
-              />
-              <q-icon
-                :name="ndQuizReview > 1 ? 'battery_full' : 'battery_0_bar'"
-                size="md"
-              />
-              <q-icon
-                :name="ndQuizReview > 2 ? 'battery_full' : 'battery_0_bar'"
-                size="md"
+                v-for="i in 5"
+                :key="i"
+                :name="getBatteryIcon(conceptAction, i)"
               />
             </div>
           </q-item-section>
@@ -478,4 +471,17 @@ const conceptDone = async () => {
 };
 const disableObjectives = computed(() => conceptAction.value?.inProgress);
 const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
+
+const getBatteryIcon = (action, index) => {
+  const correctAnswers = action.answeredQuestions?.filter(q => q.isValid).length || 0;
+  const fullBatteries = Math.floor(correctAnswers / 4);
+  if (index <= fullBatteries) return "battery_full";
+  const remaining = correctAnswers % 4;
+  if (index === fullBatteries + 1) {
+    if (remaining >= 3) return "battery_6_bar";
+    if (remaining >= 2) return "battery_4_bar";
+    if (remaining >= 1) return "battery_2_bar";
+  }
+  return "battery_0_bar";
+};
 </script>
