@@ -14,7 +14,6 @@
     <competency-list :competencies="[concept.competency]" />
     <h1>{{ concept.name }}</h1>
 
-
     <rich-text-renderer
       v-if="concept.description"
       :markdown-content="concept.description"
@@ -93,7 +92,9 @@
           v-if="!conceptAction?.usedFlashCards?.length"
           class="bg-secondary q-mt-md"
         >
-          Test yourself using flashcards, then mark them as correct <q-icon class="text-positive" name="check"/> or incorrect <q-icon class="text-negative" name="close"/>.
+          Test yourself using flashcards, then mark them as correct
+          <q-icon class="text-positive" name="check" /> or incorrect
+          <q-icon class="text-negative" name="close" />.
         </q-banner>
       </q-expansion-item>
 
@@ -104,15 +105,25 @@
         :content-inset-level="0.5"
       >
         <template #header>
-          <q-item-section>
-            Quiz
-          </q-item-section>
+          <q-item-section> Quiz </q-item-section>
 
-          <q-item-section v-if="!conceptAction?.inProgress && !teacherMode" side>
+          <q-item-section
+            v-if="!conceptAction?.inProgress && !teacherMode"
+            side
+          >
             <div class="row items-center">
-              <q-icon :name="ndQuizReview > 0 ? 'battery_full' : 'battery_0_bar'" size="md" />
-              <q-icon :name="ndQuizReview > 1 ? 'battery_full' : 'battery_0_bar'" size="md" />
-              <q-icon :name="ndQuizReview > 2 ? 'battery_full' : 'battery_0_bar'" size="md" />
+              <q-icon
+                :name="ndQuizReview > 0 ? 'battery_full' : 'battery_0_bar'"
+                size="md"
+              />
+              <q-icon
+                :name="ndQuizReview > 1 ? 'battery_full' : 'battery_0_bar'"
+                size="md"
+              />
+              <q-icon
+                :name="ndQuizReview > 2 ? 'battery_full' : 'battery_0_bar'"
+                size="md"
+              />
             </div>
           </q-item-section>
         </template>
@@ -183,7 +194,7 @@ onMounted(async () => {
       } else {
         conceptAction.value = await conceptActionService.create({
           conceptId,
-          inProgress: true
+          inProgress: true,
         });
       }
     }
@@ -310,9 +321,7 @@ const markAsRead = async (field) => {
   }
 
   if (save) {
-    conceptAction.value = await conceptActionService.update(
-      conceptAction.value
-    );
+    await conceptActionService.update(conceptAction.value);
   }
 };
 
@@ -335,7 +344,7 @@ const finaliseObjective = async () => {
     objective: o,
     isDone: false,
   }));
-  conceptAction.value = await conceptActionService.update(conceptAction.value);
+  await conceptActionService.update(conceptAction.value);
 };
 
 const updateObjective = async (objectives) => {
@@ -350,9 +359,7 @@ const updateObjective = async (objectives) => {
     }
   });
   if (modified) {
-    conceptAction.value = await conceptActionService.update(
-      conceptAction.value
-    );
+    await conceptActionService.update(conceptAction.value);
   }
 };
 
@@ -376,7 +383,7 @@ const updateFlashCard = async (flashCardId, status) => {
     conceptAction.value.usedFlashCards.push(flashCard);
   }
   flashCard.isOk = status;
-  conceptAction.value = await conceptActionService.update(conceptAction.value);
+  await conceptActionService.update(conceptAction.value);
 };
 
 const updateQuestionsFinished = (p) => {
@@ -435,9 +442,7 @@ const updateQuestionsProgress = async (questions) => {
   });
 
   if (hasChanges) {
-    conceptAction.value = await conceptActionService.update(
-      conceptAction.value
-    );
+    await conceptActionService.update(conceptAction.value);
   }
 };
 const updateQuestionsResults = async () => {
@@ -452,7 +457,7 @@ const updateQuestionsResults = async () => {
     actionType,
     createdAt: new Date().toISOString(),
   });
-  conceptAction.value = await conceptActionService.update(conceptAction.value);
+  await conceptActionService.update(conceptAction.value);
 };
 
 const conceptDone = async () => {
@@ -469,7 +474,7 @@ const conceptDone = async () => {
     createdAt: new Date().toISOString(),
   });
 
-  conceptAction.value = await conceptActionService.update(conceptAction.value);
+  await conceptActionService.update(conceptAction.value);
 };
 const disableObjectives = computed(() => conceptAction.value?.inProgress);
 const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
