@@ -82,7 +82,7 @@ const fetchUserHistory = async () => {
           icon = 'quiz';
           color = 'info';
         } else if (timestamp.actionType === 'started' ) {
-          label = 'Opened';
+          label = 'Started';
           icon = 'play_circle';
           color = 'secondary';
         } else if (timestamp.actionType === 'review' ) {
