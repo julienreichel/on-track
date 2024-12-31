@@ -69,6 +69,13 @@
           <q-toggle v-model="teacherMode" label="Teacher Mode" />
         </q-item>
 
+        <q-item clickable to="/history">
+          <q-item-section avatar>
+            <q-icon name="history" />
+          </q-item-section>
+          <q-item-section>History</q-item-section>
+        </q-item>
+
         <!-- Logout Button -->
         <q-item clickable @click="logout">
           <q-item-section avatar>

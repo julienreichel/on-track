@@ -121,6 +121,7 @@ const schema = a.schema({
     questionId: a.id(),
     userResponse: a.string(),
     isValid: a.boolean(),
+    quizType: a.string(),
   }),
 
   ActionTimestamp: a.customType({

@@ -83,12 +83,12 @@
           <quiz-runner
             v-if="!teacherMode"
             :questions="concept.questions"
-            :max="10"
+            :max="quizSize"
             @finished="updateQuestionsFinished"
             @results="updateQuestionsResults"
             @progress="updateQuestionsProgress"
           />
-          <question-list v-else :questions="randomizedQuestions" @answer-selected= "updateQuestions"/>
+          <question-list v-else :questions="randomizedQuestions"/>
         </div>
         <div v-else-if="teacherMode">
           <q-btn @click="generateQuizData()">Generate</q-btn>
@@ -231,15 +231,38 @@ const closeTab = (tab) => {
   }
 };
 
+const updateStarted = () => {
+  if (teacherMode.value || !conceptAction.value){
+    return false;
+  }
+  if (conceptAction.value.actionTimestamps) {
+    return false;
+  }
+  conceptAction.value.actionTimestamps = [];
+
+  conceptAction.value.actionTimestamps.push({
+    actionType: "started",
+    createdAt: new Date().toISOString(),
+  });
+  return true;
+}
+
 const markAsRead = async (field) => {
   if (teacherMode.value || !conceptAction.value){
     return;
   }
+
+  let save = updateStarted();
   if (!conceptAction.value[field]) {
     conceptAction.value[field] = true;
+    save = true;
+  }
+
+  if (save){
     conceptAction.value = await conceptActionService.update(conceptAction.value);
   }
 };
+
 
 const updateObjective = async (objectives) => {
   if (teacherMode.value || !conceptAction.value){
@@ -255,6 +278,8 @@ const updateFlashCard = async (flashCardId, status) => {
   if (teacherMode.value || !conceptAction.value){
     return;
   }
+  updateStarted();
+
   if (!conceptAction.value.usedFlashCards) {
     conceptAction.value.usedFlashCards = [];
   }
@@ -271,44 +296,38 @@ const updateFlashCard = async (flashCardId, status) => {
 
 };
 
-const updateQuestions = async ({questionId, userResponse, isValid}) => {
-  if (teacherMode.value || !conceptAction.value){
-    return;
-  }
-  if (!conceptAction.value.answeredQuestions) {
-    conceptAction.value.answeredQuestions = [];
-  }
-  let answeredQuestion = conceptAction.value.answeredQuestions.find((q) => q.questionId === questionId);
-  if (answeredQuestion && answeredQuestion.userResponse === userResponse) {
-    return;
-  }
-  if (!answeredQuestion) {
-    answeredQuestion = { questionId };
-    conceptAction.value.answeredQuestions.push(answeredQuestion);
-  }
-  answeredQuestion.userResponse = userResponse;
-  answeredQuestion.isValid = isValid;
-  conceptAction.value = await conceptActionService.update(conceptAction.value);
-};
-
 const updateQuestionsFinished = (p) => {
   console.log("Questions finished", p);
+}
+
+const getQuizType = () => {
+  if (conceptAction.value.theory && conceptAction.value.examples){
+    if(conceptAction.value.inProgress){
+      return "quiz";
+    } else {
+      return "review";
+    }
+  } else {
+    return "pre-quiz";
+  }
 }
 const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !conceptAction.value){
     return;
   }
-  const validatedQuestions = questions.filter((q) => q.validated && q.response).map((q) => ({
+  const quizType = getQuizType();
+  const validatedQuestions = questions.filter((q) => q.validated).map((q) => ({
     questionId: q.id,
-    userResponse: q.type === "checkbox" ? q.response.join(",") : q.response.toString(),
-    isValid: q.valid,
+    userResponse: q.type === "checkbox" ? q.response.join(",") : q.response?.toString() || "",
+    isValid: !!q.valid,
+    quizType,
   }));
 
   if (!conceptAction.value.answeredQuestions) {
     conceptAction.value.answeredQuestions = [];
   }
 
-  let hasChanges = false;
+  let hasChanges = updateStarted();
   validatedQuestions.forEach((q) => {
     const answeredQuestion = conceptAction.value.answeredQuestions.find((aq) => aq.questionId === q.questionId);
     if (answeredQuestion) {
@@ -318,6 +337,7 @@ const updateQuestionsProgress = async (questions) => {
       hasChanges = true;
       answeredQuestion.userResponse = q.userResponse;
       answeredQuestion.isValid = q.isValid;
+      answeredQuestion.quizType = quizType;
       return;
     }
     hasChanges = true;
@@ -329,27 +349,32 @@ const updateQuestionsProgress = async (questions) => {
   }
 }
 const updateQuestionsResults = async () => {
-  console.log("Questions results");
   if (teacherMode.value || !conceptAction.value){
     return;
   }
   if (!conceptAction.value.actionTimestamps) {
     conceptAction.value.actionTimestamps = [];
   }
+  const actionType = getQuizType();
   conceptAction.value.actionTimestamps.push({
-    actionType: "quiz",
+    actionType,
     createdAt: new Date().toISOString(),
   });
   conceptAction.value = await conceptActionService.update(conceptAction.value);
 }
 
 const conceptDone = async () => {
-  console.log("Concept done");
   if (teacherMode.value || !conceptAction.value || !conceptAction.value.inProgress){
     return;
   }
   conceptAction.value.inProgress = false;
+  conceptAction.value.actionTimestamps.push({
+    actionType: "finished",
+    createdAt: new Date().toISOString(),
+  });
+
   conceptAction.value = await conceptActionService.update(conceptAction.value);
 }
 const disableObjectives = computed(() => conceptAction.value?.inProgress);
+const quizSize = computed(() => conceptAction.value?.inProgress ? 10 : 5);
 </script>

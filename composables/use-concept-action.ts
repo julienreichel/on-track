@@ -7,6 +7,7 @@ export type QuestionActionModel = {
   questionId: string;
   userResponse: string;
   isValid: boolean;
+  quizType: string;
 };
 
 export type ActionTimestampsModel = {

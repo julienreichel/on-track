@@ -21,7 +21,7 @@
                 color="grey-6"
                 size="md"
                 class="q-mt-sm"
-                />
+              />
             </q-card>
           </div>
         </q-card-section>
@@ -159,8 +159,9 @@ const fetchConceptActions = async () => {
     }
 
     // Update history based on actionTimestamps
-    allActionTimestamps.forEach(({ createdAt }) => {
+    allActionTimestamps.forEach(({ createdAt, actionType }) => {
       if(!createdAt) return;
+      if (actionType !== 'quiz' && actionType !== 'pre-quiz' && actionType !== 'review') return;
       const actionDate = new Date(createdAt).toISOString().split('T')[0];
       const historyDay = history.value.find(day => day.date === actionDate);
       if (historyDay) {
