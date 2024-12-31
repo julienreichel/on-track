@@ -38,9 +38,9 @@
 
     <q-banner
       v-if="selectedObjectives.length < minObjectives"
-      class="bg-warning text-dark q-mt-md"
+      class="bg-secondary q-mt-md"
     >
-      Please select at least {{ minObjectives }} objectives.
+      Please select at least {{ minObjectives }} learning objectives, you can use proposed one, or create your own.
     </q-banner>
   </div>
 </template>
@@ -58,7 +58,7 @@ const props = defineProps({
   },
   maxObjectives: {
     type: Number,
-    default: 3,
+    default: 5,
   }
 });
 

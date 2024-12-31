@@ -116,8 +116,7 @@ function toggleRightDrawer() {
 watch(teacherMode, handleTeacherModeToggle);
 function handleTeacherModeToggle() {
   notify({
-    color: "positive",
-    position: "top",
+
     message: teacherMode.value ? "Teacher Mode Activated" : "Teacher Mode Deactivated",
   });
   LocalStorage.set('teacherMode', teacherMode.value);
@@ -138,8 +137,6 @@ onMounted(async () => {
 
 const logout = async () => {
   notify({
-    color: "secondary",
-    position: "top",
     message: "Logging out",
     icon: "logout",
   });

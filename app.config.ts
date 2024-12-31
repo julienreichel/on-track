@@ -8,6 +8,10 @@ export default defineAppConfig({
       positive: "#BCE2E2",
       negative: "#FBE7E6",
     },
+    notify: {
+      position: 'top',
+      color: 'secondary',
+    },
     animations: 'all',
   }
 })

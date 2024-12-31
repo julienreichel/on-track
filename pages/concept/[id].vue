@@ -89,15 +89,33 @@
             />
           </div>
         </div>
+        <q-banner
+          v-if="!conceptAction?.usedFlashCards?.length"
+          class="bg-secondary q-mt-md"
+        >
+          Test yourself using flashcards, then mark them as correct <q-icon class="text-positive" name="check"/> or incorrect <q-icon class="text-negative" name="close"/>.
+        </q-banner>
       </q-expansion-item>
 
       <q-expansion-item
         v-if="teacherMode || concept.questions?.length"
-        label="Questions"
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
       >
+        <template #header>
+          <q-item-section>
+            Quiz
+          </q-item-section>
+
+          <q-item-section v-if="!conceptAction?.inProgress" side>
+            <div class="row items-center">
+              <q-icon :name="ndQuizReview > 0 ? 'battery_full' : 'battery_0_bar'" size="md" />
+              <q-icon :name="ndQuizReview > 1 ? 'battery_full' : 'battery_0_bar'" size="md" />
+              <q-icon :name="ndQuizReview > 2 ? 'battery_full' : 'battery_0_bar'" size="md" />
+            </div>
+          </q-item-section>
+        </template>
         <div v-if="concept.questions?.length">
           <quiz-runner
             v-if="!teacherMode"
@@ -176,6 +194,12 @@ onMounted(async () => {
   } catch (error) {
     console.error("Failed to fetch concept or user action:", error);
   }
+});
+
+const ndQuizReview = computed(() => {
+  if (!conceptAction.value || !conceptAction.value.actionTimestamps) return 0;
+  const { actionTimestamps } = conceptAction.value;
+  return actionTimestamps?.filter((as) => as.actionType === "review").length;
 });
 
 const relatedConcepts = computed(() => {
