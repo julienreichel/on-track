@@ -1,13 +1,19 @@
 <template>
   <div v-if="concept" class="q-pa-sm">
-    <concept-status :concept="concept" :concept-action="conceptAction" @finished="conceptDone"/>
+    <concept-status
+      :concept="concept"
+      :concept-action="conceptAction"
+      @finished="conceptDone"
+    />
     <concept-flow
       :concepts="relatedConcepts"
       :prerequisites="relatedLinks"
       direction="LR"
       :style="{ height: `${height}px`, width: '100%' }"
     />
+    <competency-list :competencies="[concept.competency]" />
     <h1>{{ concept.name }}</h1>
+
 
     <rich-text-renderer
       v-if="concept.description"
@@ -16,13 +22,23 @@
 
     <q-list>
       <q-expansion-item
-        v-if="concept.objectives?.length"
+        v-if="conceptAction?.inProgress"
         label="Objectives"
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
+        @hide="finaliseObjective"
       >
-        <objective-list :objectives="concept.objectives" :default-check="conceptAction?.objectives" :disabled="disableObjectives" @check-objective="updateObjective" />
+        <objective-select
+          v-if="!conceptAction?.objectives?.length"
+          :objectives="concept.objectives"
+          @selected="createObjective"
+        />
+        <objective-list
+          v-else
+          :objectives="conceptAction?.objectives.map((o) => o.objective)"
+          :disabled="true"
+        />
       </q-expansion-item>
 
       <q-expansion-item
@@ -67,7 +83,10 @@
             :key="flashCard.id"
             class="col"
           >
-            <flashcard-view :flash-card="flashCard" @success="(status) => updateFlashCard(flashCard.id, status)"/>
+            <flashcard-view
+              :flash-card="flashCard"
+              @success="(status) => updateFlashCard(flashCard.id, status)"
+            />
           </div>
         </div>
       </q-expansion-item>
@@ -88,20 +107,25 @@
             @results="updateQuestionsResults"
             @progress="updateQuestionsProgress"
           />
-          <question-list v-else :questions="randomizedQuestions"/>
+          <question-list v-else :questions="randomizedQuestions" />
         </div>
         <div v-else-if="teacherMode">
           <q-btn @click="generateQuizData()">Generate</q-btn>
         </div>
       </q-expansion-item>
       <q-expansion-item
-        label="Compentency"
+        v-if="!conceptAction?.inProgress && conceptAction?.objectives?.length"
+        label="Objectives"
         header-class="text-h3"
+        group="concept"
         :content-inset-level="0.5"
       >
-        <div class="row q-col-gutter-sm">
-          <competency-list :competencies="[concept.competency]" />
-        </div>
+        <objective-list
+          :objectives="conceptAction?.objectives.map((o) => o.objective)"
+          :default-check="conceptAction?.objectives.map((o) => o.isDone)"
+          :disabled="disableObjectives"
+          @check-objective="updateObjective"
+        />
       </q-expansion-item>
     </q-list>
   </div>
@@ -129,9 +153,13 @@ onMounted(async () => {
     concept.value = await conceptService.get(conceptId);
 
     // Check or create ConceptAction
-    if (!teacherMode.value){
+    if (!teacherMode.value) {
       const { userId, username } = await getCurrentUser();
-      const actions = await conceptActionService.list({conceptId, userId, username});
+      const actions = await conceptActionService.list({
+        conceptId,
+        userId,
+        username,
+      });
       if (actions.length) {
         conceptAction.value = actions[0];
       } else {
@@ -141,6 +169,9 @@ onMounted(async () => {
           objectives: concept.value.objectives?.map(() => false) || [],
         });
       }
+      conceptAction.value.objectives = conceptAction.value.objectives.filter(
+        (o) => o.objective
+      );
     }
   } catch (error) {
     console.error("Failed to fetch concept or user action:", error);
@@ -217,22 +248,22 @@ const generateQuizData = async (level) => {
 const timers = {
   theory: null,
   examples: null,
-}
+};
 const openTab = (tab) => {
-  if (teacherMode.value || !conceptAction.value){
+  if (teacherMode.value || !conceptAction.value) {
     return;
   }
   // genereate a timeout in 15s to trigger the mark as read
   timers[tab] = setTimeout(() => markAsRead(tab), 15000);
 };
 const closeTab = (tab) => {
-  if(timers[tab]){
+  if (timers[tab]) {
     clearTimeout(timers[tab]);
   }
 };
 
 const updateStarted = () => {
-  if (teacherMode.value || !conceptAction.value){
+  if (teacherMode.value || !conceptAction.value) {
     return false;
   }
   if (conceptAction.value.actionTimestamps) {
@@ -245,10 +276,10 @@ const updateStarted = () => {
     createdAt: new Date().toISOString(),
   });
   return true;
-}
+};
 
 const markAsRead = async (field) => {
-  if (teacherMode.value || !conceptAction.value){
+  if (teacherMode.value || !conceptAction.value) {
     return;
   }
 
@@ -258,24 +289,55 @@ const markAsRead = async (field) => {
     save = true;
   }
 
-  if (save){
-    conceptAction.value = await conceptActionService.update(conceptAction.value);
+  if (save) {
+    conceptAction.value = await conceptActionService.update(
+      conceptAction.value
+    );
   }
 };
 
+let objectives = [];
+const createObjective = async (o) => {
+  console.log("Create objective", o);
+  objectives = o;
+};
 
-const updateObjective = async (objectives) => {
-  if (teacherMode.value || !conceptAction.value){
+const finaliseObjective = async () => {
+  console.log("Finalise objectives", objectives);
+  if (teacherMode.value || !conceptAction.value) {
     return;
   }
-  if (!conceptAction.value.objectives.every(function(v, index) { return v === objectives[index]})) {
-    conceptAction.value.objectives = objectives;
-    conceptAction.value = await conceptActionService.update(conceptAction.value);
+  if (!objectives.length) {
+    return;
+  }
+
+  conceptAction.value.objectives = objectives.map((o) => ({
+    objective: o,
+    isDone: false,
+  }));
+  conceptAction.value = await conceptActionService.update(conceptAction.value);
+};
+
+const updateObjective = async (objectives) => {
+  if (teacherMode.value || !conceptAction.value) {
+    return;
+  }
+  let modified = updateStarted();
+  conceptAction.value.objectives.forEach((o, index) => {
+    if (o.isDone !== objectives[index]) {
+      modified = true;
+      o.isDone = objectives[index];
+    }
+  });
+  if (modified) {
+    conceptAction.value = await conceptActionService.update(
+      conceptAction.value
+    );
   }
 };
 
 const updateFlashCard = async (flashCardId, status) => {
-  if (teacherMode.value || !conceptAction.value){
+  if (teacherMode.value || !conceptAction.value) {
     return;
   }
   updateStarted();
@@ -283,7 +345,9 @@ const updateFlashCard = async (flashCardId, status) => {
   if (!conceptAction.value.usedFlashCards) {
     conceptAction.value.usedFlashCards = [];
   }
-  let flashCard = conceptAction.value.usedFlashCards.find((f) => f.flashCardId === flashCardId);
+  let flashCard = conceptAction.value.usedFlashCards.find(
+    (f) => f.flashCardId === flashCardId
+  );
   if (flashCard && flashCard.status === status) {
     return;
   }
@@ -293,16 +357,15 @@ const updateFlashCard = async (flashCardId, status) => {
   }
   flashCard.isOk = status;
   conceptAction.value = await conceptActionService.update(conceptAction.value);
-
 };
 
 const updateQuestionsFinished = (p) => {
   console.log("Questions finished", p);
-}
+};
 
 const getQuizType = () => {
-  if (conceptAction.value.theory && conceptAction.value.examples){
-    if(conceptAction.value.inProgress){
+  if (conceptAction.value.theory && conceptAction.value.examples) {
+    if (conceptAction.value.inProgress) {
       return "quiz";
     } else {
       return "review";
@@ -310,18 +373,23 @@ const getQuizType = () => {
   } else {
     return "pre-quiz";
   }
-}
+};
 const updateQuestionsProgress = async (questions) => {
-  if (teacherMode.value || !conceptAction.value){
+  if (teacherMode.value || !conceptAction.value) {
     return;
   }
   const quizType = getQuizType();
-  const validatedQuestions = questions.filter((q) => q.validated).map((q) => ({
-    questionId: q.id,
-    userResponse: q.type === "checkbox" ? q.response.join(",") : q.response?.toString() || "",
-    isValid: !!q.valid,
-    quizType,
-  }));
+  const validatedQuestions = questions
+    .filter((q) => q.validated)
+    .map((q) => ({
+      questionId: q.id,
+      userResponse:
+        q.type === "checkbox"
+          ? q.response.join(",")
+          : q.response?.toString() || "",
+      isValid: !!q.valid,
+      quizType,
+    }));
 
   if (!conceptAction.value.answeredQuestions) {
     conceptAction.value.answeredQuestions = [];
@@ -329,9 +397,11 @@ const updateQuestionsProgress = async (questions) => {
 
   let hasChanges = updateStarted();
   validatedQuestions.forEach((q) => {
-    const answeredQuestion = conceptAction.value.answeredQuestions.find((aq) => aq.questionId === q.questionId);
+    const answeredQuestion = conceptAction.value.answeredQuestions.find(
+      (aq) => aq.questionId === q.questionId
+    );
     if (answeredQuestion) {
-      if (answeredQuestion.userResponse === q.userResponse ) {
+      if (answeredQuestion.userResponse === q.userResponse) {
         return;
       }
       hasChanges = true;
@@ -345,11 +415,13 @@ const updateQuestionsProgress = async (questions) => {
   });
 
   if (hasChanges) {
-    conceptAction.value = await conceptActionService.update(conceptAction.value);
+    conceptAction.value = await conceptActionService.update(
+      conceptAction.value
+    );
   }
-}
+};
 const updateQuestionsResults = async () => {
-  if (teacherMode.value || !conceptAction.value){
+  if (teacherMode.value || !conceptAction.value) {
     return;
   }
   if (!conceptAction.value.actionTimestamps) {
@@ -361,10 +433,14 @@ const updateQuestionsResults = async () => {
     createdAt: new Date().toISOString(),
   });
   conceptAction.value = await conceptActionService.update(conceptAction.value);
-}
+};
 
 const conceptDone = async () => {
-  if (teacherMode.value || !conceptAction.value || !conceptAction.value.inProgress){
+  if (
+    teacherMode.value ||
+    !conceptAction.value ||
+    !conceptAction.value.inProgress
+  ) {
     return;
   }
   conceptAction.value.inProgress = false;
@@ -374,7 +450,7 @@ const conceptDone = async () => {
   });
 
   conceptAction.value = await conceptActionService.update(conceptAction.value);
-}
+};
 const disableObjectives = computed(() => conceptAction.value?.inProgress);
-const quizSize = computed(() => conceptAction.value?.inProgress ? 10 : 5);
+const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
 </script>

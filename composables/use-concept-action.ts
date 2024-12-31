@@ -3,6 +3,11 @@ export type FlashCardActionModel = {
   isOk: boolean;
 };
 
+export type ObjectiveActionModel = {
+  objective: string;
+  isDone: boolean;
+};
+
 export type QuestionActionModel = {
   questionId: string;
   userResponse: string;
@@ -21,7 +26,7 @@ export type ConceptActionModel = GraphQLModel & {
   owner: string;
   conceptId: string;
   inProgress: boolean;
-  objectives: boolean[];
+  objectives: ObjectiveActionModel[];
   theory: boolean;
   examples: boolean;
   usedFlashCards: FlashCardActionModel[];
@@ -36,7 +41,7 @@ export default function () {
     'owner',
     'conceptId',
     'inProgress',
-    'objectives',
+    'objectives.*',
     'theory',
     'examples',
     'usedFlashCards.*',

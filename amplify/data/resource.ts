@@ -112,6 +112,11 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.authenticated()]),
 
+  ObjectiveAction: a.customType({
+    objective: a.string(),
+    isDone: a.boolean(),
+  }),
+
   FlashCardAction: a.customType({
     flashCardId: a.id(),
     isOk: a.boolean(),
@@ -138,7 +143,7 @@ const schema = a.schema({
       concept: a.belongsTo("Concept", "conceptId"),
 
       inProgress: a.boolean(),
-      objectives: a.boolean().array(),
+      objectives: a.ref("ObjectiveAction").array(),
       theory: a.boolean(),
       examples: a.boolean(),
       usedFlashCards: a.ref("FlashCardAction").array(),
