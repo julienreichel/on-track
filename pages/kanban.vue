@@ -39,9 +39,38 @@
                       :key="concept.id"
                       flat
                       bordered
-                      class="q-mb-sm cursor-pointer"
-                      @click="$router.push(`/concept/${concept.id}`)">
-                      <q-card-section>{{ concept.name }}</q-card-section>
+                      class="cursor-pointer q-mb-sm" @click="$router.push(`/concept/${concept.id}`)"
+                      >
+                      <q-card-section class="q-pb-xs">
+                        {{ concept.name }}
+                      </q-card-section>
+                      <q-card-section class="q-pt-xs">
+                        <div v-if="column === 'ToDo'" class="row">
+                          <q-icon name="cancel" class="cursor-pointer" @click.stop.prevent="deleteConceptAction(concept)" />
+                        </div>
+
+                        <!-- Actions for Learning -->
+                        <div v-else-if="column === 'Learning'" class="row">
+                          <q-icon name="article" :color="concept.action.theory ? 'primary': 'grey-4'"/>
+                          <q-icon name="ballot" :color="concept.action.examples ? 'primary': 'grey-4'"/>
+                          <q-icon name="check_box" :color="concept.action.usedFlashCards?.filter(fc => fc.isOk).length >= 3 ? 'primary': 'grey-4'"/>
+                          <q-icon name="help_center" :color="concept.action.answeredQuestions?.filter(q => q.isValid).length >= 8 ? 'primary': 'grey-4'"/>
+                        </div>
+
+                        <!-- Actions for Revision -->
+                        <div v-else-if="column === 'Revision'" class="row">
+                            <q-icon
+                              v-for="i in 5"
+                              :key="i"
+                              :name="getBatteryIcon(concept, i)"
+                            />
+                        </div>
+
+                        <!-- Actions for Done -->
+                        <div v-else-if="column === 'Done'" class="row">
+                          <q-icon name="visibility_off" class="cursor-pointer" @click.stop.prevent="hideTask(concept)" />
+                        </div>
+                      </q-card-section>
                     </q-card>
                   </div>
                 </div>
@@ -63,6 +92,41 @@ const loading = ref(true);
 const conceptActionService = useConceptAction();
 const conceptService = useConcept();
 
+const deleteConceptAction = async (concept) => {
+  try {
+    await conceptActionService.delete(concept.action);
+    const columns = board.value[concept.competency.id].columns
+    columns.ToDo = columns.ToDo.filter(c => c.id !== concept.id);
+  } catch (error) {
+    console.error("Error deleting concept action:", error);
+  }
+};
+
+const hideTask = async (concept) => {
+  try {
+    const timestamp = { createdAt: new Date().toISOString(), actionType: "hidden" };
+    concept.action.actionTimestamps.push(timestamp);
+    await conceptActionService.update(concept.action);
+    const columns = board.value[concept.competency.id].columns
+    columns.Done = columns.Done.filter(c => c.id !== concept.id);
+  } catch (error) {
+    console.error("Error hiding task:", error);
+  }
+};
+
+const getBatteryIcon = (concept, index) => {
+  const correctAnswers = concept.action.answeredQuestions?.filter(q => q.isValid).length || 0;
+  const fullBatteries = Math.floor(correctAnswers / 4);
+  if (index <= fullBatteries) return "battery_full";
+  const remaining = correctAnswers % 4;
+  if (index === fullBatteries + 1) {
+    if (remaining >= 3) return "battery_6_bar";
+    if (remaining >= 2) return "battery_4_bar";
+    if (remaining >= 1) return "battery_4_bar";
+  }
+  return "battery_0_bar";
+};
+
 const fetchKanbanData = async () => {
   try {
     const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
@@ -77,7 +141,10 @@ const fetchKanbanData = async () => {
     const groupedByCompetency = {};
 
     for (const action of actions) {
+      if (action.actionTimestamps?.some(ts => ts.actionType === 'hidden')) continue;
+
       const concept = await conceptService.get(action.conceptId);
+      concept.action = action;
       const competency = concept.competency;
 
       if (!groupedByCompetency[competency.id]) {
@@ -97,9 +164,6 @@ const fetchKanbanData = async () => {
         (timestamp) => timestamp.actionType === 'review'
       ) || [];
       reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      const lastReview = reviews.length > 0 ? new Date(reviews[0].createdAt) : null;
-      const twoWeeksAgo = new Date();
-      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
       if (!action.actionTimestamps?.length) {
         groupedByCompetency[competency.id].columns.ToDo.push(concept);
@@ -107,7 +171,7 @@ const fetchKanbanData = async () => {
         groupedByCompetency[competency.id].columns.Learning.push(concept);
       } else if (reviews.length < 3) {
         groupedByCompetency[competency.id].columns.Revision.push(concept);
-      } else if (lastReview && lastReview > twoWeeksAgo) {
+      } else {
         groupedByCompetency[competency.id].columns.Done.push(concept);
       }
     }
@@ -125,4 +189,6 @@ onMounted(() => {
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+
+</style>
