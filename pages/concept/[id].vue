@@ -108,7 +108,7 @@
             Quiz
           </q-item-section>
 
-          <q-item-section v-if="!conceptAction?.inProgress" side>
+          <q-item-section v-if="!conceptAction?.inProgress && !teacherMode" side>
             <div class="row items-center">
               <q-icon :name="ndQuizReview > 0 ? 'battery_full' : 'battery_0_bar'" size="md" />
               <q-icon :name="ndQuizReview > 1 ? 'battery_full' : 'battery_0_bar'" size="md" />
@@ -183,13 +183,9 @@ onMounted(async () => {
       } else {
         conceptAction.value = await conceptActionService.create({
           conceptId,
-          inProgress: true,
-          objectives: concept.value.objectives?.map(() => false) || [],
+          inProgress: true
         });
       }
-      conceptAction.value.objectives = conceptAction.value.objectives.filter(
-        (o) => o.objective
-      );
     }
   } catch (error) {
     console.error("Failed to fetch concept or user action:", error);

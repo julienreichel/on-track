@@ -37,6 +37,12 @@
         </q-item-section>
         <q-item-section>Subjects</q-item-section>
       </q-item>
+      <q-item clickable to="/kanban">
+        <q-item-section avatar>
+          <q-icon name="table_chart" />
+        </q-item-section>
+        <q-item-section>Kanban</q-item-section>
+      </q-item>
 
       <!-- Create New Lecture Section -->
       <q-item v-if="teacherMode" clickable to="/add">

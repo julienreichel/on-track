@@ -142,7 +142,7 @@ const fetchConceptActions = async () => {
 
       if (action.inProgress) {
         conceptsInProgress.value.push(concept);
-      } else {
+      } else if (action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length < 3) {
         conceptsToRevisit.value.push(concept);
       }
       fetchedConcepts.add(action.conceptId);
