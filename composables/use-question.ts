@@ -14,6 +14,20 @@ export type QuestionModel = GraphQLModel & {
   conceptId: string;
 };
 
+export type RunningQuestionModel ={
+  id: string;
+  type: string;
+  text: string;
+  explanations: string;
+  level: string;
+  answers: {
+    text: number | number[] | string | undefined;
+    valid: boolean;
+  }
+  conceptId: string;
+  validated: boolean;
+};
+
 export default function () {
   return useGraphqlQuery('Question', ['id', 'type', 'text', 'explanations', 'level', 'answers.*', 'conceptId']);
 }

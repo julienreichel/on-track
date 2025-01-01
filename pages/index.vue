@@ -32,7 +32,7 @@
     <q-list>
       <q-expansion-item
         v-if="conceptsToRevisit.length"
-        label="Revisit"
+        label="Review"
         :expanded="true"
         group="concept"
         header-class="text-h3"
@@ -44,7 +44,7 @@
 
       <q-expansion-item
         v-if="conceptsInProgress.length"
-        label="In Progress"
+        label="Continue"
         group="concept"
         header-class="text-h3"
         :content-inset-level="0.5"
@@ -55,7 +55,7 @@
 
       <q-expansion-item
         v-if="relatedConcepts.length"
-        label="Next"
+        label="Explore"
         group="concept"
         header-class="text-h3"
         :content-inset-level="0.5"

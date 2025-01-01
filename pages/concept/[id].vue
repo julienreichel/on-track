@@ -196,12 +196,6 @@ onMounted(async () => {
   }
 });
 
-const ndQuizReview = computed(() => {
-  if (!conceptAction.value || !conceptAction.value.actionTimestamps) return 0;
-  const { actionTimestamps } = conceptAction.value;
-  return actionTimestamps?.filter((as) => as.actionType === "review").length;
-});
-
 const relatedConcepts = computed(() => {
   const relatedConcepts = [concept.value];
   if (concept.value?.prerequisites) {
@@ -290,16 +284,7 @@ const updateStarted = () => {
   if (teacherMode.value || !conceptAction.value) {
     return false;
   }
-  if (conceptAction.value.actionTimestamps) {
-    return false;
-  }
-  conceptAction.value.actionTimestamps = [];
-
-  conceptAction.value.actionTimestamps.push({
-    actionType: "started",
-    createdAt: new Date().toISOString(),
-  });
-  return true;
+  return conceptActionService.updateStarted(conceptAction.value);
 };
 
 const markAsRead = async (field) => {
@@ -383,74 +368,17 @@ const updateQuestionsFinished = (p) => {
   console.log("Questions finished", p);
 };
 
-const getQuizType = () => {
-  if (conceptAction.value.theory && conceptAction.value.examples) {
-    if (conceptAction.value.inProgress) {
-      return "quiz";
-    } else {
-      return "review";
-    }
-  } else {
-    return "pre-quiz";
-  }
-};
 const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !conceptAction.value) {
     return;
   }
-  const quizType = getQuizType();
-  const validatedQuestions = questions
-    .filter((q) => q.validated)
-    .map((q) => ({
-      questionId: q.id,
-      userResponse:
-        q.type === "checkbox"
-          ? q.response.join(",")
-          : q.response?.toString() || "",
-      isValid: !!q.valid,
-      quizType,
-    }));
-
-  if (!conceptAction.value.answeredQuestions) {
-    conceptAction.value.answeredQuestions = [];
-  }
-
-  let hasChanges = updateStarted();
-  validatedQuestions.forEach((q) => {
-    const answeredQuestion = conceptAction.value.answeredQuestions.find(
-      (aq) => aq.questionId === q.questionId
-    );
-    if (answeredQuestion) {
-      if (answeredQuestion.userResponse === q.userResponse) {
-        return;
-      }
-      hasChanges = true;
-      answeredQuestion.userResponse = q.userResponse;
-      answeredQuestion.isValid = q.isValid;
-      answeredQuestion.quizType = quizType;
-      return;
-    }
-    hasChanges = true;
-    conceptAction.value.answeredQuestions.push(q);
-  });
-
-  if (hasChanges) {
-    await conceptActionService.update(conceptAction.value);
-  }
+  return conceptActionService.updateQuestionsProgress(questions, conceptAction.value);
 };
 const updateQuestionsResults = async () => {
   if (teacherMode.value || !conceptAction.value) {
     return;
   }
-  if (!conceptAction.value.actionTimestamps) {
-    conceptAction.value.actionTimestamps = [];
-  }
-  const actionType = getQuizType();
-  conceptAction.value.actionTimestamps.push({
-    actionType,
-    createdAt: new Date().toISOString(),
-  });
-  await conceptActionService.update(conceptAction.value);
+  return conceptActionService.updateQuestionsResults(conceptAction.value);
 };
 
 const conceptDone = async () => {

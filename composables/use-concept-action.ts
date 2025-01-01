@@ -76,5 +76,86 @@ export default function () {
     delete input.owner;
     return calls.update(input, options);
   };
-  return { ...calls, list, update };
+
+
+  const getQuizType = (conceptAction: ConceptActionModel) => {
+    if (conceptAction.theory && conceptAction.examples) {
+      if (conceptAction.inProgress) {
+        return "quiz";
+      } else {
+        return "review";
+      }
+    } else {
+      return "pre-quiz";
+    }
+  };
+
+  const updateStarted = (conceptAction: ConceptActionModel) => {
+    if (conceptAction.actionTimestamps) {
+      return false;
+    }
+    conceptAction.actionTimestamps = [];
+
+    conceptAction.actionTimestamps.push({
+      actionType: "started",
+      createdAt: new Date().toISOString(),
+    });
+    return true;
+  };
+
+  const updateQuestionsProgress = async (questions:RunningQuestionModel[], conceptAction: ConceptActionModel) => {
+    const quizType = getQuizType(conceptAction);
+    const validatedQuestions = questions
+      .filter((q) => q.validated)
+      .map((q) => ({
+        questionId: q.id,
+        userResponse:
+          q.type === "checkbox"
+            ? q.response?.join(",") ?? ""
+            : q.response?.toString() ?? "",
+        isValid: !!q.valid,
+        quizType,
+      }));
+
+    if (!conceptAction.answeredQuestions) {
+      conceptAction.answeredQuestions = [];
+    }
+
+    let hasChanges = updateStarted(conceptAction);
+    validatedQuestions.forEach((q) => {
+      const answeredQuestion = conceptAction.answeredQuestions.find(
+        (aq) => aq.questionId === q.questionId
+      );
+      if (answeredQuestion) {
+        if (answeredQuestion.userResponse === q.userResponse) {
+          return;
+        }
+        hasChanges = true;
+        answeredQuestion.userResponse = q.userResponse;
+        answeredQuestion.isValid = q.isValid;
+        answeredQuestion.quizType = quizType;
+        return;
+      }
+      hasChanges = true;
+      conceptAction.answeredQuestions.push(q);
+    });
+
+    if (hasChanges) {
+      await update(conceptAction);
+    }
+  };
+
+  const updateQuestionsResults = async (conceptAction: ConceptActionModel) => {
+
+    if (!conceptAction.actionTimestamps) {
+      conceptAction.actionTimestamps = [];
+    }
+    const actionType = getQuizType(conceptAction);
+    conceptAction.actionTimestamps.push({
+      actionType,
+      createdAt: new Date().toISOString(),
+    });
+    await update(conceptAction);
+  };
+  return { ...calls, list, update, updateQuestionsResults, updateQuestionsProgress, getQuizType, updateStarted };
 }

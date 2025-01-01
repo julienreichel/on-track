@@ -55,6 +55,7 @@
                       </q-card-section>
                       <q-card-section class="q-pt-xs">
                         <div v-if="column === 'ToDo'" class="row">
+                          <q-space/>
                           <q-icon
                             name="cancel"
                             class="cursor-pointer"
@@ -109,6 +110,7 @@
 
                         <!-- Actions for Done -->
                         <div v-else-if="column === 'Done'" class="row">
+                          <q-space/>
                           <q-icon
                             name="visibility_off"
                             class="cursor-pointer"
@@ -141,7 +143,8 @@
                 <q-card-section class="q-pb-xs">
                   {{ concept.name }}
                 </q-card-section>
-                <q-card-section class="q-pt-xs">
+                <q-card-section class="q-pt-xs row">
+                  <q-space/>
                   <q-icon
                     name="add_circle"
                     class="cursor-pointer"
