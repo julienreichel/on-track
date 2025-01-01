@@ -20,12 +20,12 @@ export type RunningQuestionModel ={
   text: string;
   explanations: string;
   level: string;
-  answers: {
-    text: number | number[] | string | undefined;
-    valid: boolean;
-  }
+  answers: QuestionAnswerModel[];
   conceptId: string;
   validated: boolean;
+  response: number | number[] | string | undefined;
+  valid: boolean;
+  points: number;
 };
 
 export default function () {

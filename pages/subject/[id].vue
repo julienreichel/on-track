@@ -62,7 +62,7 @@ const generateCompetenciesData = async () => {
   loading.show();
 
   await Promise.all( subject.value.competencies.map((c) => {
-    if (!c.concepts.length){
+    if (!c.concepts?.length){
       return competencyService.createWithAI( c );
     }
   }));

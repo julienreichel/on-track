@@ -1,14 +1,14 @@
 <template>
-  <q-page class="q-gutter-sm q-pa-sm">
-    <p class="text-h6 q-pt-md">Add subjects</p>
+  <div class="q-gutter-sm q-pa-sm">
+    <p class="text-h3 q-pt-md">Add subject</p>
     <q-input v-model="prompt" rows="6" type="textarea" />
-    <q-btn label="Send Request" @click="sendRequest" />
-    <div style="height: 300px; width: 100%">
-      <subject-list
+    <q-btn label="Create" @click="sendRequest" />
+    <div>
+      <subject-cards
         :subjects="subjects"
       />
     </div>
-  </q-page>
+  </div>
 </template>
 
 <script setup lang="ts">

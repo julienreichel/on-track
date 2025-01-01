@@ -49,7 +49,7 @@
         <q-item-section avatar>
           <q-icon name="create" />
         </q-item-section>
-        <q-item-section>Create New Subject</q-item-section>
+        <q-item-section>Add Subject</q-item-section>
       </q-item>
     </q-drawer>
 

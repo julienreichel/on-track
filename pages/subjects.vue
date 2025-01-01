@@ -1,7 +1,7 @@
 <template>
-  <div>
-    <h1>Subjects</h1>
-    <subject-list :subjects="subjects" :allow-delete="teacherMode" @delete="deleteSubject"/>
+  <div class="q-pa-md">
+    <div class="text-h3 q-mb-md">Subjects</div>
+    <subject-cards :subjects="subjects" :allow-delete="teacherMode" @delete="deleteSubject"/>
   </div>
 </template>
 

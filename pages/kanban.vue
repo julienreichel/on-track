@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md">
-    <div class="text-h4 q-mb-md">Kanban Board</div>
+    <div class="text-h3 q-mb-md">Kanban Board</div>
     <q-card flat bordered class="q-mb-md">
       <q-card-section>
         <q-spinner

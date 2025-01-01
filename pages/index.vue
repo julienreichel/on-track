@@ -1,12 +1,12 @@
 <template>
-  <div>
+  <div class="q-pa-md">
     <!-- Last 14 Days History Section -->
     <div class="q-mb-lg">
       <q-card flat class="q-pa-md">
         <q-card-section class="row q-col-gutter-sm">
-          <div v-for="day in history" :key="day.date" class="col">
-            <q-card flat bordered class="text-center">
-              <div class="text-sm">{{ day.shortDate }}</div>
+          <div v-for="(day, idx) in history" :key="day.date" class="col" :class="{ 'gt-sm': idx < 7 }">
+            <q-card flat bordered class="text-center" >
+              <div class="text-sm gt-sm" >{{ day.shortDate }}</div>
               <div class="text-xs text-gray-6">{{ day.weekday }}</div>
               <q-icon
                 v-if="day.hasAction"
@@ -35,11 +35,20 @@
         label="Review"
         :expanded="true"
         group="concept"
+        default-opened
         header-class="text-h3"
-        :content-inset-level="0.5"
-        class="q-mb-md"
       >
-        <concept-list :concepts="conceptsToRevisit" />
+        <div class="q-pa-sm q-gutter-sm">
+          <concept-cards class="q-pa-sm lt-md" :concepts="conceptsToRevisit.slice(0, 1)" />
+          <concept-cards class="q-pa-sm gt-sm" :concepts="conceptsToRevisit.slice(0, 3)" />
+          <quiz-runner
+              :questions="conceptsToRevisit[0].questions"
+              :max="5"
+              @finished="sortRevisitedConcepts"
+              @results="conceptActionService.updateQuestionsResults(conceptsToRevisit[0].action)"
+              @progress="(q) => conceptActionService.updateQuestionsProgress(q, conceptsToRevisit[0].action)"
+            />
+        </div>
       </q-expansion-item>
 
       <q-expansion-item
@@ -47,10 +56,8 @@
         label="Continue"
         group="concept"
         header-class="text-h3"
-        :content-inset-level="0.5"
-        class="q-mb-md"
       >
-        <concept-list :concepts="conceptsInProgress" />
+        <concept-cards class="q-pa-sm" :concepts="conceptsInProgress" />
       </q-expansion-item>
 
       <q-expansion-item
@@ -58,10 +65,8 @@
         label="Explore"
         group="concept"
         header-class="text-h3"
-        :content-inset-level="0.5"
-        class="q-mb-md"
       >
-        <concept-list :concepts="relatedConcepts" />
+        <concept-cards class="q-pa-sm" :concepts="relatedConcepts" />
       </q-expansion-item>
     </q-list>
   </div>
@@ -93,7 +98,7 @@ const getWeekday = (date) => {
 };
 
 // Function to generate the last 14 days
-const generateLast14Days = () => {
+const generateLastDays = () => {
   const days = [];
   const today = new Date();
   for (let i = 0; i < 14; i++) {
@@ -109,11 +114,26 @@ const generateLast14Days = () => {
   return days;
 };
 
+const sortRevisitedConcepts = () => {
+  conceptsToRevisit.value.sort((a, b) => {
+    if (a.action.actionTimestamps.length === 0) return -1;
+    if (b.action.actionTimestamps.length === 0) return 1;
+    const lastActionsA = a.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    const lastActionsB = b.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    return new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt);
+  });
+
+  conceptsToRevisit.value = conceptsToRevisit.value.filter((concept) => {
+    return concept.action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length < 3;
+  });
+
+};
+
 // Function to fetch and categorize actions
 const fetchConceptActions = async () => {
   try {
     // Initialize history
-    history.value = generateLast14Days();
+    history.value = generateLastDays();
 
     // Get current user
     const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
@@ -139,7 +159,7 @@ const fetchConceptActions = async () => {
 
     for (const action of actions) {
       const concept = await conceptService.get(action.conceptId);
-
+      concept.action = action;
       if (action.inProgress) {
         conceptsInProgress.value.push(concept);
       } else if (action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length < 3) {
@@ -175,6 +195,7 @@ const fetchConceptActions = async () => {
     if (conceptsInProgress.value.length === 0 && conceptsToRevisit.value.length === 0) {
       router.push('/subjects');
     }
+    sortRevisitedConcepts();
   } catch (error) {
     console.error('Error fetching concept actions:', error);
   }
