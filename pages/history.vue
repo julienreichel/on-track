@@ -9,15 +9,24 @@
         :color="entry.color"
         :subtitle="`${entry.date} ${entry.time}`"
       >
-      <template #title>
+        <template #title>
           {{ entry.concept.name }}
-          <q-icon name="arrow_right" class="cursor-pointer" @click="$router.push(`/concept/${entry.concept.id}`)"/>
+          <q-icon
+            name="arrow_right"
+            class="cursor-pointer"
+            @click="$router.push(`/concept/${entry.concept.id}`)"
+          />
         </template>
         <div>
-          <div class="text-weight-bold">{{ entry.competency.name }}
-            <q-icon name="arrow_right" class="cursor-pointer" @click="$router.push(`/competency/${entry.competency.id}`)"/>
+          <div class="text-weight-bold">
+            {{ entry.competency.name }}
+            <q-icon
+              name="arrow_right"
+              class="cursor-pointer"
+              @click="$router.push(`/competency/${entry.competency.id}`)"
+            />
           </div>
-          <div>{{ entry.label  }}</div>
+          <div>{{ entry.label }}</div>
         </div>
       </q-timeline-entry>
     </q-timeline>
@@ -51,6 +60,7 @@ const fetchUserHistory = async () => {
     for (const action of actions) {
       // Fetch concept details to get concept name and competency name
       const concept = await conceptService.get(action.conceptId);
+      if(!concept) continue;
       const competency = concept.competency;
 
       // Add task started entry

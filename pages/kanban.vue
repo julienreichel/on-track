@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md">
+  <div class="q-pa-md" style="min-width: 1024px;">
     <div class="text-h3 q-mb-md">Kanban Board</div>
     <q-card flat bordered class="q-mb-md">
       <q-card-section>
@@ -27,14 +27,14 @@
           <!-- Rows for Competencies -->
           <div v-for="(competency, competencyId) in board" :key="competencyId">
             <div class="row q-col-gutter-md">
-              <div class="col-2">
+              <div class="col-2 q-pb-sm">
                 <q-card
                   flat
                   bordered
-                  class="q-mb-sm cursor-pointer"
+                  class="q-mb-sm cursor-pointer bg-secondary text-white full-height "
                   @click="$router.push(`/competency/${competencyId}`)"
                 >
-                  <q-card-section class="text-h5 text-center">{{
+                  <q-card-section class="">{{
                     competency.name
                   }}</q-card-section>
                 </q-card>
