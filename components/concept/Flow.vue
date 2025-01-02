@@ -4,8 +4,9 @@
       :nodes="nodes"
       :edges="edges"
       :connection-mode="ConnectionMode.Strict"
-      :nodes-draggable="false"
-      :nodes-connectable="false"
+      :nodes-draggable="teacherMode"
+      :zoom-on-scroll="false"
+      :nodes-connectable="teacherMode"
       :pan-on-drag="false"
     >
       <template #node-concept="nodeProps">
@@ -26,9 +27,11 @@ import { VueFlow, ConnectionMode, useVueFlow } from "@vue-flow/core";
 const { onConnect, onNodesChange, onEdgesChange, applyNodeChanges, applyEdgeChanges, updateNodeData } = useVueFlow()
 const { layout } = useLayout()
 
+const teacherMode = inject('teacherMode');
+
 const props = defineProps({
   concepts: { type: Array, required: true },
-  prerequisites: { type: Array, required: true },
+  prerequisites: { type: Array, default: null },
   direction: { type: String, default: "TB" },
 });
 const conceptService = useConcept();
@@ -56,12 +59,25 @@ watch(() => props.concepts, async (concepts) => {
 }, { immediate: true });
 
 watch(() => props.prerequisites, async (prerequisites) => {
-  // convert prerequisites to edges
-  edges.value = prerequisites.map((prerequisite) => ({
-    id: prerequisite.id,
-    source: prerequisite.prerequisiteId,
-    target: prerequisite.conceptId,
-  }));
+  if(!prerequisites){
+    // get the edges from the concept.prerequisites and convert them to edges
+    edges.value = [];
+    for (const concept of props.concepts) {
+      for (const prerequisite of concept.prerequisites) {
+        edges.value.push({
+          id: prerequisite.id,
+          source: prerequisite.prerequisiteId,
+          target: prerequisite.conceptId,
+        });
+      }
+    }
+  } else {
+    edges.value = prerequisites.map((prerequisite) => ({
+      id: prerequisite.id,
+      source: prerequisite.prerequisiteId,
+      target: prerequisite.conceptId,
+    }));
+  }
   nextTick(() => {
     nodes.value = layout(nodes.value, edges.value, props.direction);
   });
@@ -90,9 +106,11 @@ onNodesChange(async (changes) => {
   for (const change of changes) {
     if (change.type === 'remove') {
       // delete the concept
-      edges.value = edges.value.filter(edge => edge.source !== change.id && edge.target !== change.id);
-      nodes.value = nodes.value.filter(node => node.id !== change.id);
-      await conceptService.delete({ id: change.id })
+      if ( teacherMode.value ) {
+        edges.value = edges.value.filter(edge => edge.source !== change.id && edge.target !== change.id);
+        nodes.value = nodes.value.filter(node => node.id !== change.id);
+        await conceptService.delete({ id: change.id })
+      }
     } else {
       if (change.type === "select") {
         if (change.selected) {
@@ -118,8 +136,10 @@ onEdgesChange(async (changes) => {
   for (const change of changes) {
     if (change.type === 'remove') {
       // delete the prerequisite
-      edges.value = edges.value.filter(edge => edge.id !== change.id);
-      await prerequisiteService.delete({ id: change.id});
+      if (teacherMode.value){
+        edges.value = edges.value.filter(edge => edge.id !== change.id);
+        await prerequisiteService.delete({ id: change.id});
+      }
     } else {
       nextChanges.push(change)
     }

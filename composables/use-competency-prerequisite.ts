@@ -1,9 +1,11 @@
 
 export type CompetencyPrerequisiteModel = GraphQLModel & {
-  conceptId: string;
+  competencyId: string;
   prerequisiteId: string;
+  competency?: CompetencyModel;
+  prerequisite?: CompetencyModel;
 };
 
 export default function () {
-  return useGraphqlQuery('CompetencyDependency', ['competencyId', 'prerequisiteId']);
+  return useGraphqlQuery('CompetencyDependency', ['id', 'competencyId', 'prerequisiteId']);
 }

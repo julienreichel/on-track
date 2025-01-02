@@ -3,7 +3,7 @@
     <div
       v-for="(competency, idx) in competencies"
       :key="idx"
-      class="col-12 col-md-4">
+      class="col-12 col-sm-6 col-md-4">
     <q-card
       flat
       bordered
@@ -15,12 +15,6 @@
         <div class="q-mt-sm truncated-description">
           {{ competency.description }}
         </div>
-      </q-card-section>
-      <q-card-section v-if="competency.action">
-        <competency-status
-          :competency="competency"
-          :competency-action="competency.action"
-        />
       </q-card-section>
       <q-card-actions>
         <q-space/>

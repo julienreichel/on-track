@@ -4,9 +4,14 @@
     <div class="q-mb-lg">
       <q-card flat class="q-pa-md">
         <q-card-section class="row q-col-gutter-sm">
-          <div v-for="(day, idx) in history" :key="day.date" class="col" :class="{ 'gt-sm': idx < 7 }">
-            <q-card flat bordered class="text-center" >
-              <div class="text-sm gt-sm" >{{ day.shortDate }}</div>
+          <div
+            v-for="(day, idx) in history"
+            :key="day.date"
+            class="col"
+            :class="{ 'gt-sm': idx < 7 }"
+          >
+            <q-card flat bordered class="text-center">
+              <div class="text-sm gt-sm">{{ day.shortDate }}</div>
               <div class="text-xs text-gray-6">{{ day.weekday }}</div>
               <q-icon
                 v-if="day.hasAction"
@@ -39,15 +44,31 @@
         header-class="text-h3"
       >
         <div class="q-pa-sm q-gutter-sm">
-          <concept-cards class="q-pa-sm lt-md" :concepts="conceptsToRevisit.slice(0, 1)" />
-          <concept-cards class="q-pa-sm gt-sm" :concepts="conceptsToRevisit.slice(0, 3)" />
+          <concept-cards
+            class="q-pa-sm lt-md"
+            :concepts="conceptsToRevisit.slice(0, 1)"
+          />
+          <concept-cards
+            class="q-pa-sm gt-sm"
+            :concepts="conceptsToRevisit.slice(0, 3)"
+          />
           <quiz-runner
-              :questions="conceptsToRevisit[0].questions"
-              :max="5"
-              @finished="sortRevisitedConcepts"
-              @results="conceptActionService.updateQuestionsResults(conceptsToRevisit[0].action)"
-              @progress="(q) => conceptActionService.updateQuestionsProgress(q, conceptsToRevisit[0].action)"
-            />
+            :questions="conceptsToRevisit[0].questions"
+            :max="5"
+            @finished="sortRevisitedConcepts"
+            @results="
+              conceptActionService.updateQuestionsResults(
+                conceptsToRevisit[0].action
+              )
+            "
+            @progress="
+              (q) =>
+                conceptActionService.updateQuestionsProgress(
+                  q,
+                  conceptsToRevisit[0].action
+                )
+            "
+          />
         </div>
       </q-expansion-item>
 
@@ -159,6 +180,7 @@ const fetchConceptActions = async () => {
 
     for (const action of actions) {
       const concept = await conceptService.get(action.conceptId);
+      if (!concept) continue;
       concept.action = action;
       if (action.inProgress) {
         conceptsInProgress.value.push(concept);
@@ -207,6 +229,4 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

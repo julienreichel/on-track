@@ -1,5 +1,5 @@
 <template>
-  <div v-if="concept" class="q-pa-sm">
+  <div v-if="concept" class="q-pa-md">
     <concept-status
       :concept="concept"
       :concept-action="conceptAction"
@@ -10,6 +10,7 @@
       :prerequisites="relatedLinks"
       direction="LR"
       :style="{ height: `${height}px`, width: '100%' }"
+      class="gt-xs"
     />
     <competency-list :competencies="[concept.competency]" />
     <h1>{{ concept.name }}</h1>

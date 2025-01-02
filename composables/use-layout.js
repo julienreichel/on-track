@@ -46,7 +46,7 @@ export default function () {
         ...node,
         targetPosition: isHorizontal ? Position.Left : Position.Top,
         sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
-        position: { x: nodeWithPosition.x, y: nodeWithPosition.y },
+        position: { x: nodeWithPosition.x - 75, y: nodeWithPosition.y },
       }
     })
   }

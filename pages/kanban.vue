@@ -55,7 +55,7 @@
                       </q-card-section>
                       <q-card-section class="q-pt-xs">
                         <div v-if="column === 'ToDo'" class="row">
-                          <q-space/>
+                          <q-space />
                           <q-icon
                             name="cancel"
                             class="cursor-pointer"
@@ -110,7 +110,7 @@
 
                         <!-- Actions for Done -->
                         <div v-else-if="column === 'Done'" class="row">
-                          <q-space/>
+                          <q-space />
                           <q-icon
                             name="visibility_off"
                             class="cursor-pointer"
@@ -129,7 +129,7 @@
     </q-card>
 
     <!-- Follow-Up Concepts Section -->
-    <div v-if="!loading" class="q-my-md" >
+    <div v-if="!loading" class="q-my-md">
       <div class="text-h5 q-mb-md">Backlog</div>
       <q-card flat bordered>
         <q-card-section>
@@ -144,7 +144,7 @@
                   {{ concept.name }}
                 </q-card-section>
                 <q-card-section class="q-pt-xs row">
-                  <q-space/>
+                  <q-space />
                   <q-icon
                     name="add_circle"
                     class="cursor-pointer"
@@ -245,6 +245,7 @@ const fetchKanbanData = async () => {
       if (action.actionTimestamps?.some(ts => ts.actionType === 'hidden')) continue;
 
       const concept = await conceptService.get(action.conceptId);
+      if(!concept) continue;
       concept.action = action;
       const competency = concept.competency;
       existingConceptIds.add(concept.id);
@@ -299,6 +300,4 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

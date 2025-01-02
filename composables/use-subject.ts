@@ -16,6 +16,7 @@ export default function () {
     "description",
 
     "competencies.*",
+    'competencies.prerequisites.*',
   ], [
     "id",
     "name",

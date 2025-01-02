@@ -1,12 +1,18 @@
 <template>
-  <div v-if="subject" class="q-pa-sm">
+  <div v-if="subject" class="q-pa-md">
     <h1>{{ subject.name }}</h1>
     <p v-if="subject.description" style="max-width:600px" >{{ subject.description }}</p>
     <q-btn v-else @click="generateSubjectData()">Generate</q-btn>
 
     <div v-if="subject.competencies?.length">
       <h3>Competencies</h3>
-      <competency-list :competencies="subject.competencies" :allow-delete="teacherMode" @delete="deleteCompetency"/>
+      <competency-flow
+        :competencies="subject.competencies"
+        :direction="direction"
+        :style="{height: `${height}px`, width: '100%' }"
+        class="gt-xs"
+      />
+      <competency-cards :competencies="subject.competencies" :allow-delete="teacherMode" @delete="deleteCompetency"/>
       <q-btn v-if="teacherMode && subject.competencies.some(s => !s.introduction)" @click="generateCompetenciesData()">Populate</q-btn>
     </div>
   </div>
@@ -19,7 +25,7 @@
 const subjectService = useSubject();
 const competencyService = useCompetency();
 const route = useRoute();
-const { loading } = useQuasar();
+const { loading, screen } = useQuasar();
 
 const teacherMode = inject('teacherMode');
 
@@ -29,8 +35,32 @@ onMounted(async () => {
   try {
     const subjectId = route.params.id;
     subject.value = await subjectService.get(subjectId);
+
+    if (subject.value?.competencies){
+      competencyService.sort(subject.value.competencies);
+    }
+
   } catch (error) {
     console.error("Failed to fetch subject:", error);
+  }
+});
+
+const direction = computed(() => screen.lt.sm ? "TB" : "LR");
+
+const height = computed(() => {
+  if (!subject.value?.competencies?.length){
+    return 0;
+  }
+  const competencies = subject.value.competencies;
+  if (screen.lt.sm){
+    return competencies[competencies.length - 1].order * 150;
+  } else {
+
+    let height = 1;
+    competencies?.forEach((c) => {
+      height = Math.max(height, c.prerequisites?.length || 0);
+    });
+    return height * 100 + 20;
   }
 });
 

@@ -1,11 +1,13 @@
 <template>
-  <div v-if="competency" class="q-pa-sm">
+  <div v-if="competency" class="q-pa-md">
     <competency-flow
       :competencies="relatedCompetencies"
       :prerequisites="relatedLinks"
-      direction="LR"
+      :direction="direction"
       :style="{height: `${height}px`, width: '100%' }"
+      class="gt-xs"
     />
+    <subject-list :subjects="[competency.subject]" />
     <h1>{{ competency.name }}</h1>
 
     <p v-if="competency.description" style="max-width:600px" >{{ competency.description }}</p>
@@ -17,16 +19,18 @@
 
     <h3>Concepts</h3>
     <div v-if="competency.concepts?.length">
-      <concept-list :concepts="competency.concepts" :allow-delete="teacherMode" @delete="deleteConcept"/>
+      <concept-flow
+        :concepts="competency.concepts"
+        :direction="direction"
+        :style="{height: `${heightConcepts}px`, width: '100%' }"
+        class="gt-xs"
+      />
+      <concept-cards :concepts="competency.concepts" :allow-delete="teacherMode" @delete="deleteConcept"/>
       <q-btn v-if="teacherMode && competency.concepts.some(s => !s.theory)" @click="generateConceptsData()">Populate</q-btn>
     </div>
     <div v-else-if="teacherMode">
       <q-btn @click="generateCompetencyData()">Generate</q-btn>
     </div>
-
-    <h3>Subject</h3>
-    <subject-list :subjects="[competency.subject]" />
-
   </div>
   <div v-else>
     <p>Loading...</p>
@@ -37,7 +41,7 @@
 const competencyService = useCompetency();
 const conceptService = useConcept();
 const route = useRoute();
-const { loading } = useQuasar();
+const { loading, screen } = useQuasar();
 
 const teacherMode = inject('teacherMode');
 
@@ -50,7 +54,14 @@ onMounted(async () => {
   } catch (error) {
     console.error("Failed to fetch competency:", error);
   }
+
+  if (competency.value?.concepts){
+    conceptService.sort(competency.value.concepts);
+  }
+
 });
+
+const direction = computed(() => screen.lt.sm ? "TB" : "LR");
 
 const relatedCompetencies = computed(() => {
   const relatedCompetencies = [competency.value];
@@ -75,7 +86,29 @@ const relatedLinks = computed(() => {
 });
 
 const height = computed(() => {
-  return Math.max(competency.value?.prerequisites?.length || 0, competency.value?.followUps?.length || 0) * 100;
+  if (screen.lt.sm){
+    const hasPre = competency.value?.prerequisites?.length ? 1 : 0;
+    const hasFollow = competency.value?.followUps?.length ? 1: 0;
+    return hasPre * 100 + hasFollow * 100 + 120;
+  } else{
+    return Math.max(competency.value?.prerequisites?.length || 0, competency.value?.followUps?.length || 0) * 100 + 20;
+  }
+});
+
+const heightConcepts = computed(() => {
+  if (!competency.value?.concepts?.length){
+    return 0;
+  }
+  const concepts = competency.value.concepts;
+  if (screen.lt.sm){
+    return concepts[concepts.length - 1].order * 150;
+  } else {
+    let height = 1;
+    concepts.forEach((c) => {
+      height = Math.max(height, c.prerequisites?.length || 0);
+    });
+    return height * 100;
+  }
 });
 
 const generateCompetencyData = async () => {

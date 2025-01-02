@@ -26,6 +26,7 @@ export default function () {
     'subject.*',
 
     'concepts.*',
+    'concepts.prerequisites.*',
 
     'prerequisites.id',
     'prerequisites.prerequisite.*',
@@ -115,9 +116,39 @@ export default function () {
   };
 
 
+  const sort = (competencies: CompetencyModel[]) => {
+    competencies.forEach((c) => {
+      c.prerequisites = c.prerequisites?.map((p) => ({...p, prerequisite: competencies.find((c) => c.id === p.prerequisiteId)})) || [];
+    });
+    let run = true;
+    while (run){
+      run = false;
+      let updated = false;
+      competencies.forEach((c) => {
+        if (c.order === undefined){
+          if (!c.prerequisites?.length) {
+            c.order = 0;
+            updated = true;
+          } else if (c.prerequisites.every((p) => p.prerequisite?.order !== undefined)){
+            c.order = Math.max(...c.prerequisites.map((p) => p.prerequisite?.order)) + 1;
+            updated = true;
+          } else {
+            run = true;
+          }
+        }
+      });
+      if (!updated){
+        // in case of loops, we stop the loop
+        run = false;
+      }
+    }
+    competencies.sort((a, b) => a.order - b.order);
+  }
+
   return {
     ...calls,
     delete: del,
-    createWithAI
+    createWithAI,
+    sort
   };
 }
