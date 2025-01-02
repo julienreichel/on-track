@@ -48,7 +48,7 @@ export default function (
       ...defaultOptions,
       ...options,
     };
-    console.log("useGraphqlQuery", request, options);
+    console.log("useGraphqlQuery", request, input, options);
     if (request === "list") {
       input = {
         ...options,
@@ -125,6 +125,15 @@ export default function (
     return call("list", params, options) as unknown as GraphQLModel[];
   };
 
+  const pick = (obj: GraphQLParams, keys: string[]) => {
+    return keys.reduce((acc, key) => {
+      if (key in obj) {
+        acc[key] = obj[key];
+      }
+      return acc;
+    }, {} as GraphQLParams);
+  }
+
   return {
     call,
     create,
@@ -132,5 +141,6 @@ export default function (
     get,
     delete: del,
     list,
+    pick
   };
 }

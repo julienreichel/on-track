@@ -2,8 +2,8 @@
 export type ConceptPrerequisiteModel = GraphQLModel & {
   conceptId: string;
   prerequisiteId: string;
-  concept: ConceptModel;
-  prerequisite: ConceptModel;
+  concept: ConceptModel | undefined;
+  prerequisite: ConceptModel | undefined;
 };
 
 export default function () {

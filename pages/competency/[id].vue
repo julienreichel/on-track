@@ -104,10 +104,22 @@ const heightConcepts = computed(() => {
     return concepts[concepts.length - 1].order * 150;
   } else {
     let height = 1;
+    const dep = {}
     concepts.forEach((c) => {
-      height = Math.max(height, c.prerequisites?.length || 0);
+      if (!c.prerequisites?.length){
+        return;
+      }
+      c.prerequisites.forEach((p) => {
+        if (!dep[p.prerequisiteId]){
+          dep[p.prerequisiteId] = 0;
+        }
+        dep[p.prerequisiteId]++;
+      });
+      height = Math.max(height, c.prerequisites.length || 0);
     });
-    return height * 100;
+    const maxDep = Math.max(...Object.values(dep), height);
+    console.log(dep);
+    return maxDep * 100 + 20;
   }
 });
 
@@ -132,9 +144,14 @@ const deleteConcept = async (concept) => {
 const generateConceptsData = async () => {
   loading.show();
 
-  await Promise.all( competency.value.concepts.map((c) => {
+  await Promise.all( competency.value.concepts.map(async (c) => {
     if (!c.theory){
-      return conceptService.createWithAI( c );
+      await conceptService.createWithAI( c );
+    }
+    if (!c.questions?.length){
+      await Promise.all(
+        [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(c, l))
+      );
     }
   }));
 

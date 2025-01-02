@@ -55,12 +55,22 @@ const height = computed(() => {
   if (screen.lt.sm){
     return competencies[competencies.length - 1].order * 150;
   } else {
-
+    const dep = {};
     let height = 1;
     competencies?.forEach((c) => {
+      if (!c.prerequisites?.length){
+        return;
+      }
+      c.prerequisites.forEach((p) => {
+        if (!dep[p.prerequisiteId]){
+          dep[p.prerequisiteId] = 0;
+        }
+        dep[p.prerequisiteId]++;
+      });
       height = Math.max(height, c.prerequisites?.length || 0);
     });
-    return height * 100 + 20;
+    const maxDep = Math.max(...Object.values(dep), height);
+    return maxDep * 100 + 20;
   }
 });
 

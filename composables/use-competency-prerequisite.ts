@@ -2,8 +2,8 @@
 export type CompetencyPrerequisiteModel = GraphQLModel & {
   competencyId: string;
   prerequisiteId: string;
-  competency?: CompetencyModel;
-  prerequisite?: CompetencyModel;
+  competency: CompetencyModel | undefined;
+  prerequisite: CompetencyModel  | undefined;
 };
 
 export default function () {

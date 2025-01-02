@@ -69,6 +69,12 @@ export default function () {
     return calls.delete(model, options) as Promise<CompetencyModel>;
   };
 
+  const update = async (input: GraphQLModel, options: GraphQLOptions = {}) => {
+    // keep only known fields
+    input = calls.pick(input, [ 'id', 'name', 'description', 'objectives', 'subjectId']);
+    return calls.update(input, options);
+  };
+
   const createWithAI = async (competency: CompetencyModel, locale: Locale = "en") => {
     const response = await queryCompetency(
       competency.name,
@@ -147,6 +153,7 @@ export default function () {
 
   return {
     ...calls,
+    update,
     delete: del,
     createWithAI,
     sort

@@ -77,6 +77,12 @@ export default function () {
     return calls.delete(model, options) as Promise<ConceptModel>;
   };
 
+  const update = async (input: GraphQLModel, options: GraphQLOptions = {}) => {
+    // keep only known fields
+    input = calls.pick(input, [ 'id', 'name', 'description', 'objectives', 'theory', 'examples', 'competencyId']);
+    return calls.update(input, options);
+  };
+
   const createWithAI = async (concept: ConceptModel, locale: Locale = "en") => {
     const response = await queryConcept(
       concept.name,
@@ -95,7 +101,7 @@ export default function () {
     if (response.examples){
       concept.examples = response.examples
     }
-    await calls.update(concept);
+    await update(concept);
 
     // Step 2 create the flashcards
     concept.flashCards = await Promise.all(
@@ -114,8 +120,7 @@ export default function () {
   const addQuizWithAI = async (concept: ConceptModel, level: number, locale: Locale = "en") => {
     const name = concept.name;
     const summary = concept.description;
-    const objectives = concept.objectives
-      .filter(Boolean) as string[];
+    const objectives = concept.objectives.filter(Boolean);
     const theory = concept.theory;
     const examples = concept.examples;
 
@@ -126,7 +131,8 @@ export default function () {
     const response = await queryQuiz(name, summary, objectives, theory, examples, level, locale);
     console.log("response", response);
 
-    const questions = await Promise.all(response.map((q) =>
+    const filteredResponse = response.filter((q) => q.text && q.answers?.length && q.type);
+    const questions = await Promise.all(filteredResponse.map((q) =>
       question.create({
         text: q.text,
         explanations: q.explanations,
@@ -177,6 +183,7 @@ export default function () {
   return {
     ...calls,
     delete: del,
+    update,
     createWithAI,
     addQuizWithAI,
     sort

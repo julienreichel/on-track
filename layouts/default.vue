@@ -146,7 +146,11 @@ const logout = async () => {
     message: "Logging out",
     icon: "logout",
   });
-  signOut();
+  try {
+    await signOut();
+  } catch (error) {
+    console.error("Failed to logout:", error);
+  }
   router.push("/login");
 };
 </script>
