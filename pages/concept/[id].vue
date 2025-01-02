@@ -1,5 +1,5 @@
 <template>
-  <div v-if="concept" class="q-pa-md">
+  <div v-if="concept" class="q-pa-sm">
     <concept-status
       :concept="concept"
       :concept-action="conceptAction"
@@ -81,7 +81,7 @@
           <div
             v-for="flashCard in concept.flashCards"
             :key="flashCard.id"
-            class="col"
+            class="col-12 col-sm-6 col-md"
           >
             <flashcard-view
               :flash-card="flashCard"
@@ -103,7 +103,7 @@
         v-if="teacherMode || concept.questions?.length"
         header-class="text-h3"
         group="concept"
-        :content-inset-level="0.5"
+        :content-inset-level="teacherMode ? 0.5 : 0"
       >
         <template #header>
           <q-item-section> Quiz </q-item-section>

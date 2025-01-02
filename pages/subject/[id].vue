@@ -1,5 +1,5 @@
 <template>
-  <div v-if="subject" class="q-pa-md">
+  <div v-if="subject" class="q-pa-sm">
     <h1>{{ subject.name }}</h1>
     <p v-if="subject.description" style="max-width:600px" >{{ subject.description }}</p>
     <q-btn v-else @click="generateSubjectData()">Generate</q-btn>

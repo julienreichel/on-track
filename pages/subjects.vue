@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md">
+  <div class="q-pa-sm">
     <div class="text-h3 q-mb-md">Subjects</div>
     <subject-cards :subjects="subjects" :allow-delete="teacherMode" @delete="deleteSubject"/>
   </div>

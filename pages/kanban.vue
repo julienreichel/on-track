@@ -1,22 +1,22 @@
 <template>
-  <div class="q-pa-md" style="min-width: 1024px;">
+  <div class="q-pa-sm" style="min-width: 1024px;">
     <div class="text-h3 q-mb-md">Kanban Board</div>
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section>
+    <q-card flat bordered>
+      <q-card-section class="q-pa-sm">
         <q-spinner
           v-if="loading"
           color="primary"
           size="lg"
-          class="q-my-md text-center"
+          class="q-my-sm text-center"
         />
         <div v-else>
           <!-- Header Row with Column Titles -->
-          <div class="row q-col-gutter-md">
+          <div class="row q-col-gutter-sm">
             <div class="col-2">
               <div class="text-h5 text-center">Competency</div>
             </div>
             <div class="col-10">
-              <div class="row q-col-gutter-md">
+              <div class="row q-col-gutter-sm">
                 <div v-for="column in columns" :key="column" class="col">
                   <div class="text-h5 text-center">{{ column }}</div>
                 </div>
@@ -26,7 +26,7 @@
           <q-separator class="q-my-md" />
           <!-- Rows for Competencies -->
           <div v-for="(competency, competencyId) in board" :key="competencyId">
-            <div class="row q-col-gutter-md">
+            <div class="row q-col-gutter-sm">
               <div class="col-2 q-pb-sm">
                 <q-card
                   flat
@@ -40,7 +40,7 @@
                 </q-card>
               </div>
               <div class="col-10">
-                <div class="row q-col-gutter-md">
+                <div class="row q-col-gutter-sm">
                   <div v-for="column in columns" :key="column" class="col">
                     <q-card
                       v-for="concept in competency.columns[column]"
@@ -129,11 +129,11 @@
     </q-card>
 
     <!-- Follow-Up Concepts Section -->
-    <div v-if="!loading" class="q-my-md">
+    <div v-if="!loading" class="q-my-sm">
       <div class="text-h5 q-mb-md">Backlog</div>
-      <q-card flat bordered>
-        <q-card-section>
-          <div class="row q-col-gutter-md">
+      <q-card flat>
+        <q-card-section class="q-pa-sm">
+          <div class="row q-col-gutter-sm">
             <div
               v-for="concept in followUpConcepts"
               :key="concept.id"

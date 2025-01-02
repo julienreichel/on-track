@@ -1,8 +1,7 @@
 <template>
-  <div class="q-pa-md">
-    <!-- Last 14 Days History Section -->
+  <div class="q-pa-sm">
     <div class="q-mb-lg">
-      <q-card flat class="q-pa-md">
+      <q-card flat>
         <q-card-section class="row q-col-gutter-sm">
           <div
             v-for="(day, idx) in history"

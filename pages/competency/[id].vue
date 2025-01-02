@@ -1,5 +1,5 @@
 <template>
-  <div v-if="competency" class="q-pa-md">
+  <div v-if="competency" class="q-pa-sm">
     <competency-flow
       :competencies="relatedCompetencies"
       :prerequisites="relatedLinks"
