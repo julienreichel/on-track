@@ -147,8 +147,6 @@ const generateConceptsData = async () => {
   await Promise.all( competency.value.concepts.map(async (c) => {
     if (!c.theory){
       await conceptService.createWithAI( c );
-    }
-    if (!c.questions?.length){
       await Promise.all(
         [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(c, l))
       );

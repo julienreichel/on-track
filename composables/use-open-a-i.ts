@@ -4,7 +4,6 @@ import competencyPrompt from "./prompts/competency";
 import conceptPrompt from "./prompts/concept";
 import quizPrompt from "./prompts/quiz";
 
-
 export type OpenAIRequest = GraphQLModel & {
   system?: string;
   prompt: string;
@@ -16,7 +15,7 @@ export type FlashCardResponse = {
   question: string;
   answer: string;
   notes?: string;
-}
+};
 
 export type ConceptResponse = {
   name: string;
@@ -26,21 +25,21 @@ export type ConceptResponse = {
   examples?: string;
   prerequisites: string[];
   flashcards: FlashCardResponse[];
-}
+};
 
 export type CompetencyResponse = {
   name: string;
   description: string;
   learning_objectives: string[];
   prerequisites: string[];
-}
+};
 
 // Define the structure of the Subject Response
 export type SubjectResponse = {
   name: string;
   description: string;
   competencies: CompetencyResponse[];
-}
+};
 
 export type SectionsResponse = {
   name: string;
@@ -48,7 +47,7 @@ export type SectionsResponse = {
   objectives: (string | undefined)[];
   theory: string | undefined;
   examples: string | undefined;
-}
+};
 
 export type QuizResponse = {
   id: string;
@@ -57,7 +56,7 @@ export type QuizResponse = {
   answers: { text: string; valid: boolean }[];
   level: string;
   explanations: string;
-}
+};
 
 export default function () {
   const { create, get } = useGraphqlQuery("OpenAIRequest");
@@ -101,12 +100,12 @@ export default function () {
     es: "Spanish",
     fr: "French",
     de: "German",
-  }
+  };
 
   const querySubject = async (
     subjectDescription: string,
     locale: Locale = "en"
-  ): Promise<SubjectResponse>  => {
+  ): Promise<SubjectResponse> => {
     const request: OpenAIRequest = {
       system: subjectPrompt.system(localeMap[locale]),
       prompt: subjectPrompt.prompt(subjectDescription),
@@ -121,7 +120,7 @@ export default function () {
     description: string,
     objectives: string[],
     locale: Locale = "en"
-  ): Promise<{concepts: ConceptResponse[]}>  => {
+  ): Promise<{ concepts: ConceptResponse[] }> => {
     const request: OpenAIRequest = {
       system: competencyPrompt.system(localeMap[locale]),
       prompt: competencyPrompt.prompt(name, description, objectives),
@@ -153,7 +152,7 @@ export default function () {
     const response = await query(request);
 
     function convertMarkdownToJSON(markdown: string): ConceptResponse {
-      const lines = markdown.split('\n');
+      const lines = markdown.split("\n");
       const response: ConceptResponse = {
         name: "",
         description: "",
@@ -164,33 +163,56 @@ export default function () {
         flashcards: [],
       };
 
-      let currentSection: 'description' | 'objectives' | 'theory' | 'examples' | 'flashcards' | null = null;
-      let currentFlashcard: { question: string; answer: string; notes?: string } | null = null;
+      let currentSection:
+        | "description"
+        | "objectives"
+        | "theory"
+        | "examples"
+        | "flashcards"
+        | null = null;
+      let currentFlashcard: {
+        question: string;
+        answer: string;
+        notes?: string;
+      } | null = null;
 
       lines.forEach((line) => {
-        if (line.startsWith('# ')) {
-          response.name = line.replace('# ', '').trim();
-        } else if (line.startsWith('### ')) {
-          currentSection = line.replace('### ', '').trim().toLowerCase() as 'description' | 'objectives' | 'theory' | 'examples' | 'flashcards';
-        } else if(currentSection === 'objectives'){
-          if (line.startsWith('- ')) {
-            response.learning_objectives.push(line.replace('- ', '').trim());
+        if (line.startsWith("# ")) {
+          response.name = line.replace("# ", "").trim();
+        } else if (line.startsWith("### ")) {
+          currentSection = line.replace("### ", "").trim().toLowerCase() as
+            | "description"
+            | "objectives"
+            | "theory"
+            | "examples"
+            | "flashcards";
+        } else if (currentSection === "objectives") {
+          if (line.startsWith("- ")) {
+            response.learning_objectives.push(line.replace("- ", "").trim());
           }
-        } else if(currentSection === 'flashcards') {
-          if (line.startsWith('- **Question:**')) {
+        } else if (currentSection === "flashcards") {
+          if (line.startsWith("- **Question:**")) {
             if (currentFlashcard) {
               response.flashcards.push(currentFlashcard);
             }
-            currentFlashcard = { question: line.replace('- **Question:**', '').trim(), answer: "" };
+            currentFlashcard = {
+              question: line.replace("- **Question:**", "").trim(),
+              answer: "",
+            };
           } else if (currentFlashcard) {
-            if (line.trim().startsWith('**Answer:**')) {
-              currentFlashcard.answer = line.replace('**Answer:**', '').trim();
-            } else if (line.trim().startsWith('**Notes:**')) {
-              currentFlashcard.notes = line.replace('**Notes:**', '').trim();
+            if (line.trim().startsWith("**Answer:**")) {
+              currentFlashcard.answer = line.replace("**Answer:**", "").trim();
+            } else if (line.trim().startsWith("**Notes:**")) {
+              currentFlashcard.notes = line.replace("**Notes:**", "").trim();
             }
           }
-        } else if (line.trim() && (currentSection === 'theory' || currentSection === 'examples' || currentSection === 'description')) {
-            response[currentSection] += `${line.trim()}\n`;
+        } else if (
+          line.trim() &&
+          (currentSection === "theory" ||
+            currentSection === "examples" ||
+            currentSection === "description")
+        ) {
+          response[currentSection] += `${line.trim()}\n`;
         }
       });
 
@@ -202,8 +224,16 @@ export default function () {
       // Clean up trailing newlines
       response.description = response.description?.trim();
       // openAi has a tendancy to not repsect the markdown headers, so we fix it here
-      response.theory = response.theory?.trim().replaceAll("#### ", "##### ");
-      response.examples = response.examples?.trim().replaceAll("#### ", "##### ");
+      response.theory = response.theory
+        ?.trim()
+        .replaceAll("#### ", "##### ")
+        .replaceAll("###### ", "##### ")
+        .replace(/^(?:\d+\.\s*)?\*\*(.*?)\*\*$/gm, "##### $1");
+      response.examples = response.examples
+        ?.trim()
+        .replaceAll("#### ", "##### ")
+        .replaceAll("###### ", "##### ")
+        .replace(/^(?:\d+\.\s*)?\*\*(.*?)\*\*$/gm, "##### $1");
 
       return response;
     }
@@ -213,9 +243,14 @@ export default function () {
   };
 
   const queryQuiz = async (
-    name: string, summary: string, objectives: string[], theory: string, examples: string, difficultyLevel: number, locale: Locale = "en"
+    name: string,
+    summary: string,
+    objectives: string[],
+    theory: string,
+    examples: string,
+    difficultyLevel: number,
+    locale: Locale = "en"
   ): Promise<QuizResponse[]> => {
-
     const request: OpenAIRequest = {
       system: quizPrompt.system(difficultyLevel, localeMap[locale]),
       prompt: quizPrompt.prompt(name, summary, objectives, theory, examples),
@@ -225,7 +260,7 @@ export default function () {
     const response = await query(request);
 
     return response.questions;
-  }
+  };
 
   return { query, querySubject, queryCompetency, queryConcept, queryQuiz };
 }

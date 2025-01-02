@@ -91,7 +91,7 @@
         </div>
         <q-banner
           v-if="!conceptAction?.usedFlashCards?.length"
-          class="bg-secondary q-mt-md"
+          class="bg-secondary q-mt-md text-white"
         >
           Test yourself using flashcards, then mark them as correct
           <q-icon class="text-positive" name="check" /> or incorrect
@@ -138,6 +138,7 @@
       </q-expansion-item>
       <q-expansion-item
         v-if="!conceptAction?.inProgress && conceptAction?.objectives?.length"
+        v-model="openObjective"
         label="Objectives"
         header-class="text-h3"
         group="concept"
@@ -149,6 +150,20 @@
           :disabled="disableObjectives"
           @check-objective="updateObjective"
         />
+        <q-banner
+          v-if="!conceptAction.objectives.some((o) => o.isDone)"
+          class="bg-secondary q-mt-md text-white"
+        >
+          Have you met your objectives?
+        </q-banner>
+      </q-expansion-item>
+      <q-expansion-item
+        v-if="!conceptAction?.inProgress"
+        label="Next steps"
+        header-class="text-h3"
+        group="concept"
+      >
+      <concept-cards :concepts="nextConcepts"/>
       </q-expansion-item>
     </q-list>
   </div>
@@ -208,6 +223,14 @@ const relatedConcepts = computed(() => {
     concept.value.followUps.forEach((f) => relatedConcepts.push(f.concept));
   }
   return relatedConcepts;
+});
+
+const nextConcepts = computed(() => {
+  const nextConcepts = [];
+  if (concept.value?.followUps) {
+    concept.value.followUps.forEach((f) => nextConcepts.push(f.concept));
+  }
+  return nextConcepts;
 });
 
 const relatedLinks = computed(() => {
@@ -365,8 +388,9 @@ const updateFlashCard = async (flashCardId, status) => {
   await conceptActionService.update(conceptAction.value);
 };
 
-const updateQuestionsFinished = (p) => {
-  console.log("Questions finished", p);
+const openObjective = ref(false);
+const updateQuestionsFinished = () => {
+  openObjective.value = true;
 };
 
 const updateQuestionsProgress = async (questions) => {
