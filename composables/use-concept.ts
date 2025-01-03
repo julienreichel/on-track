@@ -14,6 +14,7 @@ export type ConceptModel = GraphQLModel & {
   prerequisites: ConceptPrerequisiteModel[];
   followUps: ConceptPrerequisiteModel[];
   competencyId: string;
+  competency: CompetencyModel;
 };
 
 
@@ -87,6 +88,8 @@ export default function () {
 
   const createWithAI = async (concept: ConceptModel) => {
     const response = await queryConcept(
+      concept.competency?.name,
+      concept.competency?.description,
       concept.name,
       concept.description,
       concept.objectives,

@@ -5,6 +5,7 @@ export type CompetencyModel = GraphQLModel & {
   locale: Locale;
   objectives: string[];
   subjectId: string;
+  subject: SubjectModel;
   concepts: ConceptModel[];
   prerequisites: CompetencyPrerequisiteModel[];
   followUps: CompetencyPrerequisiteModel[];
@@ -79,6 +80,8 @@ export default function () {
 
   const createWithAI = async (competency: CompetencyModel) => {
     const response = await queryCompetency(
+      competency.subject?.name,
+      competency.subject?.description,
       competency.name,
       competency.description,
       competency.objectives,

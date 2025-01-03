@@ -37,8 +37,8 @@ Output the response in a structured JSON format, as shown below:
 ${language}
 `;
 
-const prompt = (name: string, description: string, objectives: string[]): string => `
-Your task is to break down the provided competency into three to seven foundational concepts.
+const prompt = (subjectName: string, subjectDescription: string, name: string, description: string, objectives: string[]): string => `
+Your task is to break down the provided competency (which is part of the provided subject) into three to seven foundational concepts.
 
 For each concept:
 1. Provide a **name** that clearly identifies the concept.
@@ -66,6 +66,12 @@ Return the output in the following JSON format:
     ...
   ]
 }
+
+** Subject name **
+${subjectName}
+
+** Subject description **
+${subjectDescription}
 
 ** Competency name **
 ${name}
