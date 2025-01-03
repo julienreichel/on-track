@@ -1,5 +1,5 @@
 <template>
-  <div v-if="competency" class="q-pa-sm">
+  <div v-if="competency" class="q-pa-sm q-gutter-sm">
     <competency-flow
       :competencies="relatedCompetencies"
       :prerequisites="relatedLinks"
@@ -12,10 +12,17 @@
 
     <p v-if="competency.description" style="max-width:600px" >{{ competency.description }}</p>
 
-    <div v-if="competency.objectives?.length">
-      <h3>Objectives</h3>
-      <objective-list :objectives="competency.objectives" />
-    </div>
+    <q-btn v-if="!teacherMode && !showQuiz" :label="quizLabel" color="primary" class="q-my-md" @click="startPreCheck" />
+
+    <quiz-runner
+      v-if="showQuiz"
+      :questions="questions"
+      :max="20"
+      always-show-hints
+      @finished="updateQuestionsFinished"
+      @results="updateQuestionsResults"
+      @progress="updateQuestionsProgress"
+    />
 
     <h3>Concepts</h3>
     <div v-if="competency.concepts?.length">
@@ -26,11 +33,13 @@
         class="gt-xs"
       />
       <concept-cards :concepts="competency.concepts" :allow-delete="teacherMode" @delete="deleteConcept"/>
-      <q-btn v-if="teacherMode && competency.concepts.some(s => !s.theory)" @click="generateConceptsData()">Populate</q-btn>
+      <q-btn v-if="teacherMode && competency.concepts.some(s => !s.theory)" @click="generateConceptsData">Populate</q-btn>
     </div>
     <div v-else-if="teacherMode">
-      <q-btn @click="generateCompetencyData()">Generate</q-btn>
+      <q-btn @click="generateCompetencyData">Generate</q-btn>
     </div>
+
+
   </div>
   <div v-else>
     <p>Loading...</p>
@@ -40,77 +49,101 @@
 <script setup>
 const competencyService = useCompetency();
 const conceptService = useConcept();
+const competencyActionService = useCompetencyAction();
 const route = useRoute();
 const { loading, screen } = useQuasar();
+const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
 const teacherMode = inject('teacherMode');
 
 const competency = ref(null);
+const questions = ref([]);
+const showQuiz = ref(false);
+const competencyAction = ref(null);
 
 onMounted(async () => {
   try {
     const competencyId = route.params.id;
     competency.value = await competencyService.get(competencyId);
+
+    // Check or create CompetencyAction
+    console.log("teacherMode", teacherMode.value);
+    if (!teacherMode.value) {
+      const { userId, username } = await getCurrentUser();
+      const actions = await competencyActionService.list({
+        competencyId,
+        userId,
+        username,
+      });
+      if (actions.length) {
+        competencytAction.value = actions[0];
+      } else {
+        competencyAction.value = await competencyActionService.create({
+          competencyId
+        });
+      }
+    }
+
   } catch (error) {
     console.error("Failed to fetch competency:", error);
   }
 
-  if (competency.value?.concepts){
+  if (competency.value?.concepts) {
     conceptService.sort(competency.value.concepts);
   }
-
 });
 
 const direction = computed(() => screen.lt.sm ? "TB" : "LR");
 
 const relatedCompetencies = computed(() => {
   const relatedCompetencies = [competency.value];
-  if (competency.value?.prerequisites){
+  if (competency.value?.prerequisites) {
     competency.value.prerequisites.forEach((p) => relatedCompetencies.push(p.prerequisite));
   }
-  if (competency.value?.followUps){
+  if (competency.value?.followUps) {
     competency.value.followUps.forEach((f) => relatedCompetencies.push(f.competency));
   }
   return relatedCompetencies;
 });
+
 const relatedLinks = computed(() => {
   const relatedLinks = [];
 
-  if (competency.value?.prerequisites){
-    competency.value.prerequisites.forEach((p) => relatedLinks.push({ id: p.prerequisite.id, prerequisiteId: p.prerequisite.id, competencyId: competency.value.id}));
+  if (competency.value?.prerequisites) {
+    competency.value.prerequisites.forEach((p) => relatedLinks.push({ id: p.prerequisite.id, prerequisiteId: p.prerequisite.id, competencyId: competency.value.id }));
   }
-  if (competency.value?.followUps){
-    competency.value.followUps.forEach((f) => relatedLinks.push({ id: f.competency.id, prerequisiteId: competency.value.id, competencyId: f.competency.id}));
+  if (competency.value?.followUps) {
+    competency.value.followUps.forEach((f) => relatedLinks.push({ id: f.competency.id, prerequisiteId: competency.value.id, competencyId: f.competency.id }));
   }
   return relatedLinks;
 });
 
 const height = computed(() => {
-  if (screen.lt.sm){
+  if (screen.lt.sm) {
     const hasPre = competency.value?.prerequisites?.length ? 1 : 0;
-    const hasFollow = competency.value?.followUps?.length ? 1: 0;
+    const hasFollow = competency.value?.followUps?.length ? 1 : 0;
     return hasPre * 100 + hasFollow * 100 + 120;
-  } else{
+  } else {
     return Math.max(competency.value?.prerequisites?.length || 0, competency.value?.followUps?.length || 0) * 100 + 20;
   }
 });
 
 const heightConcepts = computed(() => {
-  if (!competency.value?.concepts?.length){
+  if (!competency.value?.concepts?.length) {
     return 0;
   }
   const concepts = competency.value.concepts;
-  if (screen.lt.sm){
+  if (screen.lt.sm) {
     return concepts[concepts.length - 1].order * 150;
   } else {
     let height = 1;
-    const dep = {}
+    const dep = {};
     concepts.forEach((c) => {
-      if (!c.prerequisites?.length){
+      if (!c.prerequisites?.length) {
         return;
       }
       c.prerequisites.forEach((p) => {
-        if (!dep[p.prerequisiteId]){
+        if (!dep[p.prerequisiteId]) {
           dep[p.prerequisiteId] = 0;
         }
         dep[p.prerequisiteId]++;
@@ -118,18 +151,54 @@ const heightConcepts = computed(() => {
       height = Math.max(height, c.prerequisites.length || 0);
     });
     const maxDep = Math.max(...Object.values(dep), height);
-    console.log(dep);
     return maxDep * 100 + 20;
   }
 });
 
+const startPreCheck = async () => {
+  try {
+    loading.show();
+    const extendedCompetency = await competencyService.get(competency.value.id, { selectionSet: ['concepts.questions.*']});
+    questions.value = extendedCompetency.concepts.flatMap(c => c.questions);
+    showQuiz.value = true;
+  } catch (error) {
+    console.error("Error starting pre-check:", error);
+  } finally {
+    loading.hide();
+  }
+};
+
+const updateQuestionsFinished = () => {
+  showQuiz.value = false;
+};
+
+const quizLabel = computed(() => {
+  if (teacherMode.value || !competencyAction.value || !competencyAction.value.actionTimestamps?.length) {
+    return "Pre Check";
+  }
+  const finished = competencyAction.value.actionTimestamps.some( (a) => a.actionType === "finished")
+  return finished ? "Final Quiz" : "Test";
+});
+const updateQuestionsProgress = async (questions) => {
+  if (teacherMode.value || !competencyAction.value) {
+    return;
+  }
+  return competencyActionService.updateQuestionsProgress(questions, competencyAction.value);
+};
+const updateQuestionsResults = async () => {
+  if (teacherMode.value || !competencyAction.value) {
+    return;
+  }
+  return competencyActionService.updateQuestionsResults(competencyAction.value);
+};
+
 const generateCompetencyData = async () => {
   loading.show();
 
-  competency.value = await competencyService.createWithAI( competency.value );
+  competency.value = await competencyService.createWithAI(competency.value);
 
   loading.hide();
-}
+};
 
 const deleteConcept = async (concept) => {
   loading.show();
@@ -139,14 +208,14 @@ const deleteConcept = async (concept) => {
   competency.value.concepts = competency.value.concepts.filter((s) => s.id !== concept.id);
 
   loading.hide();
-}
+};
 
 const generateConceptsData = async () => {
   loading.show();
 
-  await Promise.all( competency.value.concepts.map(async (c) => {
-    if (!c.theory){
-      await conceptService.createWithAI( c );
+  await Promise.all(competency.value.concepts.map(async (c) => {
+    if (!c.theory) {
+      await conceptService.createWithAI(c);
       await Promise.all(
         [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(c, l))
       );
@@ -154,9 +223,9 @@ const generateConceptsData = async () => {
   }));
 
   loading.hide();
-}
+};
 </script>
 
 <style scoped>
-/* Add your styles here */
+
 </style>

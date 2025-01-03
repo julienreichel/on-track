@@ -93,6 +93,8 @@ const schema = a.schema({
       concepts: a.hasMany("Concept", "competencyId"),
       prerequisites: a.hasMany("CompetencyDependency", "competencyId"),
       followUps: a.hasMany("CompetencyDependency", "prerequisiteId"),
+
+      competencyActions: a.hasMany("CompetencyAction", "competencyId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
@@ -156,6 +158,26 @@ const schema = a.schema({
     .secondaryIndexes((index) => [
       index("owner").name("byOwner").sortKeys(["createdAt"]),
       index("conceptId").name("byConcept").sortKeys(["owner"])
+    ])
+    .authorization((allow) => [
+      allow.owner(),
+      allow.authenticated().to(["read"]),
+    ]),
+
+    CompetencyAction: a
+    .model({
+      id: a.id().required(),
+      createdAt: a.datetime(),
+      owner: a.string(),
+      competencyId: a.id().required(),
+      competency: a.belongsTo("Competency", "competencyId"),
+
+      answeredQuestions: a.ref("QuestionAction").array(),
+      actionTimestamps: a.ref("ActionTimestamp").array(),
+    })
+    .secondaryIndexes((index) => [
+      index("owner").name("byOwner").sortKeys(["createdAt"]),
+      index("competencyId").name("byCompetency").sortKeys(["owner"])
     ])
     .authorization((allow) => [
       allow.owner(),

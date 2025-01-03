@@ -154,6 +154,7 @@ const props = defineProps({
   nextActionsIcon: { type: String, default: "check" },
   prevActionsIcon: { type: String, default: "" },
   title: { type: String, default: null },
+  alwaysShowHints: { type: Boolean, default: false },
 });
 const emit = defineEmits(["finished", "results", "progress"]);
 
@@ -222,7 +223,7 @@ const nextCliked = () => {
   } else {
     const valid = validateAnswers(question.value);
     emit("progress", [...activeQuestions.value]);
-    if (valid) {
+    if (valid && !alwaysShowHints.value) {
       step.value++;
     }
   }
