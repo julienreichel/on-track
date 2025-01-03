@@ -5,6 +5,7 @@ export type ConceptModel = GraphQLModel & {
   id: string;
   name: string;
   description: string;
+  locale: Locale;
   objectives: string[];
   theory: string;
   examples: string;
@@ -30,6 +31,7 @@ export default function () {
     'objectives',
     'theory',
     'examples',
+    "locale",
 
     'questions.*',
     'flashCards.*',
@@ -83,12 +85,12 @@ export default function () {
     return calls.update(input, options);
   };
 
-  const createWithAI = async (concept: ConceptModel, locale: Locale = "en") => {
+  const createWithAI = async (concept: ConceptModel) => {
     const response = await queryConcept(
       concept.name,
       concept.description,
       concept.objectives,
-      locale
+      concept.locale
     );
     console.log("queryConcept", response);
 

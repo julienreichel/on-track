@@ -2,6 +2,7 @@ export type CompetencyModel = GraphQLModel & {
   id: string;
   name: string;
   description: string;
+  locale: Locale;
   objectives: string[];
   subjectId: string;
   concepts: ConceptModel[];
@@ -21,6 +22,7 @@ export default function () {
     'name',
     'description',
     'objectives',
+    "locale",
 
     'subjectId',
     'subject.*',
@@ -75,12 +77,12 @@ export default function () {
     return calls.update(input, options);
   };
 
-  const createWithAI = async (competency: CompetencyModel, locale: Locale = "en") => {
+  const createWithAI = async (competency: CompetencyModel) => {
     const response = await queryCompetency(
       competency.name,
       competency.description,
       competency.objectives,
-      locale
+      competency.locale
     );
     console.log("queryCompetency", response);
 
@@ -92,6 +94,7 @@ export default function () {
         concept.create({
           name: c.name,
           description: c.description,
+          locale: competency.locale,
           objectives: c.learning_objectives,
           competencyId: competency.id,
         }) as Promise<ConceptModel>

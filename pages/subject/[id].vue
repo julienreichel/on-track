@@ -57,8 +57,10 @@ const height = computed(() => {
   } else {
     const dep = {};
     let height = 1;
+    let starters = 0;
     competencies?.forEach((c) => {
       if (!c.prerequisites?.length){
+        starters++;
         return;
       }
       c.prerequisites.forEach((p) => {
@@ -69,7 +71,7 @@ const height = computed(() => {
       });
       height = Math.max(height, c.prerequisites?.length || 0);
     });
-    const maxDep = Math.max(...Object.values(dep), height);
+    const maxDep = Math.max(...Object.values(dep), height, starters);
     return maxDep * 100 + 20;
   }
 });

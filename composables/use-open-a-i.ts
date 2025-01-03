@@ -147,7 +147,7 @@ export default function () {
     const request: OpenAIRequest = {
       system: conceptPrompt.system(localeMap[locale]),
       prompt: conceptPrompt.prompt(name, description, objectives),
-      token: 2000,
+      token: 4000,
     };
     const response = await query(request);
 
@@ -191,27 +191,22 @@ export default function () {
             response.learning_objectives.push(line.replace("- ", "").trim());
           }
         } else if (currentSection === "flashcards") {
-          if (line.startsWith("- **Question:**")) {
+          if (line.startsWith("- **Question:**") || line.startsWith("- **Question :**")) {
             if (currentFlashcard) {
               response.flashcards.push(currentFlashcard);
             }
             currentFlashcard = {
-              question: line.replace("- **Question:**", "").trim(),
+              question: line.replace("- **Question:**", "").replace("- **Question :**", "").trim(),
               answer: "",
             };
           } else if (currentFlashcard) {
-            if (line.trim().startsWith("**Answer:**")) {
-              currentFlashcard.answer = line.replace("**Answer:**", "").trim();
-            } else if (line.trim().startsWith("**Notes:**")) {
-              currentFlashcard.notes = line.replace("**Notes:**", "").trim();
+            if (line.trim().startsWith("**Answer:**") || line.trim().startsWith("**Answer :**")) {
+              currentFlashcard.answer = line.replace("**Answer:**", "").replace("**Answer :**", "").trim();
+            } else if (line.trim().startsWith("**Notes:**") || line.trim().startsWith("**Notes :**")) {
+              currentFlashcard.notes = line.replace("**Notes:**", "").replace("**Notes :**", "").trim();
             }
           }
-        } else if (
-          line.trim() &&
-          (currentSection === "theory" ||
-            currentSection === "examples" ||
-            currentSection === "description")
-        ) {
+        } else if (currentSection === "theory" || currentSection === "examples" || currentSection === "description") {
           response[currentSection] += `${line.trim()}\n`;
         }
       });
@@ -228,12 +223,12 @@ export default function () {
         ?.trim()
         .replaceAll("#### ", "##### ")
         .replaceAll("###### ", "##### ")
-        .replace(/^(?:\d+\.\s*)?\*\*(.*?)\*\*$/gm, "##### $1");
+        //.replace(/^(?:\d+\.\s*)?\*\*(.*?)\*\*$/gm, "##### $1");
       response.examples = response.examples
         ?.trim()
         .replaceAll("#### ", "##### ")
         .replaceAll("###### ", "##### ")
-        .replace(/^(?:\d+\.\s*)?\*\*(.*?)\*\*$/gm, "##### $1");
+        //.replace(/^(?:\d+\.\s*)?\*\*(.*?)\*\*$/gm, "##### $1");
 
       return response;
     }

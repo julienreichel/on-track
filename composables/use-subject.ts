@@ -2,6 +2,7 @@ export type SubjectModel = GraphQLModel & {
   id: string;
   name: string;
   description: string;
+  locale: Locale;
   competencies: CompetencyModel[];
 };
 
@@ -14,6 +15,7 @@ export default function () {
     "id",
     "name",
     "description",
+    "locale",
 
     "competencies.*",
     'competencies.prerequisites.*',
@@ -66,6 +68,7 @@ export default function () {
     const newSubject = await calls.create({
       name: response.name,
       description: response.description,
+      locale
     }) as SubjectModel;
 
     // step 2 create the competencies
@@ -74,6 +77,7 @@ export default function () {
         competency.create({
           name: comp.name,
           description: comp.description,
+          locale,
           objectives: comp.learning_objectives,
           subjectId: newSubject.id,
         }) as Promise<CompetencyModel>
@@ -97,7 +101,7 @@ export default function () {
             }
           })
         );
-        currentCompetency.prerequisites = prereqs.filter(Boolean) as ConceptPrerequisiteModel[];
+        currentCompetency.prerequisites = prereqs.filter(Boolean) as CompetencyPrerequisiteModel[];
       })
     );
 

@@ -57,6 +57,7 @@ const schema = a.schema({
       id: a.id().required(),
       name: a.string(),
       description: a.string(),
+      locale: a.string(),
       objectives: a.string().array(),
       theory: a.string(),
       examples: a.string(),
@@ -85,6 +86,7 @@ const schema = a.schema({
       id: a.id().required(),
       name: a.string(),
       description: a.string(),
+      locale: a.string(),
       objectives: a.string().array(),
       subjectId: a.id().required(),
       subject: a.belongsTo("Subject", "subjectId"),
@@ -107,6 +109,7 @@ const schema = a.schema({
     .model({
       id: a.id().required(),
       name: a.string(),
+      locale: a.string(),
       description: a.string(),
       competencies: a.hasMany("Competency", "subjectId"),
     })
