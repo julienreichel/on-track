@@ -4,18 +4,27 @@
       :competencies="relatedCompetencies"
       :prerequisites="relatedLinks"
       :direction="direction"
-      :style="{height: `${height}px`, width: '100%' }"
+      :style="{ height: `${height}px`, width: '100%' }"
       class="gt-xs"
     />
     <subject-list :subjects="[competency.subject]" />
     <h1>{{ competency.name }}</h1>
 
-    <p v-if="competency.description" style="max-width:600px" >{{ competency.description }}</p>
+    <p v-if="competency.description" style="max-width: 600px">
+      {{ competency.description }}
+    </p>
 
-    <q-btn v-if="!teacherMode && !showQuiz" :label="quizLabel" color="primary" class="q-my-md" @click="startPreCheck" />
+    <q-btn
+      v-if="!teacherMode && !showQuiz"
+      :label="quizLabel"
+      color="primary"
+      class="q-my-md"
+      @click="startPreCheck"
+    />
 
     <quiz-runner
       v-if="showQuiz"
+      :answered-questions="answeredQuestions"
       :questions="questions"
       :max="20"
       always-show-hints
@@ -29,17 +38,23 @@
       <concept-flow
         :concepts="competency.concepts"
         :direction="direction"
-        :style="{height: `${heightConcepts}px`, width: '100%' }"
+        :style="{ height: `${heightConcepts}px`, width: '100%' }"
         class="gt-xs"
       />
-      <concept-cards :concepts="competency.concepts" :allow-delete="teacherMode" @delete="deleteConcept"/>
-      <q-btn v-if="teacherMode && competency.concepts.some(s => !s.theory)" @click="generateConceptsData">Populate</q-btn>
+      <concept-cards
+        :concepts="competency.concepts"
+        :allow-delete="teacherMode"
+        @delete="deleteConcept"
+      />
+      <q-btn
+        v-if="teacherMode && competency.concepts.some((s) => !s.theory)"
+        @click="generateConceptsData"
+        >Populate</q-btn
+      >
     </div>
     <div v-else-if="teacherMode">
       <q-btn @click="generateCompetencyData">Generate</q-btn>
     </div>
-
-
   </div>
   <div v-else>
     <p>Loading...</p>
@@ -54,13 +69,21 @@ const route = useRoute();
 const { loading, screen } = useQuasar();
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
-const teacherMode = inject('teacherMode');
+const teacherMode = inject("teacherMode");
 
 const competency = ref(null);
 const questions = ref([]);
+const answeredQuestions = ref([]);
 const showQuiz = ref(false);
 const competencyAction = ref(null);
 
+
+const getLastQuizTime = (action) => {
+  return action.actionTimestamps?.reduce((acc, a) => {
+    const time = new Date(a.createdAt).getTime();
+    return time > acc ? time : acc;
+  }, 0) || 0;
+};
 onMounted(async () => {
   try {
     const competencyId = route.params.id;
@@ -76,11 +99,18 @@ onMounted(async () => {
         username,
       });
       if (actions.length) {
-        competencytAction.value = actions[0];
+        competencyAction.value = actions[0];
       } else {
         competencyAction.value = await competencyActionService.create({
-          competencyId
+          competencyId,
         });
+      }
+      const lastQuizTime = getLastQuizTime(competencyAction.value);
+      const inProgress = competencyAction.value.answeredQuestions?.some(
+        (q) => new Date(q.createdAt).getTime() > lastQuizTime
+      );
+      if (inProgress) {
+        startPreCheck();
       }
     }
 
@@ -93,15 +123,19 @@ onMounted(async () => {
   }
 });
 
-const direction = computed(() => screen.lt.sm ? "TB" : "LR");
+const direction = computed(() => (screen.lt.sm ? "TB" : "LR"));
 
 const relatedCompetencies = computed(() => {
   const relatedCompetencies = [competency.value];
   if (competency.value?.prerequisites) {
-    competency.value.prerequisites.forEach((p) => relatedCompetencies.push(p.prerequisite));
+    competency.value.prerequisites.forEach((p) =>
+      relatedCompetencies.push(p.prerequisite)
+    );
   }
   if (competency.value?.followUps) {
-    competency.value.followUps.forEach((f) => relatedCompetencies.push(f.competency));
+    competency.value.followUps.forEach((f) =>
+      relatedCompetencies.push(f.competency)
+    );
   }
   return relatedCompetencies;
 });
@@ -110,10 +144,22 @@ const relatedLinks = computed(() => {
   const relatedLinks = [];
 
   if (competency.value?.prerequisites) {
-    competency.value.prerequisites.forEach((p) => relatedLinks.push({ id: p.prerequisite.id, prerequisiteId: p.prerequisite.id, competencyId: competency.value.id }));
+    competency.value.prerequisites.forEach((p) =>
+      relatedLinks.push({
+        id: p.prerequisite.id,
+        prerequisiteId: p.prerequisite.id,
+        competencyId: competency.value.id,
+      })
+    );
   }
   if (competency.value?.followUps) {
-    competency.value.followUps.forEach((f) => relatedLinks.push({ id: f.competency.id, prerequisiteId: competency.value.id, competencyId: f.competency.id }));
+    competency.value.followUps.forEach((f) =>
+      relatedLinks.push({
+        id: f.competency.id,
+        prerequisiteId: competency.value.id,
+        competencyId: f.competency.id,
+      })
+    );
   }
   return relatedLinks;
 });
@@ -124,7 +170,14 @@ const height = computed(() => {
     const hasFollow = competency.value?.followUps?.length ? 1 : 0;
     return hasPre * 100 + hasFollow * 100 + 120;
   } else {
-    return Math.max(competency.value?.prerequisites?.length || 0, competency.value?.followUps?.length || 0) * 100 + 20;
+    return (
+      Math.max(
+        competency.value?.prerequisites?.length || 0,
+        competency.value?.followUps?.length || 0
+      ) *
+        100 +
+      20
+    );
   }
 });
 
@@ -158,8 +211,30 @@ const heightConcepts = computed(() => {
 const startPreCheck = async () => {
   try {
     loading.show();
-    const extendedCompetency = await competencyService.get(competency.value.id, { selectionSet: ['concepts.questions.*']});
-    questions.value = extendedCompetency.concepts.flatMap(c => c.questions);
+    const extendedCompetency = await competencyService.get(
+      competency.value.id,
+      { selectionSet: ["concepts.questions.*"] }
+    );
+    const allQuestion = extendedCompetency.concepts.flatMap((c) => c.questions);
+    if (competencyAction.value) {
+      const action = competencyAction.value;
+      const lastQuizTime = getLastQuizTime(action);
+      const prevQuizQuestionsIds =
+        action.answeredQuestions?.filter(
+            (q) => new Date(q.createdAt).getTime() <= lastQuizTime && q.isValid
+          )
+          .map((q) => q.questionId) || [];
+
+        answeredQuestions.value = action.answeredQuestions?.filter(
+          (q) => new Date(q.createdAt).getTime() > lastQuizTime
+        ) || [];
+
+      questions.value = allQuestion.filter(
+        (q) => !prevQuizQuestionsIds.includes(q.id)
+      );
+    } else {
+      questions.value = allQuestion;
+    }
     showQuiz.value = true;
   } catch (error) {
     console.error("Error starting pre-check:", error);
@@ -173,17 +248,26 @@ const updateQuestionsFinished = () => {
 };
 
 const quizLabel = computed(() => {
-  if (teacherMode.value || !competencyAction.value || !competencyAction.value.actionTimestamps?.length) {
+  if (
+    teacherMode.value ||
+    !competencyAction.value ||
+    !competencyAction.value.actionTimestamps?.length
+  ) {
     return "Pre Check";
   }
-  const finished = competencyAction.value.actionTimestamps.some( (a) => a.actionType === "finished")
+  const finished = competencyAction.value.actionTimestamps.some(
+    (a) => a.actionType === "finished"
+  );
   return finished ? "Final Quiz" : "Test";
 });
 const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !competencyAction.value) {
     return;
   }
-  return competencyActionService.updateQuestionsProgress(questions, competencyAction.value);
+  return competencyActionService.updateQuestionsProgress(
+    questions,
+    competencyAction.value
+  );
 };
 const updateQuestionsResults = async () => {
   if (teacherMode.value || !competencyAction.value) {
@@ -205,7 +289,9 @@ const deleteConcept = async (concept) => {
 
   await conceptService.delete(concept);
 
-  competency.value.concepts = competency.value.concepts.filter((s) => s.id !== concept.id);
+  competency.value.concepts = competency.value.concepts.filter(
+    (s) => s.id !== concept.id
+  );
 
   loading.hide();
 };
@@ -213,14 +299,16 @@ const deleteConcept = async (concept) => {
 const generateConceptsData = async () => {
   loading.show();
 
-  await Promise.all(competency.value.concepts.map(async (c) => {
-    if (!c.theory) {
-      await conceptService.createWithAI(c);
-      await Promise.all(
-        [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(c, l))
-      );
-    }
-  }));
+  await Promise.all(
+    competency.value.concepts.map(async (c) => {
+      if (!c.theory) {
+        await conceptService.createWithAI(c);
+        await Promise.all(
+          [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(c, l))
+        );
+      }
+    })
+  );
 
   loading.hide();
 };

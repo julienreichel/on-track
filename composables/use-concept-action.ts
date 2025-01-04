@@ -115,34 +115,20 @@ export default function () {
             : q.response?.toString() ?? "",
         isValid: !!q.valid,
         quizType,
+        createdAt: new Date().toISOString(),
       }));
 
     if (!conceptAction.answeredQuestions) {
       conceptAction.answeredQuestions = [];
     }
 
-    let hasChanges = updateStarted(conceptAction);
+    updateStarted(conceptAction);
     validatedQuestions.forEach((q) => {
-      const answeredQuestion = conceptAction.answeredQuestions.find(
-        (aq) => aq.questionId === q.questionId
-      );
-      if (answeredQuestion) {
-        if (answeredQuestion.userResponse === q.userResponse) {
-          return;
-        }
-        hasChanges = true;
-        answeredQuestion.userResponse = q.userResponse;
-        answeredQuestion.isValid = q.isValid;
-        answeredQuestion.quizType = quizType;
-        return;
-      }
-      hasChanges = true;
       conceptAction.answeredQuestions.push(q);
     });
 
-    if (hasChanges) {
-      await update(conceptAction);
-    }
+    await update(conceptAction);
+
   };
 
   const updateQuestionsResults = async (conceptAction: ConceptActionModel) => {

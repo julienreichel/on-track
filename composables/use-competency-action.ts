@@ -48,7 +48,7 @@ export default function () {
 
 
   const getQuizType = (competencyAction: CompetencyActionModel) => {
-    if (!competencyAction.actionTimestamps) {
+    if (!competencyAction.actionTimestamps?.length) {
       return "pre-quiz";
     }
     const isFinished = competencyAction.actionTimestamps.some( (a) => a.actionType === "finished");
@@ -71,40 +71,28 @@ export default function () {
             : q.response?.toString() ?? "",
         isValid: !!q.valid,
         quizType,
+        createdAt: new Date().toISOString(),
       }));
 
     if (!competencyAction.answeredQuestions) {
       competencyAction.answeredQuestions = [];
     }
 
-    let hasChanges = false;
     validatedQuestions.forEach((q) => {
-      const answeredQuestion = competencyAction.answeredQuestions.find(
-        (aq) => aq.questionId === q.questionId
-      );
-      if (answeredQuestion) {
-        if (answeredQuestion.userResponse === q.userResponse) {
-          return;
-        }
-        hasChanges = true;
-        Object.assign(answeredQuestion, q);
-        return;
-      }
-      hasChanges = true;
       competencyAction.answeredQuestions.push(q);
     });
 
-    if (hasChanges) {
-      await update(competencyAction);
-    }
+    await update(competencyAction);
+
   };
 
   const updateQuestionsResults = async (competencyAction: CompetencyActionModel) => {
 
+    const actionType = getQuizType(competencyAction);
+
     if (!competencyAction.actionTimestamps) {
       competencyAction.actionTimestamps = [];
     }
-    const actionType = getQuizType(competencyAction);
     competencyAction.actionTimestamps.push({
       actionType,
       createdAt: new Date().toISOString(),

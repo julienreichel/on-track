@@ -223,7 +223,7 @@ const nextCliked = () => {
   } else {
     const valid = validateAnswers(question.value);
     emit("progress", [...activeQuestions.value]);
-    if (valid && !alwaysShowHints.value) {
+    if (valid && !props.alwaysShowHints) {
       step.value++;
     }
   }

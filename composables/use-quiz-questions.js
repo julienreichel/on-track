@@ -173,12 +173,12 @@ export default function () {
   };
   const initQuestionResponseWithAnswer = (question, answeredQuestion) => {
     if(question.type === "checkbox") {
-      return answeredQuestion.response.split(",");
+      return answeredQuestion.userResponse.split(",");
     }
     if(question.type === "radio") {
-      return Number(answeredQuestion.response);
+      return Number(answeredQuestion.userResponse);
     }
-    return answeredQuestion.response;
+    return answeredQuestion.userResponse;
   };
 
   const resetQuestions = (inputQuestions, answeredQuestions = []) => {
@@ -190,7 +190,7 @@ export default function () {
     // pre-populate the questions with the answers
     if (answeredQuestions?.length) {
       answeredQuestions.forEach((answeredQuestion, idx) => {
-        if (!answeredQuestion || answeredQuestion.valid === null) {
+        if (!answeredQuestion || answeredQuestion.isValid === null) {
           // the question has not been validated otherwise it would be true or false
           return;
         }
@@ -202,7 +202,7 @@ export default function () {
         }
         question.response = initQuestionResponseWithAnswer(question, answeredQuestion);
         question.validated = true;
-        question.valid = answeredQuestion.valid;
+        question.valid = answeredQuestion.isValid;
         question.order = -answeredQuestions.length + idx;
       });
     }
