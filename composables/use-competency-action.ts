@@ -59,8 +59,7 @@ export default function () {
     }
   };
 
-  const updateQuestionsProgress = async (questions:RunningQuestionModel[], competencyAction: CompetencyActionModel) => {
-    const quizType = getQuizType(competencyAction);
+  const updateQuestionsProgress = async (questions:RunningQuestionModel[], competencyAction: CompetencyActionModel, quizType: string) => {
     const validatedQuestions = questions
       .filter((q) => q.validated)
       .map((q) => ({
@@ -71,6 +70,7 @@ export default function () {
             : q.response?.toString() ?? "",
         isValid: !!q.valid,
         quizType,
+        level: q.level,
         createdAt: new Date().toISOString(),
       }));
 
@@ -78,18 +78,34 @@ export default function () {
       competencyAction.answeredQuestions = [];
     }
 
+    // find the latest quiz timestamp (if any)
+    const lastQuizTimestamp = competencyAction.actionTimestamps?.reduce((acc, curr) => {
+      const date = new Date(curr.createdAt).getTime();;
+      if (date > acc) {
+        return date;
+      }
+      return acc;
+    },0);
+
+    let hasChanges = false;
     validatedQuestions.forEach((q) => {
+      const answeredQuestion = competencyAction.answeredQuestions.find(
+        (aq) => aq.questionId === q.questionId && new Date(aq.createdAt).getTime() > lastQuizTimestamp
+      );
+      if (answeredQuestion && answeredQuestion.userResponse === q.userResponse) {
+        return;
+      }
+      hasChanges = true;
       competencyAction.answeredQuestions.push(q);
     });
 
-    await update(competencyAction);
+    if (hasChanges) {
+      await update(competencyAction);
+    }
 
   };
 
-  const updateQuestionsResults = async (competencyAction: CompetencyActionModel) => {
-
-    const actionType = getQuizType(competencyAction);
-
+  const updateQuestionsResults = async (competencyAction: CompetencyActionModel, actionType: string) => {
     if (!competencyAction.actionTimestamps) {
       competencyAction.actionTimestamps = [];
     }

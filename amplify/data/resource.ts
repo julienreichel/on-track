@@ -131,6 +131,7 @@ const schema = a.schema({
     questionId: a.id(),
     createdAt: a.datetime(),
     userResponse: a.string(),
+    level: a.string(),
     isValid: a.boolean(),
     quizType: a.string(),
   }),

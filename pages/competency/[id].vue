@@ -27,7 +27,8 @@
       :answered-questions="answeredQuestions"
       :questions="questions"
       :max="20"
-      always-show-hints
+      :always-show-hints="quizStatus === 'pre-quiz'"
+      :exam-mode="quizStatus === 'final-quiz'"
       @finished="updateQuestionsFinished"
       @results="updateQuestionsResults"
       @progress="updateQuestionsProgress"
@@ -65,6 +66,7 @@
 const competencyService = useCompetency();
 const conceptService = useConcept();
 const competencyActionService = useCompetencyAction();
+const conceptActionService = useConceptAction();
 const route = useRoute();
 const { loading, screen } = useQuasar();
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
@@ -76,6 +78,8 @@ const questions = ref([]);
 const answeredQuestions = ref([]);
 const showQuiz = ref(false);
 const competencyAction = ref(null);
+const quizStatus = ref("pre-quiz");
+
 
 
 const getLastQuizTime = (action) => {
@@ -112,6 +116,37 @@ onMounted(async () => {
       if (inProgress) {
         startPreCheck();
       }
+    }
+
+    // laod all concepts actions
+    const { userId, username } = await getCurrentUser();
+    const status = []
+    await Promise.all(
+      competency.value.concepts.map(async (c) => {
+        const actions = await conceptActionService.list({
+          conceptId: c.id,
+          userId,
+          username,
+        });
+        // little hack to make sure the preogression status is corect as the questions and flashcards are not loaded at this point
+        c.questions = c.questions || Array(20).fill(null);
+        c.flashCards = c.flashCards || Array(5).fill(null);
+        c.action = actions[0] || {};
+        // check if the action is started and/or finished
+         const started = c.action.actionTimestamps?.some(
+          (a) => a.actionType === "started"
+        );
+        const finished = c.action.actionTimestamps?.some(
+          (a) => a.actionType === "finished"
+        );
+        status.push({ started, finished });
+      })
+    );
+    if (status.some((s) => s.started)){
+      quizStatus.value = "quiz";
+    }
+    if (status.every((s) => s.finished)){
+      quizStatus.value = "final-quiz";
     }
 
   } catch (error) {
@@ -248,17 +283,13 @@ const updateQuestionsFinished = () => {
 };
 
 const quizLabel = computed(() => {
-  if (
-    teacherMode.value ||
-    !competencyAction.value ||
-    !competencyAction.value.actionTimestamps?.length
-  ) {
-    return "Pre Check";
-  }
-  const finished = competencyAction.value.actionTimestamps.some(
-    (a) => a.actionType === "finished"
-  );
-  return finished ? "Final Quiz" : "Test";
+  const mapping = {
+    "pre-quiz": "Pre Check",
+    quiz: "Test",
+    "final-quiz": "Final Quiz",
+  };
+  return mapping[quizStatus.value] || "Pre Check";
+
 });
 const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !competencyAction.value) {
@@ -266,14 +297,15 @@ const updateQuestionsProgress = async (questions) => {
   }
   return competencyActionService.updateQuestionsProgress(
     questions,
-    competencyAction.value
+    competencyAction.value,
+    quizStatus.value
   );
 };
 const updateQuestionsResults = async () => {
   if (teacherMode.value || !competencyAction.value) {
     return;
   }
-  return competencyActionService.updateQuestionsResults(competencyAction.value);
+  return competencyActionService.updateQuestionsResults(competencyAction.value, quizStatus.value);
 };
 
 const generateCompetencyData = async () => {

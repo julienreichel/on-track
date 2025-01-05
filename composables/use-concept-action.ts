@@ -115,6 +115,7 @@ export default function () {
             : q.response?.toString() ?? "",
         isValid: !!q.valid,
         quizType,
+        level: q.level,
         createdAt: new Date().toISOString(),
       }));
 
@@ -122,10 +123,26 @@ export default function () {
       conceptAction.answeredQuestions = [];
     }
 
-    updateStarted(conceptAction);
+    let hasChanges = updateStarted(conceptAction);
     validatedQuestions.forEach((q) => {
+      const answeredQuestion = conceptAction.answeredQuestions.find(
+        (aq) => aq.questionId === q.questionId
+      );
+      if (answeredQuestion){
+        if (answeredQuestion.userResponse === q.userResponse) {
+          return;
+        }
+        Object.assign(answeredQuestion, q);
+        hasChanges = true;
+        return;
+      }
+      hasChanges = true;
       conceptAction.answeredQuestions.push(q);
     });
+
+    if (hasChanges) {
+      await update(conceptAction);
+    }
 
     await update(conceptAction);
 

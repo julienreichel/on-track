@@ -46,8 +46,8 @@ const progress = computed(() => {
   return progress;
 });
 
-const nbFlashCards = computed(() => props.concept.flashCards.length || 0 );
-const nbQuestion = computed(() => Math.min(props.concept.questions.length || 0, 10));
+const nbFlashCards = computed(() => props.concept.flashCards?.length || 0 );
+const nbQuestion = computed(() => Math.min(props.concept.questions?.length || 0, 10));
 // A sucess, means, all the theory and examples are read
 // the flashcards have been used and the 10 questions have been answered with at leat 80% of success
 const success = computed(() => 12.5 + 12.5 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 0.8);

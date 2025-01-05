@@ -259,10 +259,7 @@ const numValidatedQuestions = computed(
 );
 
 const leftOverQuestions = computed(() =>
-  Array.from(
-    { length: realMax.value - numValidatedQuestions.value },
-    (_, index) => ({ id: index, text: "...", points: "?" }),
-  ),
+  [ { id: 0, text: realMax.value - numValidatedQuestions.value + " Questions ...", points: "?" } ]
 );
 
 const finished = () => {
