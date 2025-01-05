@@ -14,6 +14,7 @@
       {{ competency.description }}
     </p>
 
+    <competency-level v-if="competencyAction" :action="competencyAction" />
     <q-btn
       v-if="!teacherMode && !showQuiz"
       :label="quizLabel"
@@ -81,20 +82,22 @@ const competencyAction = ref(null);
 const quizStatus = ref("pre-quiz");
 
 
-
-const getLastQuizTime = (action) => {
+const getLastQuizTime = (action, lastQuizTime = 0) => {
   return action.actionTimestamps?.reduce((acc, a) => {
     const time = new Date(a.createdAt).getTime();
-    return time > acc ? time : acc;
-  }, 0) || 0;
+    if (lastQuizTime && time >= lastQuizTime) {
+      return acc;
+    }
+    return time > acc.time ? {time, type: a.actionType} : acc;
+  }, {time: 0}) || {time: 0};
 };
+
 onMounted(async () => {
   try {
     const competencyId = route.params.id;
     competency.value = await competencyService.get(competencyId);
 
     // Check or create CompetencyAction
-    console.log("teacherMode", teacherMode.value);
     if (!teacherMode.value) {
       const { userId, username } = await getCurrentUser();
       const actions = await competencyActionService.list({
@@ -109,7 +112,7 @@ onMounted(async () => {
           competencyId,
         });
       }
-      const lastQuizTime = getLastQuizTime(competencyAction.value);
+      const lastQuizTime = getLastQuizTime(competencyAction.value).time;
       const inProgress = competencyAction.value.answeredQuestions?.some(
         (q) => new Date(q.createdAt).getTime() > lastQuizTime
       );
@@ -253,7 +256,7 @@ const startPreCheck = async () => {
     const allQuestion = extendedCompetency.concepts.flatMap((c) => c.questions);
     if (competencyAction.value) {
       const action = competencyAction.value;
-      const lastQuizTime = getLastQuizTime(action);
+      const lastQuizTime = getLastQuizTime(action).time;
       const prevQuizQuestionsIds =
         action.answeredQuestions?.filter(
             (q) => new Date(q.createdAt).getTime() <= lastQuizTime && q.isValid
@@ -289,8 +292,8 @@ const quizLabel = computed(() => {
     "final-quiz": "Final Quiz",
   };
   return mapping[quizStatus.value] || "Pre Check";
-
 });
+
 const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !competencyAction.value) {
     return;
@@ -347,5 +350,7 @@ const generateConceptsData = async () => {
 </script>
 
 <style scoped>
-
+.q-chip {
+    text-transform: capitalize;
+}
 </style>

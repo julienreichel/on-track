@@ -62,7 +62,6 @@ const emit = defineEmits(["finished"]);
 
 watch(finished, (finished) => {
   if (finished) {
-    console.log("finished");
     emit("finished", progressPercent);
   }
 }, { immediate: true });
