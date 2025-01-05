@@ -94,6 +94,7 @@
     <q-card-section>
       <q-card square>
         <quiz-summary-responses
+          v-if="correctQuestions.length"
           :questions="correctQuestions"
           title="Well done"
           icon="task_alt"
@@ -101,6 +102,7 @@
           @activate="goToQuestion"
         />
         <quiz-summary-responses
+          v-if="wrongQuestions.length"
           :questions="wrongQuestions"
           title="Lets review"
           icon="highlight_off"
@@ -108,10 +110,12 @@
           @activate="goToQuestion"
         />
         <quiz-summary-responses
+          v-if="leftOverQuestions.length"
           :questions="leftOverQuestions"
           title="More to go"
           icon="help_outline"
           color="bg-info"
+          :number-of-items="1"
           @activate="goToNextQuestion"
         />
       </q-card>
@@ -259,7 +263,10 @@ const numValidatedQuestions = computed(
 );
 
 const leftOverQuestions = computed(() =>
-  [ { id: 0, text: realMax.value - numValidatedQuestions.value + " Questions ...", points: "?" } ]
+  Array.from(
+    { length: realMax.value - numValidatedQuestions.value },
+    (_, index) => ({ id: index, text: "...", points: "?" }),
+  ),
 );
 
 const finished = () => {
