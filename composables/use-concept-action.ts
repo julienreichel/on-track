@@ -10,8 +10,10 @@ export type ObjectiveActionModel = {
 
 export type QuestionActionModel = {
   questionId: string;
+  createdAt: string;
   userResponse: string;
   isValid: boolean;
+  level: string;
   quizType: string;
 };
 
@@ -90,6 +92,8 @@ export default function () {
     }
   };
 
+  const debouncedUpdate = calls.debounce(update, 500); // 500 milliseconds delay
+
   const updateStarted = (conceptAction: ConceptActionModel) => {
     if (conceptAction.actionTimestamps) {
       return false;
@@ -141,10 +145,8 @@ export default function () {
     });
 
     if (hasChanges) {
-      await update(conceptAction);
+      await debouncedUpdate(conceptAction);
     }
-
-    await update(conceptAction);
 
   };
 
@@ -158,7 +160,7 @@ export default function () {
       actionType,
       createdAt: new Date().toISOString(),
     });
-    await update(conceptAction);
+    await debouncedUpdate(conceptAction);
   };
   return { ...calls, list, update, updateQuestionsResults, updateQuestionsProgress, getQuizType, updateStarted };
 }

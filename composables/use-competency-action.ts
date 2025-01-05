@@ -46,6 +46,7 @@ export default function () {
     return calls.update(input, options);
   };
 
+  const debouncedUpdate = calls.debounce(update, 500); // 500 milliseconds delay
 
   const getQuizType = (competencyAction: CompetencyActionModel) => {
     if (!competencyAction.actionTimestamps?.length) {
@@ -85,7 +86,7 @@ export default function () {
         return date;
       }
       return acc;
-    },0);
+    }, 0) || 0;
 
     let hasChanges = false;
     validatedQuestions.forEach((q) => {
@@ -100,7 +101,7 @@ export default function () {
     });
 
     if (hasChanges) {
-      await update(competencyAction);
+      await debouncedUpdate(competencyAction);
     }
 
   };
@@ -113,7 +114,7 @@ export default function () {
       actionType,
       createdAt: new Date().toISOString(),
     });
-    await update(competencyAction);
+    await debouncedUpdate(competencyAction);
   };
   return { ...calls, list, update, updateQuestionsResults, updateQuestionsProgress, getQuizType };
 }

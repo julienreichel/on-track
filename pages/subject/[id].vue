@@ -24,8 +24,10 @@
 <script setup>
 const subjectService = useSubject();
 const competencyService = useCompetency();
+const competencyActionService = useCompetencyAction();
 const route = useRoute();
 const { loading, screen } = useQuasar();
+const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
 const teacherMode = inject('teacherMode');
 
@@ -39,7 +41,19 @@ onMounted(async () => {
     if (subject.value?.competencies){
       competencyService.sort(subject.value.competencies);
     }
-
+    if (!teacherMode.value) {
+      const { userId, username } = await getCurrentUser();
+      await Promise.all(
+        subject.value.competencies.map(async (c) => {
+          const actions = await competencyActionService.list({
+            competencyId: c.id,
+            userId,
+            username,
+          });
+          c.action = actions[0];
+        })
+      );
+    }
   } catch (error) {
     console.error("Failed to fetch subject:", error);
   }

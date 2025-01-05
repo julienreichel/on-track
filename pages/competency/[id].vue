@@ -8,15 +8,17 @@
       class="gt-xs"
     />
     <subject-list :subjects="[competency.subject]" />
+
+    <competency-level v-if="competencyAction"  class="float-right" :action="competencyAction" />
     <h1>{{ competency.name }}</h1>
 
     <p v-if="competency.description" style="max-width: 600px">
       {{ competency.description }}
     </p>
 
-    <competency-level v-if="competencyAction" :action="competencyAction" />
+
     <q-btn
-      v-if="!teacherMode && !showQuiz"
+      v-if="!teacherMode && !showQuiz && !competency.concepts.some((s) => !s.theory)"
       :label="quizLabel"
       color="primary"
       class="q-my-md"
@@ -119,37 +121,36 @@ onMounted(async () => {
       if (inProgress) {
         startPreCheck();
       }
-    }
 
-    // laod all concepts actions
-    const { userId, username } = await getCurrentUser();
-    const status = []
-    await Promise.all(
-      competency.value.concepts.map(async (c) => {
-        const actions = await conceptActionService.list({
-          conceptId: c.id,
-          userId,
-          username,
-        });
-        // little hack to make sure the preogression status is corect as the questions and flashcards are not loaded at this point
-        c.questions = c.questions || Array(20).fill(null);
-        c.flashCards = c.flashCards || Array(5).fill(null);
-        c.action = actions[0] || {};
-        // check if the action is started and/or finished
-         const started = c.action.actionTimestamps?.some(
-          (a) => a.actionType === "started"
-        );
-        const finished = c.action.actionTimestamps?.some(
-          (a) => a.actionType === "finished"
-        );
-        status.push({ started, finished });
-      })
-    );
-    if (status.some((s) => s.started)){
-      quizStatus.value = "quiz";
-    }
-    if (status.every((s) => s.finished)){
-      quizStatus.value = "final-quiz";
+      // laod all concepts actions
+      const status = []
+      await Promise.all(
+        competency.value.concepts.map(async (c) => {
+          const actions = await conceptActionService.list({
+            conceptId: c.id,
+            userId,
+            username,
+          });
+          // little hack to make sure the preogression status is corect as the questions and flashcards are not loaded at this point
+          c.questions = c.questions || Array(20).fill(null);
+          c.flashCards = c.flashCards || Array(5).fill(null);
+          c.action = actions[0] || {};
+          // check if the action is started and/or finished
+          const started = c.action.actionTimestamps?.some(
+            (a) => a.actionType === "started"
+          );
+          const finished = c.action.actionTimestamps?.some(
+            (a) => a.actionType === "finished"
+          );
+          status.push({ started, finished });
+        })
+      );
+      if (status.some((s) => s.started)){
+        quizStatus.value = "quiz";
+      }
+      if (status.every((s) => s.finished)){
+        quizStatus.value = "final-quiz";
+      }
     }
 
   } catch (error) {

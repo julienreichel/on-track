@@ -134,6 +134,23 @@ export default function (
     }, {} as GraphQLParams);
   }
 
+  const debounce = (func: Function, delay: number) => {
+    let timeoutId: NodeJS.Timeout;
+    let pendingResolves = [] as Function[];
+    return function (...args) {
+      const context = this;
+      clearTimeout(timeoutId);
+      return new Promise((resolve) => {
+        pendingResolves.push(resolve);
+        timeoutId = setTimeout(async () => {
+          const result = await func.apply(context, args);
+          pendingResolves.forEach((resolve) => resolve(result));
+          pendingResolves = [];
+        }, delay);
+      });
+    };
+  };
+
   return {
     call,
     create,
@@ -141,6 +158,7 @@ export default function (
     get,
     delete: del,
     list,
-    pick
+    pick,
+    debounce
   };
 }
