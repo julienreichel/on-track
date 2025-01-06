@@ -37,7 +37,7 @@
       <q-expansion-item
         v-if="conceptsToRevisit.length"
         label="Review"
-        :expanded="true"
+        :expanded="conceptsToRevisit.length"
         group="concept"
         default-opened
         header-class="text-h3"
@@ -73,6 +73,7 @@
 
       <q-expansion-item
         v-if="conceptsInProgress.length"
+        :expanded="!conceptsToRevisit.length && conceptsInProgress.length"
         label="Continue"
         group="concept"
         header-class="text-h3"
@@ -82,6 +83,7 @@
 
       <q-expansion-item
         v-if="relatedConcepts.length"
+        :expanded="!conceptsToRevisit.length && !conceptsInProgress.length"
         label="Explore"
         group="concept"
         header-class="text-h3"

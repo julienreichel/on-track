@@ -42,7 +42,8 @@ export default function () {
     "followUps.id",
     "followUps.concept.*",
 
-    'competency.*'
+    'competency.*',
+    'competency.subject.*'
   ]);
 
   /**
@@ -88,6 +89,8 @@ export default function () {
 
   const createWithAI = async (concept: ConceptModel) => {
     const response = await queryConcept(
+      concept.competency?.subject?.name,
+      concept.competency?.subject?.description,
       concept.competency?.name,
       concept.competency?.description,
       concept.name,

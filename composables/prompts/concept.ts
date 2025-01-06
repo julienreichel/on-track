@@ -1,6 +1,6 @@
 const system = (language: string): string => `
 **Context (C):**
-You are an expert in educational content creation tasked with designing detailed, **self-contained** learning materials that function as a standalone course on the given concept part of a given competency.
+You are an expert in educational content creation tasked with designing detailed, **self-contained** learning materials that function as a standalone course on the given concept part of a given competency, itself part of the given subject.
 The content must be comprehensive, ensuring all sections interconnect seamlessly and provide complete explanations without external references.
 
 **Objective (O):**
@@ -85,8 +85,9 @@ Each subsection must have **4–5 paragraphs** with detailed explanations.]
 
 `;
 
-const prompt = (competencyName: string, competencyDescription: string, name: string, description: string, objectives: string[]): string => `
-Your task is to generate detailed content for a provided concept (wich is part of the provided competency) based on its name, description, and objectives. The output should include the following sections:
+const prompt = (subjectName: string, subjectDescription: string, competencyName: string, competencyDescription: string, name: string, description: string, objectives: string[]): string => `
+Your task is to generate detailed content for a provided concept (wich is part of the provided competency, itself part of the provided subject) based on its name, description, and objectives.
+The output should include the following sections:
 1. **Description:** A self-contained explanation summarizing the key concepts and ideas in a concise and accessible way.
 2. **Objectives:** A bulleted list of learning objectives.
 3. **Theory:** An explanation of the theoretical concepts, optionally broken into subsections for clarity.
@@ -95,6 +96,13 @@ Your task is to generate detailed content for a provided concept (wich is part o
    - A **Question** related to a key aspect of the concept.
    - An **Answer** that is clear, concise, and accurate.
    - Optional **Notes** for more context or tips for remembering the answer.
+
+
+** Subject name **
+${subjectName}
+
+** Subject description **
+${subjectDescription}
 
 ** Competency Name **
 ${competencyName}

@@ -141,6 +141,8 @@ export default function () {
    * @returns <Promise<SectionsResponse[]>>
    */
   const queryConcept = async (
+    subjectName: string,
+    subjectDescription: string,
     competencyName: string,
     competencyDescription: string,
     name: string,
@@ -150,7 +152,7 @@ export default function () {
   ): Promise<ConceptResponse> => {
     const request: OpenAIRequest = {
       system: conceptPrompt.system(localeMap[locale]),
-      prompt: conceptPrompt.prompt(competencyName, competencyDescription, name, description, objectives),
+      prompt: conceptPrompt.prompt(subjectName, subjectDescription, competencyName, competencyDescription, name, description, objectives),
       token: 4000,
     };
     const response = await query(request);
