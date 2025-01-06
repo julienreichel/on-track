@@ -22,15 +22,20 @@
 
     <q-list>
       <q-expansion-item
-        v-if="conceptAction?.inProgress"
+        v-if="teacherMode || conceptAction?.inProgress"
         label="Objectives"
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
         @hide="finaliseObjective"
       >
+      <objective-list
+          v-if="teacherMode"
+          :objectives="concept.objectives"
+          :disabled="true"
+        />
         <objective-select
-          v-if="!conceptAction?.objectives?.length"
+          v-else-if="!conceptAction?.objectives?.length"
           :objectives="concept.objectives"
           @selected="createObjective"
         />
@@ -46,12 +51,13 @@
         label="Theory"
         header-class="text-h3"
         group="concept"
-        :content-inset-level="0.5"
-        @show="openTab('theory')"
-        @hide="closeTab('theory')"
+        :content-inset-level="teacherMode ? 0.5 : 0"
       >
+        <div v-if="!teacherMode && concept.theory">
+          <concept-runner :markdown-content="concept.theory" @finished="markAsRead('theory')" />
+        </div>
         <rich-text-renderer
-          v-if="concept.theory"
+          v-else-if="concept.theory"
           :markdown-content="concept.theory"
         />
         <q-btn v-else-if="teacherMode" @click="generateConceptData()"
@@ -61,18 +67,23 @@
 
       <q-expansion-item
         v-if="concept.examples"
+        v-model="openExamples"
         label="Examples"
         header-class="text-h3"
         group="concept"
         :content-inset-level="0.5"
-        @show="openTab('examples')"
-        @hide="closeTab('examples')"
       >
-        <rich-text-renderer :markdown-content="concept.examples" />
+        <div v-if="!teacherMode && concept.examples">
+          <concept-runner
+            :markdown-content="concept.examples"
+            @finished="markAsRead('examples')" />
+        </div>
+        <rich-text-renderer v-else :markdown-content="concept.examples" />
       </q-expansion-item>
 
       <q-expansion-item
         v-if="concept.flashCards?.length"
+        v-model="openFlashCards"
         label="Flashcards"
         header-class="text-h3"
         group="concept"
@@ -101,6 +112,7 @@
 
       <q-expansion-item
         v-if="teacherMode || concept.questions?.length"
+        v-model="openQuiz"
         header-class="text-h3"
         group="concept"
         :content-inset-level="teacherMode ? 0.5 : 0"
@@ -287,22 +299,6 @@ const generateQuizData = async (level) => {
   loading.hide();
 };
 
-const timers = {
-  theory: null,
-  examples: null,
-};
-const openTab = (tab) => {
-  if (teacherMode.value || !conceptAction.value) {
-    return;
-  }
-  // genereate a timeout in 15s to trigger the mark as read
-  timers[tab] = setTimeout(() => markAsRead(tab), 15000);
-};
-const closeTab = (tab) => {
-  if (timers[tab]) {
-    clearTimeout(timers[tab]);
-  }
-};
 
 const updateStarted = () => {
   if (teacherMode.value || !conceptAction.value) {
@@ -310,6 +306,10 @@ const updateStarted = () => {
   }
   return conceptActionService.updateStarted(conceptAction.value);
 };
+
+const openExamples = ref(false);
+const openFlashCards = ref(false);
+const openQuiz = ref(false);
 
 const markAsRead = async (field) => {
   if (teacherMode.value || !conceptAction.value) {
@@ -324,6 +324,12 @@ const markAsRead = async (field) => {
 
   if (save) {
     await conceptActionService.update(conceptAction.value);
+  }
+
+  if (field === "theory") {
+    openExamples.value = true;
+  } else if (field === "examples") {
+    openFlashCards.value = true;
   }
 };
 
@@ -380,12 +386,20 @@ const updateFlashCard = async (flashCardId, status) => {
   if (flashCard && flashCard.status === status) {
     return;
   }
+  let triggerOpenQuiz =  false;
   if (!flashCard) {
     flashCard = { flashCardId };
     conceptAction.value.usedFlashCards.push(flashCard);
+    if (conceptAction.value.usedFlashCards.length === concept.value.flashCards.length) {
+      triggerOpenQuiz = true;
+    }
   }
   flashCard.isOk = status;
   await conceptActionService.update(conceptAction.value);
+
+  if(triggerOpenQuiz) {
+    openQuiz.value = true;
+  }
 };
 
 const openObjective = ref(false);
