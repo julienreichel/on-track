@@ -1,7 +1,19 @@
 <template>
   <div v-if="subject" class="q-pa-sm">
-    <h1>{{ subject.name }}</h1>
-    <p v-if="subject.description" style="max-width:600px" >{{ subject.description }}</p>
+    <editable-text
+      :value="subject.name"
+      :enable-editing="teacherMode"
+      class="text-h1"
+      @update="(text) => updateSubject('name', text)"
+    />
+    <editable-text
+      v-if="subject.description"
+      :value="subject.description"
+      :enable-editing="teacherMode"
+      type="textarea"
+      use-rich-text
+      @update="(text) => updateSubject('description', text)"
+    />
     <q-btn v-else @click="generateSubjectData()">Generate</q-btn>
 
     <div v-if="subject.competencies?.length">
@@ -9,11 +21,19 @@
       <competency-flow
         :competencies="subject.competencies"
         :direction="direction"
-        :style="{height: `${height}px`, width: '100%' }"
+        :style="{ height: `${height}px`, width: '100%' }"
         class="gt-xs"
       />
-      <competency-cards :competencies="subject.competencies" :allow-delete="teacherMode" @delete="deleteCompetency"/>
-      <q-btn v-if="teacherMode && subject.competencies.some(s => !s.introduction)" @click="generateCompetenciesData()">Populate</q-btn>
+      <competency-cards
+        :competencies="subject.competencies"
+        :allow-delete="teacherMode"
+        @delete="deleteCompetency"
+      />
+      <q-btn
+        v-if="teacherMode && subject.competencies.some((s) => !s.introduction)"
+        @click="generateCompetenciesData()"
+        >Populate</q-btn
+      >
     </div>
   </div>
   <div v-else>
@@ -29,7 +49,7 @@ const route = useRoute();
 const { loading, screen } = useQuasar();
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
-const teacherMode = inject('teacherMode');
+const teacherMode = inject("teacherMode");
 
 const subject = ref(null);
 
@@ -38,7 +58,7 @@ onMounted(async () => {
     const subjectId = route.params.id;
     subject.value = await subjectService.get(subjectId);
 
-    if (subject.value?.competencies){
+    if (subject.value?.competencies) {
       competencyService.sort(subject.value.competencies);
     }
     if (!teacherMode.value) {
@@ -59,26 +79,26 @@ onMounted(async () => {
   }
 });
 
-const direction = computed(() => screen.lt.sm ? "TB" : "LR");
+const direction = computed(() => (screen.lt.sm ? "TB" : "LR"));
 
 const height = computed(() => {
-  if (!subject.value?.competencies?.length){
+  if (!subject.value?.competencies?.length) {
     return 0;
   }
   const competencies = subject.value.competencies;
-  if (screen.lt.sm){
+  if (screen.lt.sm) {
     return competencies[competencies.length - 1].order * 150;
   } else {
     const dep = {};
     let height = 1;
     let starters = 0;
     competencies?.forEach((c) => {
-      if (!c.prerequisites?.length){
+      if (!c.prerequisites?.length) {
         starters++;
         return;
       }
       c.prerequisites.forEach((p) => {
-        if (!dep[p.prerequisiteId]){
+        if (!dep[p.prerequisiteId]) {
           dep[p.prerequisiteId] = 0;
         }
         dep[p.prerequisiteId]++;
@@ -93,38 +113,49 @@ const height = computed(() => {
 const generateSubjectData = async () => {
   loading.show();
 
-  const { touchedSubjects } = await subjectService.createWithAI( [subject.value.name] );
+  const { touchedSubjects } = await subjectService.createWithAI([
+    subject.value.name,
+  ]);
 
-  if (!touchedSubjects.length){
+  if (!touchedSubjects.length) {
     loading.hide();
     return;
   }
   subject.value = touchedSubjects[0];
 
   loading.hide();
-}
+};
 
 const deleteCompetency = async (competency) => {
   loading.show();
 
   await competencyService.delete(competency);
 
-  subject.value.competencies = subject.value.competencies.filter((s) => s.id !== competency.id);
+  subject.value.competencies = subject.value.competencies.filter(
+    (s) => s.id !== competency.id
+  );
 
   loading.hide();
-}
+};
 
 const generateCompetenciesData = async () => {
   loading.show();
 
-  await Promise.all( subject.value.competencies.map((c) => {
-    if (!c.concepts?.length){
-      return competencyService.createWithAI( c );
-    }
-  }));
+  await Promise.all(
+    subject.value.competencies.map((c) => {
+      if (!c.concepts?.length) {
+        return competencyService.createWithAI(c);
+      }
+    })
+  );
 
   loading.hide();
-}
+};
+
+const updateSubject = async (field, value) => {
+  subject.value[field] = value;
+  await subjectService.update(subject.value);
+};
 </script>
 
 <style scoped>

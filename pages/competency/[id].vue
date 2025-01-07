@@ -9,16 +9,39 @@
     />
     <subject-list :subjects="[competency.subject]" />
 
-    <competency-level v-if="competencyAction"  class="float-right" :action="competencyAction" />
-    <h1>{{ competency.name }}</h1>
+    <competency-level
+      v-if="competencyAction"
+      class="float-right"
+      :action="competencyAction"
+    />
 
-    <p v-if="competency.description" style="max-width: 600px">
-      {{ competency.description }}
-    </p>
+    <editable-text
+      :value="competency.name"
+      :enable-editing="teacherMode"
+      class="text-h1"
+      @update="(text) => updateCompetency('name', text)"
+    />
+    <editable-text
+      v-if="competency.description"
+      :value="competency.description"
+      :enable-editing="teacherMode"
+      type="textarea"
+      use-rich-text
+      @update="(text) => updateCompetency('description', text)"
+    />
 
-
+    <editable-text
+      v-if="teacherMode"
+      :value="competency.objectives.join('\n\n')"
+      :enable-editing="teacherMode"
+      type="textarea"
+      use-rich-text
+      @update="(text) => updateCompetency('objectives', text.split('\n').filter((o) => o))"
+    />
     <q-btn
-      v-if="!teacherMode && !showQuiz && !competency.concepts.some((s) => !s.theory)"
+      v-if="
+        !teacherMode && !showQuiz && !competency.concepts.some((s) => !s.theory)
+      "
       :label="quizLabel"
       color="primary"
       class="q-my-md"
@@ -83,15 +106,19 @@ const showQuiz = ref(false);
 const competencyAction = ref(null);
 const quizStatus = ref("pre-quiz");
 
-
 const getLastQuizTime = (action, lastQuizTime = 0) => {
-  return action.actionTimestamps?.reduce((acc, a) => {
-    const time = new Date(a.createdAt).getTime();
-    if (lastQuizTime && time >= lastQuizTime) {
-      return acc;
-    }
-    return time > acc.time ? {time, type: a.actionType} : acc;
-  }, {time: 0}) || {time: 0};
+  return (
+    action.actionTimestamps?.reduce(
+      (acc, a) => {
+        const time = new Date(a.createdAt).getTime();
+        if (lastQuizTime && time >= lastQuizTime) {
+          return acc;
+        }
+        return time > acc.time ? { time, type: a.actionType } : acc;
+      },
+      { time: 0 }
+    ) || { time: 0 }
+  );
 };
 
 onMounted(async () => {
@@ -123,7 +150,7 @@ onMounted(async () => {
       }
 
       // laod all concepts actions
-      const status = []
+      const status = [];
       await Promise.all(
         competency.value.concepts.map(async (c) => {
           const actions = await conceptActionService.list({
@@ -145,14 +172,13 @@ onMounted(async () => {
           status.push({ started, finished });
         })
       );
-      if (status.some((s) => s.started)){
+      if (status.some((s) => s.started)) {
         quizStatus.value = "quiz";
       }
-      if (status.every((s) => s.finished)){
+      if (status.every((s) => s.finished)) {
         quizStatus.value = "final-quiz";
       }
     }
-
   } catch (error) {
     console.error("Failed to fetch competency:", error);
   }
@@ -259,12 +285,14 @@ const startPreCheck = async () => {
       const action = competencyAction.value;
       const lastQuizTime = getLastQuizTime(action).time;
       const prevQuizQuestionsIds =
-        action.answeredQuestions?.filter(
+        action.answeredQuestions
+          ?.filter(
             (q) => new Date(q.createdAt).getTime() <= lastQuizTime && q.isValid
           )
           .map((q) => q.questionId) || [];
 
-        answeredQuestions.value = action.answeredQuestions?.filter(
+      answeredQuestions.value =
+        action.answeredQuestions?.filter(
           (q) => new Date(q.createdAt).getTime() > lastQuizTime
         ) || [];
 
@@ -309,7 +337,10 @@ const updateQuestionsResults = async () => {
   if (teacherMode.value || !competencyAction.value) {
     return;
   }
-  return competencyActionService.updateQuestionsResults(competencyAction.value, quizStatus.value);
+  return competencyActionService.updateQuestionsResults(
+    competencyAction.value,
+    quizStatus.value
+  );
 };
 
 const generateCompetencyData = async () => {
@@ -348,10 +379,15 @@ const generateConceptsData = async () => {
 
   loading.hide();
 };
+
+const updateCompetency = async (field, value) => {
+  competency.value[field] = value;
+  await competencyService.update(competency.value);
+};
 </script>
 
 <style scoped>
 .q-chip {
-    text-transform: capitalize;
+  text-transform: capitalize;
 }
 </style>

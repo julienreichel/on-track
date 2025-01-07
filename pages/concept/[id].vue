@@ -13,11 +13,21 @@
       class="gt-xs"
     />
     <competency-list :competencies="[concept.competency]" />
-    <h1>{{ concept.name }}</h1>
 
-    <rich-text-renderer
+    <editable-text
+      :value="concept.name"
+      :enable-editing="teacherMode"
+      class="text-h1"
+      @update="(text) => updateConcept('name', text)"
+    />
+
+    <editable-text
       v-if="concept.description"
-      :markdown-content="concept.description"
+      :value="concept.description"
+      :enable-editing="teacherMode"
+      type="textarea"
+      use-rich-text
+      @update="(text) => updateConcept('description', text)"
     />
 
     <q-list>
@@ -29,10 +39,13 @@
         :content-inset-level="0.5"
         @hide="finaliseObjective"
       >
-      <objective-list
+        <editable-text
           v-if="teacherMode"
-          :objectives="concept.objectives"
-          :disabled="true"
+          :value="concept.objectives.join('\n\n')"
+          :enable-editing="teacherMode"
+          type="textarea"
+          use-rich-text
+          @update="(text) => updateConcept('objectives', text.split('\n').filter((o) => o))"
         />
         <objective-select
           v-else-if="!conceptAction?.objectives?.length"
@@ -54,11 +67,18 @@
         :content-inset-level="teacherMode ? 0.5 : 0"
       >
         <div v-if="!teacherMode && concept.theory">
-          <concept-runner :markdown-content="concept.theory" @finished="markAsRead('theory')" />
+          <concept-runner
+            :markdown-content="concept.theory"
+            @finished="markAsRead('theory')"
+          />
         </div>
-        <rich-text-renderer
-          v-else-if="concept.theory"
-          :markdown-content="concept.theory"
+        <editable-text
+          v-if="concept.theory"
+          :value="concept.theory"
+          :enable-editing="teacherMode"
+          type="textarea"
+          use-rich-text
+          @update="(text) => updateConcept('theory', text)"
         />
         <q-btn v-else-if="teacherMode" @click="generateConceptData()"
           >Generate</q-btn
@@ -76,9 +96,17 @@
         <div v-if="!teacherMode && concept.examples">
           <concept-runner
             :markdown-content="concept.examples"
-            @finished="markAsRead('examples')" />
+            @finished="markAsRead('examples')"
+          />
         </div>
-        <rich-text-renderer v-else :markdown-content="concept.examples" />
+        <editable-text
+          v-if="concept.examples"
+          :value="concept.examples"
+          :enable-editing="teacherMode"
+          type="textarea"
+          use-rich-text
+          @update="(text) => updateConcept('examples', text)"
+        />
       </q-expansion-item>
 
       <q-expansion-item
@@ -175,7 +203,7 @@
         header-class="text-h3"
         group="concept"
       >
-      <concept-cards :concepts="nextConcepts"/>
+        <concept-cards :concepts="nextConcepts" />
       </q-expansion-item>
     </q-list>
   </div>
@@ -299,7 +327,6 @@ const generateQuizData = async (level) => {
   loading.hide();
 };
 
-
 const updateStarted = () => {
   if (teacherMode.value || !conceptAction.value) {
     return false;
@@ -386,18 +413,21 @@ const updateFlashCard = async (flashCardId, status) => {
   if (flashCard && flashCard.status === status) {
     return;
   }
-  let triggerOpenQuiz =  false;
+  let triggerOpenQuiz = false;
   if (!flashCard) {
     flashCard = { flashCardId };
     conceptAction.value.usedFlashCards.push(flashCard);
-    if (conceptAction.value.usedFlashCards.length === concept.value.flashCards.length) {
+    if (
+      conceptAction.value.usedFlashCards.length ===
+      concept.value.flashCards.length
+    ) {
       triggerOpenQuiz = true;
     }
   }
   flashCard.isOk = status;
   await conceptActionService.update(conceptAction.value);
 
-  if(triggerOpenQuiz) {
+  if (triggerOpenQuiz) {
     openQuiz.value = true;
   }
 };
@@ -411,7 +441,10 @@ const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !conceptAction.value) {
     return;
   }
-  return conceptActionService.updateQuestionsProgress(questions, conceptAction.value);
+  return conceptActionService.updateQuestionsProgress(
+    questions,
+    conceptAction.value
+  );
 };
 const updateQuestionsResults = async () => {
   if (teacherMode.value || !conceptAction.value) {
@@ -440,7 +473,8 @@ const disableObjectives = computed(() => conceptAction.value?.inProgress);
 const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
 
 const getBatteryIcon = (action, index) => {
-  const correctAnswers = action.answeredQuestions?.filter(q => q.isValid).length || 0;
+  const correctAnswers =
+    action.answeredQuestions?.filter((q) => q.isValid).length || 0;
   const fullBatteries = Math.floor(correctAnswers / 4);
   if (index <= fullBatteries) return "battery_full";
   const remaining = correctAnswers % 4;
@@ -450,5 +484,10 @@ const getBatteryIcon = (action, index) => {
     if (remaining >= 1) return "battery_2_bar";
   }
   return "battery_0_bar";
+};
+
+const updateConcept = async (field, value) => {
+  concept.value[field] = value;
+  await conceptService.update(concept.value);
 };
 </script>
