@@ -114,16 +114,9 @@ onNodesChange(async (changes) => {
       }
     } else {
       if (change.type === "select") {
-        if (change.selected) {
-          const node = nodes.value.find(node => node.id === change.id);
-          if (node && !node.data.sections?.length) {
-            const model = await competencyService.get(change.id);
-            node.data.concepts = model?.concepts;
-            node.data.description = model.description;
-            node.data.objectives = model.objectives || [];
-          }
+        if (change.selected && !teacherMode.value) {
+          navigateTo(`/competency/${change.id}`);
         }
-        updateNodeData(change.id, { selected: change.selected });
       }
       nextChanges.push(change)
     }

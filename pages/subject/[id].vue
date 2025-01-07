@@ -29,11 +29,6 @@
         :allow-delete="teacherMode"
         @delete="deleteCompetency"
       />
-      <q-btn
-        v-if="teacherMode && subject.competencies.some((s) => !s.introduction)"
-        @click="generateCompetenciesData()"
-        >Populate</q-btn
-      >
     </div>
   </div>
   <div v-else>
@@ -133,20 +128,6 @@ const deleteCompetency = async (competency) => {
 
   subject.value.competencies = subject.value.competencies.filter(
     (s) => s.id !== competency.id
-  );
-
-  loading.hide();
-};
-
-const generateCompetenciesData = async () => {
-  loading.show();
-
-  await Promise.all(
-    subject.value.competencies.map((c) => {
-      if (!c.concepts?.length) {
-        return competencyService.createWithAI(c);
-      }
-    })
   );
 
   loading.hide();

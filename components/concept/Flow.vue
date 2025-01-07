@@ -113,15 +113,9 @@ onNodesChange(async (changes) => {
       }
     } else {
       if (change.type === "select") {
-        if (change.selected) {
-          const node = nodes.value.find(node => node.id === change.id);
-          if (node && !node.data.sections?.length) {
-            const model = await conceptService.get(change.id);
-            node.data.description = model.description;
-            node.data.objectives = model.objectives || [];
-          }
+        if (change.selected && !teacherMode.value) {
+          navigateTo(`/concept/${change.id}`);
         }
-        updateNodeData(change.id, { selected: change.selected });
       }
       nextChanges.push(change)
     }

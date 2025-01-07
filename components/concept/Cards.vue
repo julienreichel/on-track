@@ -11,6 +11,7 @@
       @click="$router.push(`/concept/${concept.id}`)"
     >
       <q-card-section>
+        <q-icon v-if="!concept.theory" name="warning" class="float-right text-warning" />
         <div class="text-h6 text-bold">{{ concept.name }}</div>
         <div class="q-mt-sm truncated-description">
           {{ concept.description }}
