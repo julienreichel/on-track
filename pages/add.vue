@@ -27,7 +27,8 @@
       />
     </div>
 
-    <q-btn label="Create" @click="sendRequest" />
+    <q-btn v-if="!nbRequest" label="Create" @click="sendRequest" />
+    <q-linear-progress v-if="nbRequest" size="xl" color="primary" :value="nbRequestDone / nbRequest" />
 
     <div>
       <subject-cards :subjects="subjects" />
@@ -46,7 +47,6 @@ const conceptService = useConcept();
 const { loading } = useQuasar();
 
 const prompt = ref("");
-const response = ref("");
 const subjects = ref([]);
 const locale = ref("en");
 const locales = [
@@ -57,44 +57,58 @@ const locales = [
 const enableCompetencies = ref(false);
 const enableConcepts = ref(false);
 
+const nbRequestDone = ref(0);
+const nbRequest = ref(0);
+
 const sendRequest = async () => {
   loading.show();
-  response.value = ""; // Clear previous response
+  nbRequest.value = 1 + (enableCompetencies.value ? 6 : 0) + (enableConcepts.value ? 6 * 6 * (1 + 4)  : 0);
+  nbRequestDone.value = 0;
   try {
+    nbRequestDone.value += 0.5;
     const subject = await subjectService.createWithAI(prompt.value, locale.value);
+    nbRequestDone.value += 0.5;
 
     if (subject) {
       subjects.value = [subject];
 
       if (enableCompetencies.value) {
+        const nbCompetencies = subject.competencies.length;
+        nbRequest.value = 1 + (enableCompetencies.value ? nbCompetencies : 0) + (enableConcepts.value ? nbCompetencies * 6 * (1 + 4)  : 0);
         await Promise.all(
-          subject.competencies.map((c) => {
+          subject.competencies.map(async (c) => {
             if (!c.concepts?.length) {
-              return competencyService.createWithAI(c);
+              await competencyService.createWithAI(c);
+            }
+            nbRequestDone.value++;
+            if (enableConcepts.value) {
+              const nbConcepts = c.concepts.length;
+              nbRequest.value = nbRequest.value - 6 * (1 + 4) + nbConcepts * (1 + 4);
+              await Promise.all(
+                c.concepts.map(async (cc) => {
+                  if (!cc.theory) {
+                    await conceptService.createWithAI(cc, locale.value);
+                    nbRequestDone.value++;
+                    await Promise.all(
+                      [1, 2, 3, 4].map(async (l) => {
+                        await conceptService.addQuizWithAI(cc, l);
+                        nbRequestDone.value++;
+                      })
+                    );
+                  }
+                })
+              );
             }
           })
         );
-
-        if (enableConcepts.value) {
-          for (const competency of subject.competencies) {
-            await Promise.all(
-              competency.concepts.map(async (c) => {
-                if (!c.theory) {
-                  await conceptService.createWithAI(c, locale.value);
-                  await Promise.all(
-                    [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(c, l))
-                  );
-                }
-              })
-            );
-          }
-        }
+        nbRequestDone.value = nbRequest.value;
       }
     }
   } catch (error) {
     console.error("Error creating subject:", error);
   } finally {
     loading.hide();
+    nbRequest.value = 0;
   }
 };
 </script>
