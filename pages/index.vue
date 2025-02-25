@@ -1,25 +1,37 @@
 <template>
   <div class="q-pa-sm">
     <cards-history :history="history" />
-    <!-- Concepts Sections -->
-    <q-list>
-      <q-expansion-item
+    <!-- TABS -->
+    <q-tabs
+      v-model="activeTab"
+      dense
+      class="text-h4"
+    >
+      <q-tab
         v-if="conceptsToRevisit.length"
+        name="review"
         label="Review"
-        :expanded="conceptsToRevisit.length"
-        group="concept"
-        default-opened
-        header-class="text-h3"
+      />
+      <q-tab
+        v-if="conceptsInProgress.length"
+        name="continue"
+        label="Continue"
+      />
+      <q-tab
+        v-if="relatedConcepts.length"
+        name="explore"
+        label="Explore"
+      />
+    </q-tabs>
+
+    <q-tab-panels v-model="activeTab" animated>
+
+      <!-- REVIEW TAB -->
+      <q-tab-panel
+        v-if="conceptsToRevisit.length"
+        name="review"
       >
         <div class="q-pa-sm q-gutter-sm">
-          <concept-cards
-            class="q-pa-sm lt-md"
-            :concepts="conceptsToRevisit.slice(0, 1)"
-          />
-          <concept-cards
-            class="q-pa-sm gt-sm"
-            :concepts="conceptsToRevisit.slice(0, 3)"
-          />
           <quiz-runner
             :questions="conceptsToRevisit[0].questions"
             :max="5"
@@ -37,29 +49,38 @@
                 )
             "
           />
+          <concept-cards
+            class="q-pa-sm gt-sm"
+            :concepts="conceptsToRevisit.slice(0, 3)"
+          />
         </div>
-      </q-expansion-item>
+      </q-tab-panel>
 
-      <q-expansion-item
+      <!-- CONTINUE TAB -->
+      <q-tab-panel
         v-if="conceptsInProgress.length"
-        :expanded="!conceptsToRevisit.length && conceptsInProgress.length"
-        label="Continue"
-        group="concept"
-        header-class="text-h3"
+        name="continue"
       >
-        <concept-cards class="q-pa-sm" :concepts="conceptsInProgress" />
-      </q-expansion-item>
+        <div class="q-pa-sm">
+          <concept-cards
+            :concepts="conceptsInProgress"
+          />
+        </div>
+      </q-tab-panel>
 
-      <q-expansion-item
+      <!-- EXPLORE TAB -->
+      <q-tab-panel
         v-if="relatedConcepts.length"
-        :expanded="!conceptsToRevisit.length && !conceptsInProgress.length"
-        label="Explore"
-        group="concept"
-        header-class="text-h3"
+        name="explore"
       >
-        <concept-cards class="q-pa-sm" :concepts="relatedConcepts" />
-      </q-expansion-item>
-    </q-list>
+        <div class="q-pa-sm">
+          <concept-cards
+            :concepts="relatedConcepts"
+          />
+        </div>
+      </q-tab-panel>
+
+    </q-tab-panels>
   </div>
 </template>
 
@@ -72,6 +93,7 @@ const relatedConcepts = ref([]);
 
 // Reference to hold history data
 const history = ref([]);
+const activeTab = ref('')  // Will hold "review", "continue", or "explore"
 
 // Access services
 const conceptService = useConcept();
@@ -188,6 +210,15 @@ const fetchConceptActions = async () => {
       router.push('/subjects');
     }
     sortRevisitedConcepts();
+
+    // Pick a default active tab
+    if (conceptsToRevisit.value.length) {
+      activeTab.value = 'review'
+    } else if (conceptsInProgress.value.length) {
+      activeTab.value = 'continue'
+    } else {
+      activeTab.value = 'explore'
+    }
   } catch (error) {
     console.error('Error fetching concept actions:', error);
   }
