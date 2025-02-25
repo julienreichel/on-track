@@ -104,6 +104,7 @@
                           <q-icon
                             v-for="i in 5"
                             :key="i"
+                            :color="getBatteryColor(concept.action, i)"
                             :name="getBatteryIcon(concept.action, i)"
                           />
                         </div>
@@ -204,6 +205,17 @@ const getBatteryIcon = (action, index) => {
     if (remaining >= 1) return "battery_2_bar";
   }
   return "battery_0_bar";
+};
+
+const getBatteryColor = (action, index) => {
+  const correctAnswers = action.answeredQuestions?.filter(q => q.isValid).length || 0;
+  const fullBatteries = Math.floor(correctAnswers / 4);
+  if (index <= fullBatteries) return "primary";
+  const remaining = correctAnswers % 4;
+  if (index === fullBatteries + 1) {
+    if (remaining >= 1) return "primary";
+  }
+  return "grey-4";
 };
 
 const addFollowUpConcept = async (concept) => {

@@ -60,7 +60,6 @@
       @progress="updateQuestionsProgress"
     />
 
-    <h3>Concepts</h3>
     <div v-if="competency.concepts?.length">
       <concept-flow
         :concepts="competency.concepts"

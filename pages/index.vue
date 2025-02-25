@@ -4,21 +4,26 @@
     <!-- TABS -->
     <q-tabs
       v-model="activeTab"
-      dense
-      class="text-h4"
+      inline-label
+      align="justify"
+      narrow-indicator
+      class="bg-primary text-white"
     >
       <q-tab
         v-if="conceptsToRevisit.length"
+        icon="fact_check"
         name="review"
         label="Review"
       />
       <q-tab
         v-if="conceptsInProgress.length"
+        icon="play_circle"
         name="continue"
         label="Continue"
       />
       <q-tab
         v-if="relatedConcepts.length"
+        icon="travel_explore"
         name="explore"
         label="Explore"
       />

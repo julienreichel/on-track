@@ -1,10 +1,8 @@
 <template>
   <div v-if="concept" class="q-pa-sm">
-    <concept-status
-      :concept="concept"
-      :concept-action="conceptAction"
-      @finished="conceptDone"
-    />
+    <!-- Existing concept header/flow/etc. -->    
+    <competency-list class="bg-primary q-px-sm text-white" :competencies="[concept.competency]" />
+    
     <concept-flow
       :concepts="relatedConcepts"
       :prerequisites="relatedLinks"
@@ -12,15 +10,13 @@
       :style="{ height: `${height}px`, width: '100%' }"
       class="gt-xs"
     />
-    <competency-list :competencies="[concept.competency]" />
-
+    
     <editable-text
       :value="concept.name"
       :enable-editing="teacherMode"
       class="text-h1"
       @update="(text) => updateConcept('name', text)"
     />
-
     <editable-text
       v-if="concept.description"
       :value="concept.description"
@@ -30,183 +26,254 @@
       @update="(text) => updateConcept('description', text)"
     />
 
-    <q-list>
-      <q-expansion-item
+    <!-- TABS -->
+    <concept-status
+      :concept="concept"
+      :concept-action="conceptAction"
+      @finished="conceptDone"
+      class="q-pb-sm"
+    />
+
+    <q-tabs
+      v-model="activeTab"
+      inline-label
+      align="justify"
+      narrow-indicator
+      class="bg-primary text-white"
+    >
+      <!-- 1. OBJECTIVES (when in-progress or teacherMode) -->
+      <q-tab
         v-if="teacherMode || conceptAction?.inProgress"
+        name="objectives"
         label="Objectives"
-        header-class="text-h3"
-        group="concept"
-        :content-inset-level="0.5"
-        @hide="finaliseObjective"
-      >
-        <editable-text
-          v-if="teacherMode"
-          :value="concept.objectives.join('\n\n')"
-          :enable-editing="teacherMode"
-          type="textarea"
-          use-rich-text
-          @update="(text) => updateConcept('objectives', text.split('\n').filter((o) => o))"
-        />
-        <objective-select
-          v-else-if="!conceptAction?.objectives?.length"
-          :objectives="concept.objectives"
-          @selected="createObjective"
-        />
-        <objective-list
-          v-else
-          :objectives="conceptAction?.objectives.map((o) => o.objective)"
-          :disabled="true"
-        />
-      </q-expansion-item>
+        icon="fact_check"
+      />
 
-      <q-expansion-item
+      <!-- 2. THEORY -->
+      <q-tab
         v-if="teacherMode || concept.theory"
+        name="theory"
         label="Theory"
-        header-class="text-h3"
-        group="concept"
-        :content-inset-level="teacherMode ? 0.5 : 0"
-      >
-        <div v-if="!teacherMode && concept.theory">
-          <concept-runner
-            :markdown-content="concept.theory"
-            @finished="markAsRead('theory')"
-          />
-        </div>
-        <editable-text
-          v-if="concept.theory"
-          :value="concept.theory"
-          :enable-editing="teacherMode"
-          type="textarea"
-          use-rich-text
-          @update="(text) => updateConcept('theory', text)"
-        />
-        <q-btn v-else-if="teacherMode" @click="generateConceptData()"
-          >Generate</q-btn
-        >
-      </q-expansion-item>
+        icon="school"
+      />
 
-      <q-expansion-item
+      <!-- 3. EXAMPLES -->
+      <q-tab
         v-if="concept.examples"
-        v-model="openExamples"
+        name="examples"
         label="Examples"
-        header-class="text-h3"
-        group="concept"
-        :content-inset-level="0.5"
-      >
-        <div v-if="!teacherMode && concept.examples">
-          <concept-runner
-            :markdown-content="concept.examples"
-            @finished="markAsRead('examples')"
-          />
-        </div>
-        <editable-text
-          v-if="concept.examples"
-          :value="concept.examples"
-          :enable-editing="teacherMode"
-          type="textarea"
-          use-rich-text
-          @update="(text) => updateConcept('examples', text)"
-        />
-      </q-expansion-item>
+        icon="description"
+      />
 
-      <q-expansion-item
+      <!-- 4. FLASHCARDS -->
+      <q-tab
         v-if="concept.flashCards?.length"
-        v-model="openFlashCards"
+        name="flashcards"
         label="Flashcards"
-        header-class="text-h3"
-        group="concept"
-      >
-        <div class="row q-col-gutter-sm">
-          <div
-            v-for="flashCard in concept.flashCards"
-            :key="flashCard.id"
-            class="col-12 col-sm-6 col-md"
-          >
-            <flashcard-view
-              :flash-card="flashCard"
-              @success="(status) => updateFlashCard(flashCard.id, status)"
+        icon="sync"
+      />
+
+      <!-- 5. QUIZ -->
+      <q-tab
+        v-if="teacherMode || concept.questions?.length"
+        name="quiz"
+        label="Quiz"
+        icon="help_center"
+      />
+
+      <!-- 6. COMPLETED OBJECTIVES (when no longer in-progress) -->
+      <q-tab
+        v-if="!conceptAction?.inProgress && conceptAction?.objectives?.length"
+        name="objectivesDone"
+        label="Objectives"
+        icon="fact_check"
+      />
+
+      <!-- 7. NEXT STEPS (when no longer in-progress) -->
+      <q-tab
+        v-if="!conceptAction?.inProgress"
+        name="nextSteps"
+        label="Next steps"
+        icon="exit_to_app"
+      />
+    </q-tabs>
+
+    <!-- TAB PANELS -->
+    <q-tab-panels v-model="activeTab" animated>
+      <!-- OBJECTIVES TAB -->
+      <q-tab-panel name="objectives">
+        <q-list>
+          <div class="q-pa-sm">
+            <editable-text
+              v-if="teacherMode"
+              :value="concept.objectives.join('\n\n')"
+              :enable-editing="teacherMode"
+              type="textarea"
+              use-rich-text
+              @update="
+                (text) =>
+                  updateConcept(
+                    'objectives',
+                    text.split('\n').filter((o) => o)
+                  )
+              "
+            />
+            <objective-select
+              v-else-if="!conceptAction?.objectives?.length"
+              :objectives="concept.objectives"
+              @selected="createObjective"
+            />
+            <objective-list
+              v-else
+              :objectives="conceptAction?.objectives.map((o) => o.objective)"
+              :disabled="true"
             />
           </div>
-        </div>
-        <q-banner
-          v-if="!conceptAction?.usedFlashCards?.length"
-          class="bg-secondary q-mt-md text-white"
-        >
-          Test yourself using flashcards, then mark them as correct
-          <q-icon class="text-positive" name="check" /> or incorrect
-          <q-icon class="text-negative" name="close" />.
-        </q-banner>
-      </q-expansion-item>
+        </q-list>
+      </q-tab-panel>
 
-      <q-expansion-item
-        v-if="teacherMode || concept.questions?.length"
-        v-model="openQuiz"
-        header-class="text-h3"
-        group="concept"
-        :content-inset-level="teacherMode ? 0.5 : 0"
-      >
-        <template #header>
-          <q-item-section> Quiz </q-item-section>
-
-          <q-item-section
-            v-if="conceptAction && !conceptAction.inProgress && !teacherMode"
-            side
-          >
-            <div class="row items-center">
-              <q-icon
-                v-for="i in 5"
-                :key="i"
-                :name="getBatteryIcon(conceptAction, i)"
+      <!-- THEORY TAB -->
+      <q-tab-panel name="theory">
+        <q-list>
+          <div class="q-pa-sm">
+            <div v-if="!teacherMode && concept.theory">
+              <concept-runner
+                :markdown-content="concept.theory"
+                @finished="markAsRead('theory')"
               />
             </div>
-          </q-item-section>
-        </template>
-        <div v-if="concept.questions?.length">
-          <quiz-runner
-            v-if="!teacherMode"
-            :questions="concept.questions"
-            :max="quizSize"
-            @finished="updateQuestionsFinished"
-            @results="updateQuestionsResults"
-            @progress="updateQuestionsProgress"
-          />
-          <question-list v-else :questions="randomizedQuestions" />
-        </div>
-        <div v-else-if="teacherMode">
-          <q-btn @click="generateQuizData()">Generate</q-btn>
-        </div>
-      </q-expansion-item>
-      <q-expansion-item
-        v-if="!conceptAction?.inProgress && conceptAction?.objectives?.length"
-        v-model="openObjective"
-        label="Objectives"
-        header-class="text-h3"
-        group="concept"
-        :content-inset-level="0.5"
-      >
-        <objective-list
-          :objectives="conceptAction?.objectives.map((o) => o.objective)"
-          :default-check="conceptAction?.objectives.map((o) => o.isDone)"
-          :disabled="disableObjectives"
-          @check-objective="updateObjective"
-        />
-        <q-banner
-          v-if="!conceptAction.objectives.some((o) => o.isDone)"
-          class="bg-secondary q-mt-md text-white"
-        >
-          Have you met your objectives?
-        </q-banner>
-      </q-expansion-item>
-      <q-expansion-item
-        v-if="!conceptAction?.inProgress"
-        label="Next steps"
-        header-class="text-h3"
-        group="concept"
-      >
-        <concept-cards :concepts="nextConcepts" />
-      </q-expansion-item>
-    </q-list>
+            <editable-text
+              v-if="teacherMode && concept.theory"
+              :value="concept.theory"
+              :enable-editing="teacherMode"
+              type="textarea"
+              use-rich-text
+              @update="(text) => updateConcept('theory', text)"
+            />
+            <q-btn v-else-if="teacherMode" @click="generateConceptData()">
+              Generate
+            </q-btn>
+          </div>
+        </q-list>
+      </q-tab-panel>
+
+      <!-- EXAMPLES TAB -->
+      <q-tab-panel name="examples">
+        <q-list>
+          <div class="q-pa-sm">
+            <div v-if="!teacherMode && concept.examples">
+              <concept-runner
+                :markdown-content="concept.examples"
+                @finished="markAsRead('examples')"
+              />
+            </div>
+            <editable-text
+              v-if="teacherMode && concept.examples"
+              :value="concept.examples"
+              :enable-editing="teacherMode"
+              type="textarea"
+              use-rich-text
+              @update="(text) => updateConcept('examples', text)"
+            />
+          </div>
+        </q-list>
+      </q-tab-panel>
+
+      <!-- FLASHCARDS TAB -->
+      <q-tab-panel name="flashcards">
+        <q-list>
+          <div class="row q-col-gutter-sm q-pa-sm">
+            <div
+              v-for="flashCard in concept.flashCards"
+              :key="flashCard.id"
+              class="col-12 col-sm-6 col-md"
+            >
+              <flashcard-view
+                :flash-card="flashCard"
+                @success="(status) => updateFlashCard(flashCard.id, status)"
+              />
+            </div>
+          </div>
+          <q-banner
+            v-if="!conceptAction?.usedFlashCards?.length"
+            class="bg-secondary q-mt-md text-white"
+          >
+            Test yourself using flashcards, then mark them as correct
+            <q-icon class="text-positive" name="check" /> or incorrect
+            <q-icon class="text-negative" name="close" />.
+          </q-banner>
+        </q-list>
+      </q-tab-panel>
+
+      <!-- QUIZ TAB -->
+      <q-tab-panel name="quiz">
+        <q-list>
+          <template #header>
+            <!-- Battery Icons (if desired) -->
+            <q-item-section
+              v-if="conceptAction && !conceptAction.inProgress && !teacherMode"
+              side
+            >
+              <div class="row items-center">
+                <q-icon
+                  v-for="i in 5"
+                  :key="i"
+                  :name="getBatteryIcon(conceptAction, i)"
+                />
+              </div>
+            </q-item-section>
+          </template>
+
+          <div class="q-pa-sm">
+            <div v-if="concept.questions?.length">
+              <quiz-runner
+                v-if="!teacherMode"
+                :questions="concept.questions"
+                :max="quizSize"
+                @finished="updateQuestionsFinished"
+                @results="updateQuestionsResults"
+                @progress="updateQuestionsProgress"
+              />
+              <question-list v-else :questions="randomizedQuestions" />
+            </div>
+            <div v-else-if="teacherMode">
+              <q-btn @click="generateQuizData()">Generate</q-btn>
+            </div>
+          </div>
+        </q-list>
+      </q-tab-panel>
+
+      <!-- COMPLETED OBJECTIVES TAB (objectives when no longer in progress) -->
+      <q-tab-panel name="objectivesDone">
+        <q-list>
+          <div class="q-pa-sm">
+            <objective-list
+              :objectives="conceptAction?.objectives.map((o) => o.objective)"
+              :default-check="conceptAction?.objectives.map((o) => o.isDone)"
+              :disabled="disableObjectives"
+              @check-objective="updateObjective"
+            />
+            <q-banner
+              v-if="!conceptAction.objectives.some((o) => o.isDone)"
+              class="bg-secondary q-mt-md text-white"
+            >
+              Have you met your objectives?
+            </q-banner>
+          </div>
+        </q-list>
+      </q-tab-panel>
+
+      <!-- NEXT STEPS TAB -->
+      <q-tab-panel name="nextSteps">
+        <q-list>
+          <div class="q-pa-sm">
+            <concept-cards :concepts="nextConcepts" />
+          </div>
+        </q-list>
+      </q-tab-panel>
+    </q-tab-panels>
   </div>
+
   <div v-else>
     <p>Loading concept data...</p>
   </div>
@@ -220,6 +287,7 @@ const { loading } = useQuasar();
 
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
+const activeTab = ref("objectives");
 const concept = ref(null);
 const conceptAction = ref(null);
 
@@ -246,6 +314,21 @@ onMounted(async () => {
           inProgress: true,
         });
       }
+    }
+    if (conceptAction.value?.inProgress){
+      if (!conceptAction.value?.objectives?.length){
+        activeTab.value = 'objectives';
+      } else if (!conceptAction.value?.theory) {
+        activeTab.value = 'theory';
+      } else if (!conceptAction.value?.examples) {
+        activeTab.value = 'examples';
+      } else if (conceptAction.value.usedFlashCards?.length !== concept.value.flashCards?.length){
+        activeTab.value = 'flashcards';
+      } else {
+        activeTab.value = 'quiz';
+      }
+    } else {
+      activeTab.value = 'quiz';
     }
   } catch (error) {
     console.error("Failed to fetch concept or user action:", error);
@@ -334,8 +417,6 @@ const updateStarted = () => {
   return conceptActionService.updateStarted(conceptAction.value);
 };
 
-const openExamples = ref(false);
-const openFlashCards = ref(false);
 const openQuiz = ref(false);
 
 const markAsRead = async (field) => {
@@ -354,9 +435,9 @@ const markAsRead = async (field) => {
   }
 
   if (field === "theory") {
-    openExamples.value = true;
+    activeTab.value = "examples";
   } else if (field === "examples") {
-    openFlashCards.value = true;
+    activeTab.value = "flashcards";
   }
 };
 
@@ -366,6 +447,11 @@ const createObjective = async (o) => {
   objectives = o;
 };
 
+watch(activeTab, (name) => {
+  if (name === 'objectives') {
+    finaliseObjective();
+  }
+})
 const finaliseObjective = async () => {
   console.log("Finalise objectives", objectives);
   if (teacherMode.value || !conceptAction.value) {
@@ -428,13 +514,12 @@ const updateFlashCard = async (flashCardId, status) => {
   await conceptActionService.update(conceptAction.value);
 
   if (triggerOpenQuiz) {
-    openQuiz.value = true;
+    activeTab.value = "quiz";
   }
 };
 
-const openObjective = ref(false);
 const updateQuestionsFinished = () => {
-  openObjective.value = true;
+  activeTab.value = "objectivesDone";
 };
 
 const updateQuestionsProgress = async (questions) => {

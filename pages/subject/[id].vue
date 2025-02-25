@@ -17,7 +17,6 @@
     <q-btn v-else @click="generateSubjectData()">Generate</q-btn>
 
     <div v-if="subject.competencies?.length">
-      <h3>Competencies</h3>
       <competency-flow
         :competencies="subject.competencies"
         :direction="direction"
