@@ -1,12 +1,12 @@
 <template>
-  <q-card v-if="currentSlide" class="q-pt-sm">
+  <q-card v-if="currentSlide" class="q-pt-xs">
     <q-card-section v-if="title" class="q-pb-none">
       <div class="text-h5 text-center">{{ title }}</div>
     </q-card-section>
-    <q-card-section class="q-pt-none">
+    <q-card-section class="q-pt-none q-px-sm">
       <q-linear-progress :value="progress" class="q-mt-md" size="lg" />
     </q-card-section>
-    <q-card-section>
+    <q-card-section class="q-pa-sm">
       <q-card square>
         <q-card-section>
           <rich-text-renderer :markdown-content="currentSlide" />

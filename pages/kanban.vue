@@ -133,7 +133,7 @@
     <div v-if="!loading" class="q-my-sm">
       <div class="text-h5 q-mb-md">Backlog</div>
       <q-card flat>
-        <q-card-section class="q-pa-sm">
+        <q-card-section class="q-pa-none">
           <div class="row q-col-gutter-sm">
             <div
               v-for="concept in followUpConcepts"

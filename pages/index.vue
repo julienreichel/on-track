@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-sm">
+  <div class="q-px-none q-py-sm q-gutter-sm">
     <cards-history :history="history" />
     <!-- TABS -->
     <q-tabs
@@ -35,8 +35,9 @@
       <q-tab-panel
         v-if="conceptsToRevisit.length"
         name="review"
+        class="q-pa-none"
       >
-        <div class="q-pa-sm q-gutter-sm">
+        <div class="q-py-sm q-px-none">
           <quiz-runner
             :questions="conceptsToRevisit[0].questions"
             :max="5"
@@ -54,6 +55,7 @@
                 )
             "
           />
+
           <concept-cards
             class="q-pa-sm gt-sm"
             :concepts="conceptsToRevisit.slice(0, 3)"
@@ -65,6 +67,7 @@
       <q-tab-panel
         v-if="conceptsInProgress.length"
         name="continue"
+        class="q-pa-none"
       >
         <div class="q-pa-sm">
           <concept-cards
@@ -77,6 +80,7 @@
       <q-tab-panel
         v-if="relatedConcepts.length"
         name="explore"
+        class="q-pa-none"
       >
         <div class="q-pa-sm">
           <concept-cards

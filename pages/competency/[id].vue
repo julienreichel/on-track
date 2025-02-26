@@ -1,13 +1,13 @@
 <template>
-  <div v-if="competency" class="q-pa-sm q-gutter-sm">
+  <div v-if="competency" class="q-px-none q-py-sm q-gutter-sm">
     <competency-flow
       :competencies="relatedCompetencies"
       :prerequisites="relatedLinks"
       :direction="direction"
       :style="{ height: `${height}px`, width: '100%' }"
-      class="gt-xs"
+      class="gt-xs q-px-sm"
     />
-    <subject-list :subjects="[competency.subject]" />
+    <subject-list :subjects="[competency.subject]" class="bg-primary q-px-sm text-white"/>
 
     <competency-level
       v-if="competencyAction"
@@ -18,7 +18,7 @@
     <editable-text
       :value="competency.name"
       :enable-editing="teacherMode"
-      class="text-h1"
+      class="text-h3 q-px-sm"
       @update="(text) => updateCompetency('name', text)"
     />
     <editable-text
@@ -26,6 +26,7 @@
       :value="competency.description"
       :enable-editing="teacherMode"
       type="textarea"
+      class="q-px-sm"
       use-rich-text
       @update="(text) => updateCompetency('description', text)"
     />
@@ -44,7 +45,7 @@
       "
       :label="quizLabel"
       color="primary"
-      class="q-my-md"
+      class="q-my-md full-width"
       @click="startPreCheck"
     />
 

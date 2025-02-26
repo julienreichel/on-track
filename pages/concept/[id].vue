@@ -1,5 +1,5 @@
 <template>
-  <div v-if="concept" class="q-pa-sm">
+  <div v-if="concept" class="q-px-none q-py-sm q-gutter-sm">
     <!-- Existing concept header/flow/etc. -->    
     <competency-list class="bg-primary q-px-sm text-white" :competencies="[concept.competency]" />
     
@@ -8,13 +8,13 @@
       :prerequisites="relatedLinks"
       direction="LR"
       :style="{ height: `${height}px`, width: '100%' }"
-      class="gt-xs"
+      class="gt-xs q-px-sm"
     />
     
     <editable-text
       :value="concept.name"
       :enable-editing="teacherMode"
-      class="text-h1"
+      class="text-h3 q-px-sm"
       @update="(text) => updateConcept('name', text)"
     />
     <editable-text
@@ -22,6 +22,7 @@
       :value="concept.description"
       :enable-editing="teacherMode"
       type="textarea"
+      class="q-px-sm"
       use-rich-text
       @update="(text) => updateConcept('description', text)"
     />
@@ -101,7 +102,7 @@
     <!-- TAB PANELS -->
     <q-tab-panels v-model="activeTab" animated>
       <!-- OBJECTIVES TAB -->
-      <q-tab-panel name="objectives">
+      <q-tab-panel name="objectives" class="q-pa-none">
         <q-list>
           <div class="q-pa-sm">
             <editable-text
@@ -133,9 +134,9 @@
       </q-tab-panel>
 
       <!-- THEORY TAB -->
-      <q-tab-panel name="theory">
+      <q-tab-panel name="theory" class="q-pa-none">
         <q-list>
-          <div class="q-pa-sm">
+          <div class="q-py-sm q-px-none">
             <div v-if="!teacherMode && concept.theory">
               <concept-runner
                 :markdown-content="concept.theory"
@@ -158,9 +159,9 @@
       </q-tab-panel>
 
       <!-- EXAMPLES TAB -->
-      <q-tab-panel name="examples">
+      <q-tab-panel name="examples" class="q-pa-none">
         <q-list>
-          <div class="q-pa-sm">
+          <div class="q-py-sm q-px-none">
             <div v-if="!teacherMode && concept.examples">
               <concept-runner
                 :markdown-content="concept.examples"
@@ -180,7 +181,7 @@
       </q-tab-panel>
 
       <!-- FLASHCARDS TAB -->
-      <q-tab-panel name="flashcards">
+      <q-tab-panel name="flashcards" class="q-pa-none">
         <q-list>
           <div class="row q-col-gutter-sm q-pa-sm">
             <div
@@ -206,7 +207,7 @@
       </q-tab-panel>
 
       <!-- QUIZ TAB -->
-      <q-tab-panel name="quiz">
+      <q-tab-panel name="quiz" class="q-pa-none">
         <q-list>
           <template #header>
             <!-- Battery Icons (if desired) -->
@@ -224,7 +225,7 @@
             </q-item-section>
           </template>
 
-          <div class="q-pa-sm">
+          <div class="q-py-sm q-px-none" >
             <div v-if="concept.questions?.length">
               <quiz-runner
                 v-if="!teacherMode"
@@ -244,7 +245,7 @@
       </q-tab-panel>
 
       <!-- COMPLETED OBJECTIVES TAB (objectives when no longer in progress) -->
-      <q-tab-panel name="objectivesDone">
+      <q-tab-panel name="objectivesDone" class="q-pa-none">
         <q-list>
           <div class="q-pa-sm">
             <objective-list
@@ -264,7 +265,7 @@
       </q-tab-panel>
 
       <!-- NEXT STEPS TAB -->
-      <q-tab-panel name="nextSteps">
+      <q-tab-panel name="nextSteps" class="q-pa-none">
         <q-list>
           <div class="q-pa-sm">
             <concept-cards :concepts="nextConcepts" />

@@ -1,12 +1,12 @@
 <template>
   <q-card v-if="!hasValidatedAnswers && question" class="q-pt-sm">
-    <q-card-section v-if="title" class="q-pb-none">
+    <q-card-section v-if="title" class="q-pb-none q-px-sm">
       <div class="text-h5 text-center">{{ title }}</div>
     </q-card-section>
     <q-card-section class="q-pt-none">
       <q-linear-progress :value="progress" class="q-mt-md" size="lg" />
     </q-card-section>
-    <q-card-section>
+    <q-card-section class="q-pa-sm">
       <q-card square>
         <q-card-section v-if="question.text">
           <rich-text-renderer class="text-h6" :markdown-content="question.text" />

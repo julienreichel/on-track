@@ -1,9 +1,9 @@
 <template>
-  <div v-if="subject" class="q-pa-sm">
+  <div v-if="subject" class="q-pa-sm q-gutter-sm">
     <editable-text
       :value="subject.name"
       :enable-editing="teacherMode"
-      class="text-h1"
+      class="text-h3"
       @update="(text) => updateSubject('name', text)"
     />
     <editable-text
