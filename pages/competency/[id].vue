@@ -1,5 +1,6 @@
 <template>
   <div v-if="competency" class="q-px-none q-py-sm q-gutter-sm">
+    <subject-list :subjects="[competency.subject]" class="bg-primary q-px-sm text-white"/>
     <competency-flow
       :competencies="relatedCompetencies"
       :prerequisites="relatedLinks"
@@ -7,7 +8,6 @@
       :style="{ height: `${height}px`, width: '100%' }"
       class="gt-xs q-px-sm"
     />
-    <subject-list :subjects="[competency.subject]" class="bg-primary q-px-sm text-white"/>
 
     <competency-level
       v-if="competencyAction"
@@ -31,23 +31,17 @@
       @update="(text) => updateCompetency('description', text)"
     />
 
-    <editable-text
-      v-if="teacherMode"
-      :value="competency.objectives.join('\n\n')"
-      :enable-editing="teacherMode"
-      type="textarea"
-      use-rich-text
-      @update="(text) => updateCompetency('objectives', text.split('\n').filter((o) => o))"
-    />
-    <q-btn
-      v-if="
-        !teacherMode && !showQuiz && !competency.concepts.some((s) => !s.theory)
-      "
-      :label="quizLabel"
-      color="primary"
-      class="q-my-md full-width"
-      @click="startPreCheck"
-    />
+    <div class="q-pa-sm">
+      <q-btn
+        v-if="
+          !teacherMode && !showQuiz && !competency.concepts.some((s) => !s.theory)
+        "
+        :label="quizLabel"
+        color="primary"
+        class="q-ma-md full-width"
+        @click="startPreCheck"
+      />
+    </div>
 
     <quiz-runner
       v-if="showQuiz"
@@ -66,11 +60,12 @@
         :concepts="competency.concepts"
         :direction="direction"
         :style="{ height: `${heightConcepts}px`, width: '100%' }"
-        class="gt-xs"
+        class="q-pa-sm gt-xs"
       />
       <concept-cards
         :concepts="competency.concepts"
         :allow-delete="teacherMode"
+        class="q-pa-sm"
         @delete="deleteConcept"
       />
       <q-btn

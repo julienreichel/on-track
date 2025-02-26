@@ -18,7 +18,7 @@
       @update="(text) => updateConcept('name', text)"
     />
     <editable-text
-      v-if="concept.description"
+      v-if="concept.description && !hasObjectives"
       :value="concept.description"
       :enable-editing="teacherMode"
       type="textarea"
@@ -120,7 +120,7 @@
               "
             />
             <objective-select
-              v-else-if="!conceptAction?.objectives?.length"
+              v-else-if="!hasObjectives"
               :objectives="concept.objectives"
               @selected="createObjective"
             />
@@ -336,6 +336,8 @@ onMounted(async () => {
   }
 });
 
+const hasObjectives = computed( () => conceptAction.value?.objectives?.length )
+
 const relatedConcepts = computed(() => {
   const relatedConcepts = [concept.value];
   if (concept.value?.prerequisites) {
@@ -417,8 +419,6 @@ const updateStarted = () => {
   }
   return conceptActionService.updateStarted(conceptAction.value);
 };
-
-const openQuiz = ref(false);
 
 const markAsRead = async (field) => {
   if (teacherMode.value || !conceptAction.value) {
