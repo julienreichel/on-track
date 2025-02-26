@@ -31,8 +31,8 @@
     <concept-status
       :concept="concept"
       :concept-action="conceptAction"
-      @finished="conceptDone"
       class="q-pb-sm"
+      @finished="conceptDone"
     />
 
     <q-tabs
