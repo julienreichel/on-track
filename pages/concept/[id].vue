@@ -181,15 +181,21 @@
 
       <!-- FLASHCARDS TAB -->
       <q-tab-panel name="flashcards" class="q-pa-none">
-        <div v-if="!teacherMode">
+        <editable-text
+          v-if="teacherMode"
+          :value="flashCardsAsText"
+          :enable-editing="teacherMode"
+          type="textarea"
+          class="q-pa-sm"
+          use-rich-text
+          @update="updateFlashCardContent"
+        />
+        <div v-else>
           <flashcard-runner
             :flash-cards="concept.flashCards"            
             @updated="updateFlashCard"
             @finished="activeTab = 'quiz'"
           />
-        </div>
-        <div v-else>
-          Edit flashcard content as text
         </div>
       </q-tab-panel>
 
@@ -569,5 +575,24 @@ const getBatteryIcon = (action, index) => {
 const updateConcept = async (field, value) => {
   concept.value[field] = value;
   await conceptService.update(concept.value);
+};
+
+const flashCardsAsText = computed(() => {
+  return concept.value.flashCards
+    .map((f, idx) => `##### Card ${idx + 1}\n- ${f.question}\n- ${f.answer}\n- ${f.notes}`)
+    .join("\n\n");
+});
+
+const updateFlashCardContent = async (text) => {
+  if (teacherMode.value) {
+    concept.value.flashCards = text
+      .split("\n\n")
+      .map((f) => {
+        const [,question, answer, notes] = f.split("\n- ");
+        return { question, answer, notes };
+      })
+      .filter((f) => f.question && f.answer);
+    await conceptService.update(concept.value);
+  }
 };
 </script>
