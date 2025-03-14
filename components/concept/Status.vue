@@ -34,12 +34,10 @@ const progress = computed(() => {
   let progress = 0;
 
   if (objectives?.length) progress += 10;
-  if (theory) progress += 10;
+  if (theory) progress += 15;
   if (examples) progress += 10;
   if (usedFlashCards) {
-    progress += usedFlashCards
-      .map((f) => (f.isOk ? 10 : 5))
-      .reduce((a, b) => a + b, 0);
+    progress += Math.min(5, usedFlashCards.length) * 5;
   }
   if (answeredQuestions && actionTimestamps && actionTimestamps.some((as) => as.actionType === "quiz" || as.actionType === "pre-quiz")) {
     progress += answeredQuestions.filter((q) => q.isValid).length * 5;
@@ -47,17 +45,17 @@ const progress = computed(() => {
   return progress;
 });
 
-const nbFlashCards = computed(() => props.concept.flashCards?.length || 0 );
+const nbFlashCards = computed(() => Math.min(props.concept.flashCards?.length, 5));
 const nbQuestion = computed(() => Math.min(props.concept.questions?.length || 0, 10));
 // A sucess, means, all the theory and examples are read
 // the flashcards have been used and the 10 questions have been answered with at leat 80% of success
-const success = computed(() => 10 + 10 + 10 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 0.8);
-// A review is a success + all falshcard corect + 3 quiz of 5 question with at least 4 correct
-const review = computed(() => Math.max(10 + 10 + 10 + 10 * nbFlashCards.value + 5 * nbQuestion.value * 2.5 * 0.8, progress.value));
+const success = computed(() => 10 + 15 + 10 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 0.8);
+// A review is a success + all falshcard + 3 quiz of 5 question with at least 4 correct
+const review = computed(() => Math.max(10 + 15 + 10 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 2.5 * 0.8, progress.value));
 
 const finished = computed(() => progress.value >= success.value);
 const color = computed(() => (finished.value ? "primary" : "secondary"));
-const progressPercent = computed(() => (Math.floor(progress.value / success.value * 10) * 10));
+const progressPercent = computed(() => (Math.floor(progress.value / success.value * 20) * 5));
 
 const emit = defineEmits(["finished"]);
 

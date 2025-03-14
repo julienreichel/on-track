@@ -181,26 +181,16 @@
 
       <!-- FLASHCARDS TAB -->
       <q-tab-panel name="flashcards" class="q-pa-none">
-        <div class="row q-col-gutter-sm q-pa-sm">
-          <div
-            v-for="flashCard in concept.flashCards"
-            :key="flashCard.id"
-            class="col-12 col-sm-6 col-md"
-          >
-            <flashcard-view
-              :flash-card="flashCard"
-              @success="(status) => updateFlashCard(flashCard.id, status)"
-            />
-          </div>
+        <div v-if="!teacherMode">
+          <flashcard-runner
+            :flash-cards="concept.flashCards"            
+            @updated="updateFlashCard"
+            @finished="activeTab = 'quiz'"
+          />
         </div>
-        <q-banner
-          v-if="!conceptAction?.usedFlashCards?.length"
-          class="bg-secondary q-mt-md text-white"
-        >
-          Test yourself using flashcards, then mark them as correct
-          <q-icon class="text-positive" name="check" /> or incorrect
-          <q-icon class="text-negative" name="close" />.
-        </q-banner>
+        <div v-else>
+          Edit flashcard content as text
+        </div>
       </q-tab-panel>
 
       <!-- QUIZ TAB -->
@@ -489,7 +479,7 @@ const updateObjective = async (objectives) => {
   }
 };
 
-const updateFlashCard = async (flashCardId, status) => {
+const updateFlashCard = async ({flashCardId, status}) => {
   if (teacherMode.value || !conceptAction.value) {
     return;
   }

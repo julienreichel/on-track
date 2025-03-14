@@ -205,7 +205,7 @@ watch(question, (newQuestion, oldQuestion) => {
   }
   timeStart = timeEnd;
 });
-const hasAnswer = computed(() => question.value.response !== undefined);
+const hasAnswer = computed(() => question.value.response !== undefined && (question.value.type != "checkbox" || question.value.response.length));
 
 const options = computed(() => getOptions(question.value));
 
