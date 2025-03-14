@@ -1,48 +1,62 @@
 <template>
-  <div>
-    <q-list class="q-pa-sm">
-      <q-item
-        v-for="(objective, idx) in objectivesWithCustom"
-        :key="idx"
-        class="q-pa-none"
+  <q-card class="q-pt-xs">
+    <q-card-section class="q-pb-none">
+      <q-list class="q-pa-sm">
+        <q-item
+          v-for="(objective, idx) in objectivesWithCustom"
+          :key="idx"
+          class="q-pa-none"
+        >
+          <q-item-section side>
+            <q-checkbox
+              v-model="selected[idx]"
+              :disable="disabled && !selected[idx]"
+              @update:model-value="updateSelection"
+            />
+          </q-item-section>
+          <q-item-section>{{ objective }}</q-item-section>
+        </q-item>
+      </q-list>
+
+      <q-input
+        v-model="newObjective"
+        label="Add your own objective"
+        dense
+        class="q-my-md"
+        :disable="disabled"
+        @keyup.enter="addObjective"
       >
-        <q-item-section side>
-          <q-checkbox
-            v-model="selected[idx]"
-            :disable="disabled && !selected[idx]"
-            @update:model-value="updateSelection"
+        <template #append>
+          <q-btn
+            flat
+            dense
+            icon="add"
+            :disable="!newObjective || disabled"
+            @click="addObjective"
           />
-        </q-item-section>
-        <q-item-section>{{ objective }}</q-item-section>
-      </q-item>
-    </q-list>
-
-    <q-input
-      v-model="newObjective"
-      label="Add your own objective"
-      dense
-      class="q-my-md"
-      :disable="disabled"
-      @keyup.enter="addObjective"
-    >
-      <template #append>
-        <q-btn
-          flat
-          dense
-          icon="add"
-          :disable="!newObjective || disabled"
-          @click="addObjective"
-        />
-      </template>
-    </q-input>
-
-    <q-banner
-      v-if="selectedObjectives.length < minObjectives"
-      class="bg-secondary q-mt-md text-white"
-    >
-      Please select at least {{ minObjectives }} learning objectives, you can use proposed one, or create your own.
-    </q-banner>
-  </div>
+        </template>
+      </q-input>
+      <q-banner
+        v-if="selectedObjectives.length < minObjectives"
+        class="bg-secondary q-mt-md text-white"
+      >
+        Please select at least {{ minObjectives }} learning objectives, you can use proposed one, or create your own.
+      </q-banner>  
+    </q-card-section>
+    <q-card-actions class="q-px-none q-py-lg">
+          
+      <q-space />
+      <q-btn
+        v-if="selectedObjectives.length >= minObjectives"
+        square
+        size="md"
+        icon="check"
+        color="primary"
+        padding="sm 64px"
+        @click="finish"
+      />
+    </q-card-actions>
+  </q-card>
 </template>
 
 <script setup lang="js">
@@ -62,7 +76,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['selected']);
+const emit = defineEmits(['selected', 'finished']);
 
 const selected = ref([]);
 const newObjective = ref('');
@@ -70,6 +84,8 @@ const newObjective = ref('');
 const updateSelection = () => {
   if (selectedObjectives.value.length >= props.minObjectives) {
     emit('selected', selectedObjectives.value);
+  } else {
+    emit('selected', []);
   }
 };
 
@@ -102,6 +118,10 @@ const disabled = computed(
 const selectedObjectives = computed(() =>
   objectivesWithCustom.value.filter((_, idx) => selected.value[idx])
 );
+
+const finish = () => {
+  emit('finished', selectedObjectives.value);  
+};
 </script>
 
 <style scoped>
