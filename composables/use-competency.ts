@@ -96,6 +96,7 @@ export default function () {
       response.concepts.map((c: ConceptResponse) =>
         concept.create({
           name: c.name,
+          level: c.level,
           description: c.description,
           locale: competency.locale,
           objectives: c.learning_objectives,

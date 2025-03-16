@@ -11,19 +11,19 @@
     >
       <q-tab
         v-if="conceptsToRevisit.length"
-        icon="fact_check"
+        icon="help_center"
         name="review"
         label="Review"
       />
       <q-tab
         v-if="conceptsInProgress.length"
-        icon="play_circle"
+        icon="slideshow"
         name="continue"
         label="Continue"
       />
       <q-tab
         v-if="relatedConcepts.length"
-        icon="travel_explore"
+        icon="pageview"
         name="explore"
         label="Explore"
       />

@@ -55,6 +55,7 @@ const schema = a.schema({
   Concept: a
     .model({
       id: a.id().required(),
+      level: a.string(),
       name: a.string(),
       description: a.string(),
       locale: a.string(),

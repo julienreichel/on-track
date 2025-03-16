@@ -60,7 +60,7 @@ For mathematical formulas, use Katex format using $$ as delimiter (i.e. $$\frac{
 <Quiz level>
 ${difficultyExplanation}
 <Response Language>
-${language}
+The reponse MUST be in ${language}
 <JSON Response Format>
 {
   "questions": [ {

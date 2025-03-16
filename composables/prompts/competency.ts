@@ -32,6 +32,7 @@ Output the response in a structured JSON format, as shown below:
       "description": "...",
       "learning_objectives": ["...", ... ],
       "prerequisites": ["...", ...]
+      "level": "..."
     },
     ...
   ]
@@ -49,6 +50,7 @@ For each concept:
 2. Write a **description** (3-4 sentences) explaining the concept in a simple and beginner-friendly way.
 3. Generate a list of **five learning objectives** that outline the key goals students must achieve to master the concept.
 4. Identify **prerequisite concepts** (if any) that are required to understand this concept.
+5. Provide a level for the concept (beginner, intermediate, advanced).
 
 Return the output in the following JSON format:
 
@@ -66,6 +68,7 @@ Return the output in the following JSON format:
         "Learning Objective 5"
       ],
       "prerequisites": ["Prerequisite Concept Name", "Another Prerequisite Concept"]
+      "level": "beginner|intermediate|advanced"
     },
     ...
   ]

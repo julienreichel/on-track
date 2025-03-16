@@ -27,6 +27,7 @@ export default function () {
 
   const calls = useGraphqlQuery('Concept', [
     'id',
+    'level',
     'name',
     'description',
     'objectives',
