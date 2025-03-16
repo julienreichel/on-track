@@ -49,7 +49,8 @@ const emit = defineEmits(["updated", "finished"]);
 const step = ref(0);
 const showBanner = ref(true);
 
-const currentCard = computed(() => props.flashCards[step.value]);
+const selectedCards = computed(() => [...props.flashCards].sort(() => Math.random() - 0.5).slice(0, props.maxCards));
+const currentCard = computed(() => selectedCards.value[step.value]);
 const realMaxCards = computed(() => Math.min(props.flashCards.length, props.maxCards));
 const progress = computed(() => (realMaxCards.value > 0 ? (step.value + 1) / realMaxCards.value : 0));
 const isLastCard = computed(() => step.value === realMaxCards.value - 1);

@@ -183,7 +183,8 @@
       <q-tab-panel name="flashcards" class="q-pa-none">
         <flashcard-list
           v-if="teacherMode"
-          :flash-cards="concept.flashCards"
+          v-model="concept.flashCards"
+          :concept="concept"
         />
         <div v-else>
           <flashcard-runner
@@ -214,7 +215,7 @@
 
         <div class="q-py-sm q-px-none">
           <div v-if="concept.questions?.length">
-            <question-list v-if="teacherMode" :questions="concept.questions" />
+            <question-list v-if="teacherMode" v-model="concept.questions" :concept="concept"/>
             <quiz-runner
               v-else
               :questions="concept.questions"
