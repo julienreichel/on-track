@@ -1,13 +1,6 @@
 <template>
   <div v-if="competency" class="q-px-none q-py-sm q-gutter-sm">
     <subject-list :subjects="[competency.subject]" class="bg-primary q-px-sm text-white"/>
-    <competency-flow
-      :competencies="relatedCompetencies"
-      :prerequisites="relatedLinks"
-      :direction="direction"
-      :style="{ height: `${height}px`, width: '100%' }"
-      class="gt-xs q-px-sm"
-    />
 
     <competency-level
       v-if="competencyAction"
@@ -31,14 +24,26 @@
       @update="(text) => updateCompetency('description', text)"
     />
 
-    <div class="q-pa-sm">
+    <div v-if="!showQuiz && !teacherMode" class="q-pa-md row">
       <q-btn
-        v-if="
-          !teacherMode && !showQuiz && !competency.concepts.some((s) => !s.theory)
-        "
-        :label="quizLabel"
+        v-if="onGoingConcept"
+        label="Continue"
         color="primary"
-        class="q-ma-md full-width"
+        class="q-ma-sm col"
+        :to="`/concept/${onGoingConcept.id}`"
+      />
+      <q-btn
+        v-else-if="quizStatus !== 'final-quiz'"
+        label="Let's get started"
+        color="primary"
+        class="q-ma-sm col"
+        @click="startCompetency"
+      />
+      <q-btn
+        v-if="quizStatus !== 'pre-quiz' || !competencyAction"
+        :label="quizLabel"
+        :color="quizStatus === 'quiz' ? undefined : 'primary'"
+        class="q-ma-sm col"
         @click="startPreCheck"
       />
     </div>
@@ -56,16 +61,21 @@
     />
 
     <div v-if="competency.concepts?.length">
-      <concept-flow
-        :concepts="competency.concepts"
-        :direction="direction"
-        :style="{ height: `${heightConcepts}px`, width: '100%' }"
-        class="q-pa-sm gt-xs"
-      />
+      <div class="gt-xs q-pb-md">
+        <concept-flow
+          :concepts="competency.concepts"
+          :direction="direction"
+          :style="{ height: `${heightConcepts}px`, width: '100%' }"
+          class="q-pa-sm"
+        />
+        <q-banner v-if="!teacherMode && quizStatus !== 'final-quiz'" class="bg-info q-mt-md text-white">
+          Select a concept to learn more about it.
+        </q-banner>
+      </div>
       <concept-cards
         :concepts="competency.concepts"
         :allow-delete="teacherMode"
-        class="q-pa-sm"
+        class="q-pa-sm lt-sm2"
         @delete="deleteConcept"
       />
       <q-btn
@@ -89,6 +99,7 @@ const conceptService = useConcept();
 const competencyActionService = useCompetencyAction();
 const conceptActionService = useConceptAction();
 const route = useRoute();
+const router = useRouter();
 const { loading, screen } = useQuasar();
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
@@ -100,6 +111,7 @@ const answeredQuestions = ref([]);
 const showQuiz = ref(false);
 const competencyAction = ref(null);
 const quizStatus = ref("pre-quiz");
+const onGoingConcept = ref(null);
 
 const getLastQuizTime = (action, lastQuizTime = 0) => {
   return (
@@ -165,6 +177,10 @@ onMounted(async () => {
             (a) => a.actionType === "finished"
           );
           status.push({ started, finished });
+          console.log("status", status);
+          if (started && !finished) {
+            onGoingConcept.value = c;
+          }
         })
       );
       if (status.some((s) => s.started)) {
@@ -184,62 +200,6 @@ onMounted(async () => {
 });
 
 const direction = computed(() => (screen.lt.sm ? "TB" : "LR"));
-
-const relatedCompetencies = computed(() => {
-  const relatedCompetencies = [competency.value];
-  if (competency.value?.prerequisites) {
-    competency.value.prerequisites.forEach((p) =>
-      relatedCompetencies.push(p.prerequisite)
-    );
-  }
-  if (competency.value?.followUps) {
-    competency.value.followUps.forEach((f) =>
-      relatedCompetencies.push(f.competency)
-    );
-  }
-  return relatedCompetencies;
-});
-
-const relatedLinks = computed(() => {
-  const relatedLinks = [];
-
-  if (competency.value?.prerequisites) {
-    competency.value.prerequisites.forEach((p) =>
-      relatedLinks.push({
-        id: p.prerequisite.id,
-        prerequisiteId: p.prerequisite.id,
-        competencyId: competency.value.id,
-      })
-    );
-  }
-  if (competency.value?.followUps) {
-    competency.value.followUps.forEach((f) =>
-      relatedLinks.push({
-        id: f.competency.id,
-        prerequisiteId: competency.value.id,
-        competencyId: f.competency.id,
-      })
-    );
-  }
-  return relatedLinks;
-});
-
-const height = computed(() => {
-  if (screen.lt.sm) {
-    const hasPre = competency.value?.prerequisites?.length ? 1 : 0;
-    const hasFollow = competency.value?.followUps?.length ? 1 : 0;
-    return hasPre * 100 + hasFollow * 100 + 120;
-  } else {
-    return (
-      Math.max(
-        competency.value?.prerequisites?.length || 0,
-        competency.value?.followUps?.length || 0
-      ) *
-        100 +
-      20
-    );
-  }
-});
 
 const heightConcepts = computed(() => {
   if (!competency.value?.concepts?.length) {
@@ -305,6 +265,12 @@ const startPreCheck = async () => {
   }
 };
 
+const startCompetency = () => {
+  const concept = competency.value.concepts.find(
+    (c) => !c.prerequisites?.length
+  );
+  router.push(`/concept/${concept.id}`);
+};
 const updateQuestionsFinished = () => {
   showQuiz.value = false;
 };

@@ -16,13 +16,27 @@
     />
     <q-btn v-else @click="generateSubjectData()">Generate</q-btn>
 
-    <div v-if="subject.competencies?.length">
-      <competency-flow
-        :competencies="subject.competencies"
-        :direction="direction"
-        :style="{ height: `${height}px`, width: '100%' }"
-        class="gt-xs"
+    <div class="q-pa-sm">
+      <q-btn
+        v-if="!teacherMode && !hasStarted"
+        label="Let's get started"
+        color="primary"
+        class="q-ma-md full-width"
+        @click="startSubject"
       />
+    </div>
+
+    <div v-if="subject.competencies?.length">
+      <div class="gt-xs q-pb-md">
+        <competency-flow
+          :competencies="subject.competencies"
+          :direction="direction"
+          :style="{ height: `${height}px`, width: '100%' }"
+        />
+        <q-banner v-if="!teacherMode" class="bg-info q-mt-md text-white">
+          Select a competency to learn more about it.
+        </q-banner>
+      </div>
       <competency-cards
         :competencies="subject.competencies"
         :allow-delete="teacherMode"
@@ -40,9 +54,11 @@ const subjectService = useSubject();
 const competencyService = useCompetency();
 const competencyActionService = useCompetencyAction();
 const route = useRoute();
+const router = useRouter();
 const { loading, screen } = useQuasar();
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
+const hasStarted = ref(false);
 const teacherMode = inject("teacherMode");
 
 const subject = ref(null);
@@ -65,6 +81,9 @@ onMounted(async () => {
             username,
           });
           c.action = actions[0];
+          if (c.action?.actionTimestamps?.length) {
+            hasStarted.value = true;
+          }
         })
       );
     }
@@ -72,6 +91,13 @@ onMounted(async () => {
     console.error("Failed to fetch subject:", error);
   }
 });
+
+const startSubject = () => {
+  const competency = subject.value.competencies.find(
+    (c) => !c.prerequisites?.length
+  );
+  router.push(`/competency/${competency.id}`);
+};
 
 const direction = computed(() => (screen.lt.sm ? "TB" : "LR"));
 
@@ -137,7 +163,3 @@ const updateSubject = async (field, value) => {
   await subjectService.update(subject.value);
 };
 </script>
-
-<style scoped>
-/* Add your styles here */
-</style>

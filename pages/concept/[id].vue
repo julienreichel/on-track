@@ -243,7 +243,7 @@
           />
           <q-banner
             v-if="!conceptAction.objectives.some((o) => o.isDone)"
-            class="bg-secondary q-mt-md text-white"
+            class="bg-info q-mt-md text-white"
           >
             Have you met your objectives?
           </q-banner>

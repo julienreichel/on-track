@@ -38,7 +38,7 @@
       </q-input>
       <q-banner
         v-if="selectedObjectives.length < minObjectives"
-        class="bg-secondary q-mt-md text-white"
+        class="bg-info q-mt-md text-white"
       >
         Please select at least {{ minObjectives }} learning objectives, you can use proposed one, or create your own.
       </q-banner>  

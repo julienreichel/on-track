@@ -41,7 +41,7 @@
             </div>
           </q-slide-item>
         </q-list>
-        <q-banner v-if="showBanner" class="bg-secondary q-mt-md text-white">
+        <q-banner v-if="showBanner" class="bg-info q-mt-md text-white">
           Swipe to the right to accept the subject, or to the left to reject it.
         </q-banner>
       </q-card-section>
@@ -105,7 +105,6 @@ const canGo = computed(
 
 const acceptSubject = (subject) => {
   selectedSubjects.value.push(subject);
-  console.log(selectedSubjects.value);
   if (votedSubjectsCount.value === subjects.value.length) {
     go();
   }

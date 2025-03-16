@@ -10,7 +10,7 @@
       <div class="row justify-center">
         <flashcard-view :flash-card="currentCard" @success="updateFlashCard" />
       </div>
-      <q-banner v-if="showBanner" class="bg-secondary q-mt-md text-white">
+      <q-banner v-if="showBanner" class="bg-info q-mt-md text-white">
         Test yourself using flashcards, then mark them as correct
         <q-icon class="text-positive" name="check" /> or incorrect
         <q-icon class="text-negative" name="close" />.
