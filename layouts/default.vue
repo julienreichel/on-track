@@ -208,4 +208,13 @@ ol {
   border-collapse: collapse;
   margin: 0 0 16px;
 }
+
+.truncated-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
 </style>

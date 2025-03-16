@@ -6,24 +6,24 @@
     <q-card-section class="q-pt-none q-px-sm">
       <q-linear-progress :value="progress" class="q-mt-md" size="lg" />
     </q-card-section>
-    <q-card-section class="q-pa-sm ">
+    <q-card-section class="q-pa-sm">
       <div class="row justify-center">
-        <flashcard-view
-          :flash-card="currentCard"
-          @success="updateFlashCard"
-        />
+        <flashcard-view :flash-card="currentCard" @success="updateFlashCard" />
       </div>
-      <q-banner
-          v-if="showBanner"
-          class="bg-secondary q-mt-md text-white"
-        >
-          Test yourself using flashcards, then mark them as correct
-          <q-icon class="text-positive" name="check" /> or incorrect
-          <q-icon class="text-negative" name="close" />.
-        </q-banner>
+      <q-banner v-if="showBanner" class="bg-secondary q-mt-md text-white">
+        Test yourself using flashcards, then mark them as correct
+        <q-icon class="text-positive" name="check" /> or incorrect
+        <q-icon class="text-negative" name="close" />.
+      </q-banner>
     </q-card-section>
     <q-card-actions class="q-px-none q-py-lg">
-      <q-btn v-if="step > 0" square size="md" icon="chevron_left" @click="prevCard" />
+      <q-btn
+        v-if="step > 0"
+        square
+        size="md"
+        icon="chevron_left"
+        @click="prevCard"
+      />
       <q-space />
       <q-btn
         square
@@ -37,7 +37,6 @@
 </template>
 
 <script setup>
-
 const props = defineProps({
   flashCards: { type: Array, required: true },
   nextActionsIcon: { type: String, default: "check" },
@@ -49,10 +48,16 @@ const emit = defineEmits(["updated", "finished"]);
 const step = ref(0);
 const showBanner = ref(true);
 
-const selectedCards = computed(() => [...props.flashCards].sort(() => Math.random() - 0.5).slice(0, props.maxCards));
+const selectedCards = computed(() =>
+  [...props.flashCards].sort(() => Math.random() - 0.5).slice(0, props.maxCards)
+);
 const currentCard = computed(() => selectedCards.value[step.value]);
-const realMaxCards = computed(() => Math.min(props.flashCards.length, props.maxCards));
-const progress = computed(() => (realMaxCards.value > 0 ? (step.value + 1) / realMaxCards.value : 0));
+const realMaxCards = computed(() =>
+  Math.min(props.flashCards.length, props.maxCards)
+);
+const progress = computed(() =>
+  realMaxCards.value > 0 ? (step.value + 1) / realMaxCards.value : 0
+);
 const isLastCard = computed(() => step.value === realMaxCards.value - 1);
 
 const nextCard = () => {

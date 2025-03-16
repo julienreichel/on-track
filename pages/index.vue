@@ -216,7 +216,7 @@ const fetchConceptActions = async () => {
     relatedConcepts.value = Object.values(relatedConcept).filter(concept => !fetchedConcepts.has(concept.id));
 
     if (conceptsInProgress.value.length === 0 && conceptsToRevisit.value.length === 0) {
-      router.push('/subjects');
+      router.push('/subject/wizard');
     }
     sortRevisitedConcepts();
 
