@@ -31,7 +31,6 @@
     <q-linear-progress v-if="nbRequest" size="xl" color="primary" :value="nbRequestDone / nbRequest" />
 
     <div>
-      <subject-cards :subjects="subjects" />
       <div v-for="subject in subjects" :key="subject.id">
         <p class="text-h4 q-pt-md">Competencies</p>
         <competency-cards :competencies="subject.competencies" />
