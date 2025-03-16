@@ -181,14 +181,9 @@
 
       <!-- FLASHCARDS TAB -->
       <q-tab-panel name="flashcards" class="q-pa-none">
-        <editable-text
+        <flashcard-list
           v-if="teacherMode"
-          :value="flashCardsAsText"
-          :enable-editing="teacherMode"
-          type="textarea"
-          class="q-pa-sm"
-          use-rich-text
-          @update="updateFlashCardContent"
+          :flash-cards="concept.flashCards"
         />
         <div v-else>
           <flashcard-runner
@@ -219,15 +214,16 @@
 
         <div class="q-py-sm q-px-none">
           <div v-if="concept.questions?.length">
+            <question-list v-if="teacherMode" :questions="concept.questions" />
             <quiz-runner
-              v-if="!teacherMode"
+              v-else
               :questions="concept.questions"
               :max="quizSize"
               @finished="updateQuestionsFinished"
               @results="updateQuestionsResults"
               @progress="updateQuestionsProgress"
             />
-            <question-list v-else :questions="randomizedQuestions" />
+            
           </div>
           <div v-else-if="teacherMode">
             <q-btn @click="generateQuizData()">Generate</q-btn>
@@ -389,9 +385,6 @@ const height = computed(() => {
   return Math.max(c.prerequisites?.length || 0, c.followUps?.length || 0) * 100;
 });
 
-const randomizedQuestions = computed(() => {
-  return [...concept.value.questions].sort(() => Math.random() - 0.5);
-});
 
 const generateConceptData = async () => {
   loading.show();
@@ -577,22 +570,4 @@ const updateConcept = async (field, value) => {
   await conceptService.update(concept.value);
 };
 
-const flashCardsAsText = computed(() => {
-  return concept.value.flashCards
-    .map((f, idx) => `##### Card ${idx + 1}\n- ${f.question}\n- ${f.answer}\n- ${f.notes}`)
-    .join("\n\n");
-});
-
-const updateFlashCardContent = async (text) => {
-  if (teacherMode.value) {
-    concept.value.flashCards = text
-      .split("\n\n")
-      .map((f) => {
-        const [,question, answer, notes] = f.split("\n- ");
-        return { question, answer, notes };
-      })
-      .filter((f) => f.question && f.answer);
-    await conceptService.update(concept.value);
-  }
-};
 </script>
