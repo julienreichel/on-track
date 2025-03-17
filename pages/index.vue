@@ -137,6 +137,12 @@ const generateLastDays = () => {
 };
 
 const sortRevisitedConcepts = () => {
+  conceptsToRevisit.value = conceptsToRevisit.value.filter((concept) => {
+    const nbReviews = concept.action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length;
+    const lastReview = concept.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    return nbReviews < 3 && new Date() - new Date(lastReview.createdAt) > 12 * 60 * 60 * 1000;
+  });
+
   conceptsToRevisit.value.sort((a, b) => {
     if (a.action.actionTimestamps.length === 0) return -1;
     if (b.action.actionTimestamps.length === 0) return 1;
@@ -144,11 +150,6 @@ const sortRevisitedConcepts = () => {
     const lastActionsB = b.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
     return new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt);
   });
-
-  conceptsToRevisit.value = conceptsToRevisit.value.filter((concept) => {
-    return concept.action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length < 3;
-  });
-
 };
 
 // Function to fetch and categorize actions
@@ -188,6 +189,7 @@ const fetchConceptActions = async () => {
       const concept = concepts[i];
       if (!concept) continue;
       concept.action = action;
+      console.log(action.actionTimestamps);
       if (action.inProgress) {
         conceptsInProgress.value.push(concept);
       } else if (action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length < 3) {
