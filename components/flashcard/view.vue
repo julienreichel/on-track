@@ -1,8 +1,10 @@
 <template>
   <q-card class="flashcard">
     <q-card-section v-if="view === 'question'" class="card-content">
+      
       <div class="question">
-        {{ flashCard.question }}
+        <!-- eslint-disable vue/no-v-html -->
+        <span v-html="renderKatex(flashCard.question)"/>
       </div>
       <q-btn
         icon="sync"
@@ -17,7 +19,8 @@
 
     <q-card-section v-if="view === 'answer'" class="card-content">
       <div class="answer">
-        {{ flashCard.answer }}
+        <!-- eslint-disable vue/no-v-html -->
+        <span v-html="renderKatex(flashCard.answer)"/>
       </div>
       <div class="row full-width justify-between">
         <q-btn
@@ -53,7 +56,8 @@
 
     <q-card-section v-if="view === 'explanation'" class="card-content">
       <div class="notes">
-        {{ flashCard.notes }}
+        <!-- eslint-disable vue/no-v-html -->
+        <span v-html="renderKatex(flashCard.notes)"/>
       </div>
       <q-btn
         icon="sync"
@@ -69,6 +73,7 @@
 </template>
 
 <script lang="js" setup>
+const { renderKatex } = useFormatter();
 
 defineProps({
   flashCard: {
