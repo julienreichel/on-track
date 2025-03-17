@@ -34,7 +34,7 @@
       />
       <q-btn
         v-else-if="quizStatus !== 'final-quiz'"
-        label="Let's get started"
+        label="Go, let's start learning now"
         color="primary"
         class="q-ma-sm col"
         @click="startCompetency"
