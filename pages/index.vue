@@ -179,8 +179,13 @@ const fetchConceptActions = async () => {
     // Collect all action timestamps
     const allActionTimestamps = [];
 
-    for (const action of actions) {
-      const concept = await conceptService.get(action.conceptId);
+    // Fetch all concepts in parallel
+    const conceptPromises = actions.map(action => conceptService.get(action.conceptId));
+    const concepts = await Promise.all(conceptPromises);
+
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+      const concept = concepts[i];
       if (!concept) continue;
       concept.action = action;
       if (action.inProgress) {
