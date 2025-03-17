@@ -57,9 +57,13 @@ const fetchUserHistory = async () => {
 
     const entries = [];
 
-    for (const action of actions) {
-      // Fetch concept details to get concept name and competency name
-      const concept = await conceptService.get(action.conceptId);
+    // Fetch all concepts in parallel
+    const conceptPromises = actions.map(action => conceptService.get(action.conceptId));
+    const concepts = await Promise.all(conceptPromises);
+
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+      const concept = concepts[i];
       if(!concept) continue;
       const competency = concept.competency;
 
@@ -68,7 +72,7 @@ const fetchUserHistory = async () => {
         const startDate = new Date(action.createdAt);
         entries.push({
           timestamp: startDate,
-          date: startDate.toLocaleDateString(),
+          date: startDate.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' }),
           time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           concept,
           competency,
@@ -108,7 +112,7 @@ const fetchUserHistory = async () => {
         }
         entries.push({
           timestamp: actionDate,
-          date: actionDate.toLocaleDateString(),
+          date: actionDate.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' }),
           time: actionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           concept,
           competency,

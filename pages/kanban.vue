@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-sm" style="min-width: 1024px;">
+  <div class="q-pa-sm" style="min-width: 1024px">
     <div class="text-h3 q-mb-md">Kanban Board</div>
     <q-card flat bordered>
       <q-card-section class="q-pa-sm">
@@ -31,7 +31,7 @@
                 <q-card
                   flat
                   bordered
-                  class="q-mb-sm cursor-pointer bg-secondary text-white full-height "
+                  class="q-mb-sm cursor-pointer bg-secondary text-white full-height"
                   @click="$router.push(`/competency/${competencyId}`)"
                 >
                   <q-card-section class="">{{
@@ -253,11 +253,16 @@ const fetchKanbanData = async () => {
     });
 
     const groupedByCompetency = {};
-    for (const action of actions) {
-      if (action.actionTimestamps?.some(ts => ts.actionType === 'hidden')) continue;
+    // Fetch all concepts in parallel
+    const activeActions = actions.filter(action => !action.actionTimestamps?.some(ts => ts.actionType === 'hidden'));
+    const conceptPromises = activeActions.map(action => conceptService.get(action.conceptId));
+    const concepts = await Promise.all(conceptPromises);
 
-      const concept = await conceptService.get(action.conceptId);
+    for (let i = 0; i < activeActions.length; i++) {
+      const action = activeActions[i];
+      const concept = concepts[i];
       if(!concept) continue;
+
       concept.action = action;
       const competency = concept.competency;
       existingConceptIds.add(concept.id);
