@@ -1,12 +1,34 @@
 <template>
-  <q-list>
-    <q-item v-for="(objective, idx) in objectives" :key="idx" class="q-pa-none">
-      <q-item-section side>
-        <q-checkbox v-model="check[idx]" :disable="disabled"/>
-      </q-item-section>
-      <q-item-section>{{ objective }}</q-item-section>
-    </q-item>
-  </q-list>
+  <q-card class="q-pt-xs">
+    <q-card-section class="q-pb-none">
+      <q-list>
+        <q-item
+          v-for="(objective, idx) in objectives"
+          :key="idx"
+          class="q-pa-none"
+        >
+          <q-item-section side>
+            <q-checkbox v-model="check[idx]" :disable="disabled" />
+          </q-item-section>
+          <q-item-section>{{ objective }}</q-item-section>
+        </q-item>
+      </q-list>
+      <q-banner v-if="!allChecked" class="bg-info q-mt-md text-white">
+        Have you met your objectives?
+      </q-banner>
+    </q-card-section>
+    <q-card-actions class="q-px-none q-py-lg">
+      <q-space />
+      <q-btn
+        square
+        size="md"
+        icon="check"
+        :color="allChecked ? 'primary': undefined"
+        padding="sm 64px"
+        @click="finish"
+      />
+    </q-card-actions>
+  </q-card>
 </template>
 
 <script setup>
@@ -28,6 +50,7 @@ watch(
   },
   { immediate: true }
 );
+
 watch(
   () => props.defaultCheck,
   (defaultCheck) => {
@@ -45,5 +68,11 @@ watch(
   { deep: true }
 );
 
-const emit = defineEmits(["check-objective"]);
+const allChecked = computed(() => check.value.every((c) => c));
+
+const emit = defineEmits(["check-objective", "finished"]);
+
+const finish = () => {
+  emit("finished");
+};
 </script>

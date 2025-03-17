@@ -188,7 +188,7 @@
         />
         <div v-else>
           <flashcard-runner
-            :flash-cards="concept.flashCards"            
+            :flash-cards="concept.flashCards"
             @updated="updateFlashCard"
             @finished="activeTab = 'quiz'"
           />
@@ -215,7 +215,11 @@
 
         <div class="q-py-sm q-px-none">
           <div v-if="concept.questions?.length">
-            <question-list v-if="teacherMode" v-model="concept.questions" :concept="concept"/>
+            <question-list
+              v-if="teacherMode"
+              v-model="concept.questions"
+              :concept="concept"
+            />
             <quiz-runner
               v-else
               :questions="concept.questions"
@@ -224,7 +228,6 @@
               @results="updateQuestionsResults"
               @progress="updateQuestionsProgress"
             />
-            
           </div>
           <div v-else-if="teacherMode">
             <q-btn @click="generateQuizData()">Generate</q-btn>
@@ -240,13 +243,8 @@
             :default-check="conceptAction?.objectives.map((o) => o.isDone)"
             :disabled="disableObjectives"
             @check-objective="updateObjective"
+            @finished="activeTab = 'nextSteps'"
           />
-          <q-banner
-            v-if="!conceptAction.objectives.some((o) => o.isDone)"
-            class="bg-info q-mt-md text-white"
-          >
-            Have you met your objectives?
-          </q-banner>
         </div>
       </q-tab-panel>
 
@@ -329,10 +327,7 @@ const hasDoneFlashcards = computed(
     concept.value.flashCards?.length
 );
 const checkObjectives = computed(
-  () =>
-    !conceptAction.value?.inProgress &&
-    hasObjectives.value &&
-    !conceptAction.value?.objectives.every((o) => o.isDone)
+  () => !conceptAction.value?.inProgress && hasObjectives.value
 );
 
 const relatedConcepts = computed(() => {
@@ -385,7 +380,6 @@ const height = computed(() => {
   if (!c) return 0;
   return Math.max(c.prerequisites?.length || 0, c.followUps?.length || 0) * 100;
 });
-
 
 const generateConceptData = async () => {
   loading.show();
@@ -479,7 +473,7 @@ const updateObjective = async (objectives) => {
   }
 };
 
-const updateFlashCard = async ({flashCardId, status}) => {
+const updateFlashCard = async ({ flashCardId, status }) => {
   if (teacherMode.value || !conceptAction.value) {
     return;
   }
@@ -570,5 +564,4 @@ const updateConcept = async (field, value) => {
   concept.value[field] = value;
   await conceptService.update(concept.value);
 };
-
 </script>
