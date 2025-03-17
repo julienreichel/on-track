@@ -8,7 +8,7 @@
       group="questions"
     >
       <q-card>
-        <q-card-section>
+        <q-card-section class="q-py-none">
           <editable-text
             :value="questionsAsText[index]"
             :enable-editing="teacherMode"
@@ -18,8 +18,25 @@
             @update="updateQuestionContent($event, index)"
           />
         </q-card-section>
+        <q-card-actions>
+          <q-space />
+          <q-btn
+            v-if="teacherMode"
+            icon="delete"
+            @click="removeQuestion(question)"
+          />
+        </q-card-actions>
       </q-card>
     </q-expansion-item>
+    <q-item>
+      <q-item-section>
+        <q-btn
+          v-if="teacherMode"
+          label="Add Question"
+          @click="addQuestion"
+        />
+      </q-item-section>
+    </q-item>
   </q-list>
 </template>
 
@@ -27,13 +44,14 @@
 const questionStore = useQuestion();
 const teacherMode = inject("teacherMode");
 
+const questions = defineModel({ type: Array, required: true });
 const props = defineProps({
-  questions: { type: Array, required: true },
+  concept: { type: Object, required: true },
 });
 
 // Compute the text representation of each question
 const questionsAsText = computed(() =>
-  props.questions.map((q) => {
+  questions.value.map((q) => {
     const answersText = q.answers
       .map((a) => (a.valid ? `- [x] ${a.text}` : `- [ ] ${a.text}`))
       .join("\n");
@@ -43,15 +61,20 @@ const questionsAsText = computed(() =>
 );
 
 const updateQuestionContent = (updatedText, index) => {
+  const levels = ["novice", "beginner", "intermediate", "advanced", "expert"];
+
   const lines = updatedText.split("\n").map((line) => line.trim()).filter(line => line !== "");
 
   if (lines.length < 3) return; // Ensure valid format
 
-  const updatedQuestion = { ...props.questions[index] };
+  const updatedQuestion = { ...questions.value[index] };
 
   updatedQuestion.text = lines[0].replace("##### ", "").trim();
   updatedQuestion.level = lines[1].replace("[", "").replace("]", "").trim();
 
+  if (levels.indexOf(updatedQuestion.level) === -1) {
+    updatedQuestion.level = "novice";
+  }
   // Extract answers
   const answers = [];
   let explanations = "";
@@ -89,5 +112,27 @@ const updateQuestionContent = (updatedText, index) => {
   }
 
   questionStore.update(updatedQuestion);
+};
+
+const removeQuestion = (question) => {
+  questionStore.delete(question.id);
+  questions.value = questions.value.filter((q) => q.id !== question.id);
+};
+
+const addQuestion = () => {
+  const newQuestion = {
+    text: "New Question",
+    level: "easy",
+    answers: [
+      { text: "Answer 1", valid: false },
+      { text: "Answer 2", valid: false },
+    ],
+    explanations: "Explanation goes here.",
+    type: "radio",
+    conceptId: props.concept.id
+  };
+
+  questionStore.create(newQuestion);
+  questions.value.push(newQuestion);
 };
 </script>
