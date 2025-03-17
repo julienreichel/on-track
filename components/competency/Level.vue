@@ -5,7 +5,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 
 const props = defineProps({
   action: { type: Object, required: true },
@@ -36,6 +35,10 @@ const computeLevel = (action) => {
     }
   );
 
+  if (!questions || questions.length === 0) {
+    return null;
+  }
+
   const levelCount = levels.reduce((acc, level) => {
     acc[level] = { total: 0, correct: 0 };
     return acc;
@@ -59,8 +62,8 @@ const computeLevel = (action) => {
 
   return levels.reduce((currentLevel, level) => {
     const successRate = levelCount[level].correct / levelCount[level].total;
-    return successRate >= 0.8 && levelCount[level].total >= 3 ? level : currentLevel;
-  }, null);
+    return successRate >= 0.75 && levelCount[level].total >= 3 ? level : currentLevel;
+  }, "novice");
 };
 
 const computedLevel = computed(() => computeLevel(props.action));

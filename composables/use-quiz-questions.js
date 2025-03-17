@@ -13,6 +13,7 @@ export default function () {
       questions
         .filter((q) => q.validated)
         .forEach((q) => {
+          q.points = q.valid ? 5 : 0;
           previousQuestions.push(q);
         });
       if (previousQuestions.length >= realMax) {

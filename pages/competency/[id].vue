@@ -24,7 +24,7 @@
       @update="(text) => updateCompetency('description', text)"
     />
 
-    <div v-if="!showQuiz && !teacherMode" class="q-pa-md row">
+    <div v-if="!showQuiz && !teacherMode" class="q-py-sm row">
       <q-btn
         v-if="onGoingConcept"
         label="Continue"
@@ -33,15 +33,14 @@
         :to="`/concept/${onGoingConcept.id}`"
       />
       <q-btn
-        v-else-if="quizStatus !== 'final-quiz'"
+        v-else-if="quizStatus === 'quiz'"
         label="Go, let's start learning now"
         color="primary"
         class="q-ma-sm col"
         @click="startCompetency"
       />
       <q-btn
-        v-if="quizStatus !== 'pre-quiz' || !competencyAction"
-        :label="quizLabel"
+          :label="quizLabel"
         :color="quizStatus === 'quiz' ? undefined : 'primary'"
         class="q-ma-sm col"
         @click="startPreCheck"
@@ -152,6 +151,10 @@ onMounted(async () => {
       const inProgress = competencyAction.value.answeredQuestions?.some(
         (q) => new Date(q.createdAt).getTime() > lastQuizTime
       );
+      // the pre-quiz has been run, so this cannot be run again
+      if (lastQuizTime && !inProgress) {
+        quizStatus.value = "quiz";
+      }
       if (inProgress) {
         startPreCheck();
       }
@@ -177,7 +180,6 @@ onMounted(async () => {
             (a) => a.actionType === "finished"
           );
           status.push({ started, finished });
-          console.log("status", status);
           if (started && !finished) {
             onGoingConcept.value = c;
           }
@@ -273,13 +275,14 @@ const startCompetency = () => {
 };
 const updateQuestionsFinished = () => {
   showQuiz.value = false;
+  quizStatus.value = "quiz";
 };
 
 const quizLabel = computed(() => {
   const mapping = {
-    "pre-quiz": "Pre Check",
-    quiz: "Test",
-    "final-quiz": "Final Quiz",
+    "pre-quiz": "Pre Check, where do I stand",
+    quiz: "Test me again",
+    "final-quiz": "Final Quiz, I am ready",
   };
   return mapping[quizStatus.value] || "Pre Check";
 });

@@ -96,7 +96,7 @@
         <quiz-summary-responses
           v-if="correctQuestions.length"
           :questions="correctQuestions"
-          title="Well done"
+          :title="`Well done (${correctQuestions.length})`"
           icon="task_alt"
           color="bg-positive"
           @activate="goToQuestion"
@@ -104,7 +104,7 @@
         <quiz-summary-responses
           v-if="wrongQuestions.length"
           :questions="wrongQuestions"
-          title="Lets review"
+          :title="`Lets review (${wrongQuestions.length})`"
           icon="highlight_off"
           color="bg-negative"
           @activate="goToQuestion"
@@ -112,7 +112,7 @@
         <quiz-summary-responses
           v-if="leftOverQuestions.length"
           :questions="leftOverQuestions"
-          title="More to go"
+          :title="`More to go (${leftOverQuestions.length})`"
           icon="help_outline"
           color="bg-info"
           :number-of-items="1"
