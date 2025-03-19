@@ -150,6 +150,15 @@ const sortRevisitedConcepts = () => {
     const lastActionsB = b.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
     return new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt);
   });
+
+  // Pick a default active tab
+  if (conceptsToRevisit.value.length) {
+    activeTab.value = 'review'
+  } else if (conceptsInProgress.value.length) {
+    activeTab.value = 'continue'
+  } else {
+    activeTab.value = 'explore'
+  }
 };
 
 // Function to fetch and categorize actions
@@ -227,14 +236,6 @@ const fetchConceptActions = async () => {
     }
     sortRevisitedConcepts();
 
-    // Pick a default active tab
-    if (conceptsToRevisit.value.length) {
-      activeTab.value = 'review'
-    } else if (conceptsInProgress.value.length) {
-      activeTab.value = 'continue'
-    } else {
-      activeTab.value = 'explore'
-    }
   } catch (error) {
     console.error('Error fetching concept actions:', error);
   }
