@@ -508,7 +508,14 @@ const updateFlashCard = async ({ flashCardId, status }) => {
 };
 
 const updateQuestionsFinished = () => {
-  activeTab.value = "objectivesDone";
+  if (conceptAction.value?.inProgress) {
+    return;
+  }
+  if (hasObjectives.value) {
+    activeTab.value = "objectivesDone";
+  } else {
+    activeTab.value = "nextSteps";
+  }
 };
 
 const updateQuestionsProgress = async (questions) => {
