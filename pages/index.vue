@@ -41,6 +41,8 @@
           <quiz-runner
             :questions="conceptsToRevisit[0].questions"
             :max="5"
+            adaptative
+            initial-level="intermediate"
             @finished="sortRevisitedConcepts"
             @results="
               conceptActionService.updateQuestionsResults(
@@ -198,7 +200,6 @@ const fetchConceptActions = async () => {
       const concept = concepts[i];
       if (!concept) continue;
       concept.action = action;
-      console.log(action.actionTimestamps);
       if (action.inProgress) {
         conceptsInProgress.value.push(concept);
       } else if (action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length < 3) {

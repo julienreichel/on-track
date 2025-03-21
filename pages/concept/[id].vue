@@ -224,6 +224,8 @@
               v-else
               :questions="concept.questions"
               :max="quizSize"
+              adaptative
+              :initial-level="quizLevel"
               @finished="updateQuestionsFinished"
               @results="updateQuestionsResults"
               @progress="updateQuestionsProgress"
@@ -553,6 +555,7 @@ const conceptDone = async () => {
 };
 const disableObjectives = computed(() => conceptAction.value?.inProgress);
 const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
+const quizLevel = computed(() => conceptAction.value?.inProgress ? "beginner" : "intermediate");
 
 const getBatteryIcon = (action, index) => {
   const correctAnswers =

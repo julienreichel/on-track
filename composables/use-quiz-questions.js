@@ -101,11 +101,17 @@ export default function () {
       return null;
     };
     // find the difficulty to use for the next question
-    console.log("difficulties", difficulties);
-
     // start with initialLevel if user answered less than 3 questions
     const initialDifficulty = levels.indexOf(initialLevel);
-    if (validatedQuestions.length < 3) {
+
+    // aritificially increasing the sucess bellow the intial level
+    for (let i = 0; i < initialDifficulty; i++) {
+      difficulties[i].total += 1;
+      difficulties[i].valid += 1;
+    }
+
+    console.log("difficulties", difficulties);
+    if (validatedQuestions.length < 2) {
       return getQuestionForDifficulty(initialDifficulty);
     }
 
@@ -121,7 +127,7 @@ export default function () {
       const total = difficulties[i].total;
       const valid = difficulties[i].valid;
       const rate = total ? valid / total : 0;
-      if (total < 3 || rate < 0.8) {
+      if (total < 2 || rate < 0.75) {
         return getQuestionForDifficulty(i);
       }
     }

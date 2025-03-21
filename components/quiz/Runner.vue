@@ -215,15 +215,7 @@ const hasAnswer = computed(() => question.value.response !== undefined && (quest
 const questionLevelText = computed(() => {
   return question.value.level;
 });
-const questionLevelColor = computed(() => {
-  const level = question.value.level;
-  if (level === "novice") {
-    return "blue-2";
-  } else if (level === "beginner") {
-    return "blue-5";
-  }
-  return "blue-7";
-});
+
 const options = computed(() => getOptions(question.value));
 
 const nextCliked = () => {
@@ -248,7 +240,7 @@ const nextCliked = () => {
       step.value++;
     }
   }
-  if (activeQuestions.value.length <= step.value + 1) {
+  if (activeQuestions.value.length <= step.value) {
     // we are building question dynamically
     activeQuestions.value = getActiveQuestions(props);
   }
