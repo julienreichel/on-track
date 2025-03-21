@@ -436,8 +436,9 @@ const createObjective = async (o) => {
   objectives = o;
 };
 
-watch(activeTab, (name) => {
-  if (name === "objectives") {
+watch(activeTab, (newQName, oldName) => {
+  console.log("Active tab", oldName);
+  if (oldName === "objectives") {
     finaliseObjective();
   }
 });
