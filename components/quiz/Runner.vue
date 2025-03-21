@@ -9,8 +9,12 @@
     <q-card-section class="q-pa-sm">
       <q-card square>
         <q-card-section v-if="question.text">
+          <q-chip color="secondary" text-color="white" square class="float-right" style="text-transform: capitalize;">
+            {{ questionLevelText }}
+            </q-chip>
           <rich-text-renderer class="text-h6" :markdown-content="question.text" />
         </q-card-section>
+        
         <q-separator inset />
         <q-card-section
           v-if="question.type === 'radio' || question.type === 'checkbox'"
@@ -208,7 +212,18 @@ watch(question, (newQuestion, oldQuestion) => {
   timeStart = timeEnd;
 });
 const hasAnswer = computed(() => question.value.response !== undefined && (question.value.type != "checkbox" || question.value.response.length));
-
+const questionLevelText = computed(() => {
+  return question.value.level;
+});
+const questionLevelColor = computed(() => {
+  const level = question.value.level;
+  if (level === "novice") {
+    return "blue-2";
+  } else if (level === "beginner") {
+    return "blue-5";
+  }
+  return "blue-7";
+});
 const options = computed(() => getOptions(question.value));
 
 const nextCliked = () => {
