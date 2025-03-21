@@ -17,24 +17,23 @@ export default function () {
   const conceptPrerequisite = useConceptPrerequisite();
   const { queryCompetency } = useOpenAI();
 
-
-  const calls = useGraphqlQuery('Competency', [
-    'id',
-    'name',
-    'description',
-    'objectives',
+  const calls = useGraphqlQuery("Competency", [
+    "id",
+    "name",
+    "description",
+    "objectives",
     "locale",
 
-    'subjectId',
-    'subject.*',
+    "subjectId",
+    "subject.*",
 
-    'concepts.*',
-    'concepts.prerequisites.*',
+    "concepts.*",
+    "concepts.prerequisites.*",
 
-    'prerequisites.id',
-    'prerequisites.prerequisite.*',
-    'followUps.id',
-    'followUps.competency.*',
+    "prerequisites.id",
+    "prerequisites.prerequisite.*",
+    "followUps.id",
+    "followUps.competency.*",
   ]);
 
   /**
@@ -65,16 +64,20 @@ export default function () {
     );
 
     // Delete related concepts
-    await Promise.all(
-      model.concepts.map(async (c) => concept.delete(c))
-    );
+    await Promise.all(model.concepts.map(async (c) => concept.delete(c)));
 
     return calls.delete(model, options) as Promise<CompetencyModel>;
   };
 
   const update = async (input: GraphQLModel, options: GraphQLOptions = {}) => {
     // keep only known fields
-    input = calls.pick(input, [ 'id', 'name', 'description', 'objectives', 'subjectId']);
+    input = calls.pick(input, [
+      "id",
+      "name",
+      "description",
+      "objectives",
+      "subjectId",
+    ]);
     return calls.update(input, options);
   };
 
@@ -92,16 +95,18 @@ export default function () {
     if (!response) return null;
 
     // step 1: create the concepts
-    const concepts = await Promise.all(
-      response.concepts.map((c: ConceptResponse) =>
-        concept.create({
-          name: c.name,
-          level: c.level,
-          description: c.description,
-          locale: competency.locale,
-          objectives: c.learning_objectives,
-          competencyId: competency.id,
-        }) as Promise<ConceptModel>
+    const concepts = (await Promise.all(
+      response.concepts.map(
+        (c: ConceptResponse) =>
+          concept.create({
+            name: c.name,
+            level: c.level,
+            description: c.description,
+            locale: competency.locale,
+            objectives: c.learning_objectives,
+            competencyId: competency.id,
+          }) as Promise<ConceptModel>
+      )
     )) as ConceptModel[];
     competency.concepts = concepts;
 
@@ -119,50 +124,120 @@ export default function () {
                 prerequisiteId: existingConcept.id,
               });
             }
-          }
-        ));
-        currentConcept.prerequisites = prereqs.filter(Boolean) as ConceptPrerequisiteModel[];
+          })
+        );
+        currentConcept.prerequisites = prereqs.filter(
+          Boolean
+        ) as ConceptPrerequisiteModel[];
       })
     );
 
     return competency;
   };
 
-
   const sort = (competencies: CompetencyModel[]) => {
     competencies.forEach((c) => {
-      c.prerequisites = c.prerequisites?.map((p) => ({...p, prerequisite: competencies.find((c) => c.id === p.prerequisiteId)})) || [];
+      c.prerequisites =
+        c.prerequisites?.map((p) => ({
+          ...p,
+          prerequisite: competencies.find((c) => c.id === p.prerequisiteId),
+        })) || [];
     });
     let run = true;
-    while (run){
+    while (run) {
       run = false;
       let updated = false;
       competencies.forEach((c) => {
-        if (c.order === undefined){
+        if (c.order === undefined) {
           if (!c.prerequisites?.length) {
             c.order = 0;
             updated = true;
-          } else if (c.prerequisites.every((p) => p.prerequisite?.order !== undefined)){
-            c.order = Math.max(...c.prerequisites.map((p) => p.prerequisite?.order)) + 1;
+          } else if (
+            c.prerequisites.every((p) => p.prerequisite?.order !== undefined)
+          ) {
+            c.order =
+              Math.max(...c.prerequisites.map((p) => p.prerequisite?.order)) +
+              1;
             updated = true;
           } else {
             run = true;
           }
         }
       });
-      if (!updated){
+      if (!updated) {
         // in case of loops, we stop the loop
         run = false;
       }
     }
     competencies.sort((a, b) => a.order - b.order);
-  }
+  };
+
+  const getLastQuizTime = (action, lastQuizTime = 0) => {
+    return (
+      action.actionTimestamps?.reduce(
+        (acc, a) => {
+          const time = new Date(a.createdAt).getTime();
+          if (lastQuizTime && time >= lastQuizTime) {
+            return acc;
+          }
+          return time > acc.time ? { time, type: a.actionType } : acc;
+        },
+        { time: 0 }
+      ) || { time: 0 }
+    );
+  };
+
+  const levels = ["novice", "beginner", "intermediate", "advanced", "expert"];
+
+  const computeLevel = (action) => {
+    const lastQuizTime = getLastQuizTime(action).time;
+    const prevQuizTime = getLastQuizTime(action, lastQuizTime).time;
+
+    const questions = action.answeredQuestions?.filter((q) => {
+      const date = new Date(q.createdAt).getTime();
+      return date > prevQuizTime && date <= lastQuizTime;
+    });
+
+    if (!questions || questions.length === 0) {
+      return null;
+    }
+
+    const levelCount = levels.reduce((acc, level) => {
+      acc[level] = { total: 0, correct: 0 };
+      return acc;
+    }, {});
+
+    questions?.forEach((q) => {
+      const level = q.level;
+      levelCount[level].total++;
+      if (q.isValid) {
+        levelCount[level].correct++;
+        for (let i = levels.indexOf(level) - 1; i >= 0; i--) {
+          levelCount[levels[i]].correct++;
+          levelCount[levels[i]].total++;
+        }
+      } else {
+        for (let i = levels.indexOf(level) + 1; i < levels.length; i++) {
+          levelCount[levels[i]].total++;
+        }
+      }
+    });
+
+    return levels.reduce((currentLevel, level) => {
+      const successRate = levelCount[level].correct / levelCount[level].total;
+      return successRate >= 0.75 && levelCount[level].total >= 3
+        ? level
+        : currentLevel;
+    }, "novice");
+  };
 
   return {
     ...calls,
     update,
     delete: del,
     createWithAI,
-    sort
+    sort,
+    getLastQuizTime,
+    computeLevel,
   };
 }

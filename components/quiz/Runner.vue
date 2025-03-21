@@ -154,6 +154,7 @@ const props = defineProps({
   answeredQuestions: { type: Array, default: () => [] },
   max: { type: Number, default: 0 },
   adaptative: { type: Boolean, default: false },
+  initialLevel: { type: String, default: "novice" },
   examMode: { type: Boolean, default: false },
   nextActionsIcon: { type: String, default: "check" },
   prevActionsIcon: { type: String, default: "" },
@@ -179,6 +180,7 @@ watch(
     step.value = 0;
     hasValidatedAnswers.value = resetQuestions(props.questions, props.answeredQuestions);
     activeQuestions.value = getActiveQuestions(props);
+    console.log("activeQuestions", activeQuestions.value);
   },
   { immediate: true },
 );

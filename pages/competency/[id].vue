@@ -40,7 +40,7 @@
         @click="startCompetency"
       />
       <q-btn
-          :label="quizLabel"
+        :label="quizLabel"
         :color="quizStatus === 'quiz' ? undefined : 'primary'"
         class="q-ma-sm col"
         @click="startPreCheck"
@@ -54,6 +54,8 @@
       :max="20"
       :always-show-hints="quizStatus === 'pre-quiz'"
       :exam-mode="quizStatus === 'final-quiz'"
+      :adaptative="quizStatus !== 'final-quiz'"
+      :initial-level="currentUserLevel"
       @finished="updateQuestionsFinished"
       @results="updateQuestionsResults"
       @progress="updateQuestionsProgress"
@@ -112,21 +114,6 @@ const competencyAction = ref(null);
 const quizStatus = ref("pre-quiz");
 const onGoingConcept = ref(null);
 
-const getLastQuizTime = (action, lastQuizTime = 0) => {
-  return (
-    action.actionTimestamps?.reduce(
-      (acc, a) => {
-        const time = new Date(a.createdAt).getTime();
-        if (lastQuizTime && time >= lastQuizTime) {
-          return acc;
-        }
-        return time > acc.time ? { time, type: a.actionType } : acc;
-      },
-      { time: 0 }
-    ) || { time: 0 }
-  );
-};
-
 onMounted(async () => {
   try {
     const competencyId = route.params.id;
@@ -147,7 +134,7 @@ onMounted(async () => {
           competencyId,
         });
       }
-      const lastQuizTime = getLastQuizTime(competencyAction.value).time;
+      const lastQuizTime = competencyService.getLastQuizTime(competencyAction.value).time;
       const inProgress = competencyAction.value.answeredQuestions?.some(
         (q) => new Date(q.createdAt).getTime() > lastQuizTime
       );
@@ -230,6 +217,13 @@ const heightConcepts = computed(() => {
   }
 });
 
+const currentUserLevel = computed(() => {
+  if (!competencyAction.value) {
+    return "novice";
+  }
+  return competencyService.computeLevel(competencyAction.value);
+});
+
 const startPreCheck = async () => {
   try {
     loading.show();
@@ -240,7 +234,7 @@ const startPreCheck = async () => {
     const allQuestion = extendedCompetency.concepts.flatMap((c) => c.questions);
     if (competencyAction.value) {
       const action = competencyAction.value;
-      const lastQuizTime = getLastQuizTime(action).time;
+      const lastQuizTime = competencyService.getLastQuizTime(action).time;
       const prevQuizQuestionsIds =
         action.answeredQuestions
           ?.filter(

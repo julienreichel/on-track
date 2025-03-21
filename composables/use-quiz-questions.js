@@ -5,9 +5,13 @@ export default function () {
 
   let questionsPerLevels = {};
 
-  const getActiveQuestions = ({ adaptative = true, examMode = false, max = 0 }) => {
+  const getActiveQuestions = ({
+    adaptative = true,
+    examMode = false,
+    max = 0,
+    initialLevel = "novice",
+  }) => {
     const realMax = max ? Math.min(max, questions.length) : questions.length;
-
     if (!previousQuestions.length) {
       // check if there are some questions that have been validated, and add them to the list
       questions
@@ -16,23 +20,12 @@ export default function () {
           q.points = q.valid ? 5 : 0;
           previousQuestions.push(q);
         });
-      if (previousQuestions.length >= realMax) {
-        return previousQuestions;
-      }
     }
-
     if (previousQuestions.length >= realMax) {
       return previousQuestions;
     }
-    // pick the questions to display
-    if (!adaptative || realMax === questions.length) {
-      let q = [...questions];
-      previousQuestions = q
-        .sort((a, b) => a.order - b.order)
-        .slice(0, realMax);
-      return previousQuestions;
-    }
 
+    // pick the questions to display
     if (examMode) {
       // create the final quiz
       let q = [];
@@ -48,6 +41,13 @@ export default function () {
       previousQuestions = q;
       return previousQuestions;
     }
+
+    if (!adaptative || realMax === questions.length) {
+      let q = [...questions];
+      previousQuestions = q.sort((a, b) => a.order - b.order).slice(0, realMax);
+      return previousQuestions;
+    }
+
     // we update the question that have not been validated, depending on what the
     // user has answered, if the user success rate for a difficulty and all the ones below
     // is under 60% of success rate, we show questions of the lower difficulty
@@ -61,8 +61,9 @@ export default function () {
     let difficulties = previousQuestions.reduce((acc, q) => {
       if (!q.validated) return acc;
       validatedQuestions.push(q);
-      acc[q.difficulty - 1].total++;
-      if (q.valid) acc[q.difficulty - 1].valid++;
+      const difficulty = levels.indexOf(q.level);
+      acc[difficulty].total++;
+      if (q.valid) acc[difficulty].valid++;
       return acc;
     }, acc);
 
@@ -76,77 +77,55 @@ export default function () {
       difficulties[i - 1].total += difficulties[i].valid;
       difficulties[i - 1].valid += difficulties[i].valid;
     }
-    // find the difficulty to use for the next question
-    console.log("difficulties", difficulties);
-    // start with novice level
-    if (difficulties[1].total < 3) {
-      let level = levels[0];
-      if (questionsPerLevels[level]?.length) {
-        console.log("initial level", level);
-        previousQuestions.push(questionsPerLevels[level].pop());
-        return previousQuestions;
+    const getQuestionForDifficulty = (difficulty) => {
+      let j = difficulty;
+      while (j >= 0) {
+        let level = levels[j];
+        if (questionsPerLevels[level]?.length) {
+          console.log("Selected level: ", level);
+          previousQuestions.push(questionsPerLevels[level].pop());
+          return previousQuestions;
+        }
+        j--;
       }
-      let j = 0;
+      j = difficulty + 1;
       while (j < 5) {
         let level = levels[j];
         if (questionsPerLevels[level]?.length) {
-          console.log("initial level", level);
+          console.log("Selected level: ", level);
           previousQuestions.push(questionsPerLevels[level].pop());
           return previousQuestions;
         }
         j++;
       }
+      return null;
+    };
+    // find the difficulty to use for the next question
+    console.log("difficulties", difficulties);
+
+    // start with initialLevel if user answered less than 3 questions
+    const initialDifficulty = levels.indexOf(initialLevel);
+    if (validatedQuestions.length < 3) {
+      return getQuestionForDifficulty(initialDifficulty);
     }
+
     // If the user failed twice in a row for the same level, we go down one level
     validatedQuestions = validatedQuestions.reverse();
-    if (
-      validatedQuestions.length > 2 &&
-      validatedQuestions[0].difficulty > 1 &&
-      validatedQuestions[0].difficulty === validatedQuestions[1].difficulty &&
-      !validatedQuestions[0].valid &&
-      !validatedQuestions[1].valid
-    ) {
-      let level = levels[validatedQuestions[0].difficulty - 2];
-      // no loop here, if there are no easier questions, then we keep the current level
-      if (questionsPerLevels[level]?.length) {
-        console.log("down level", level);
-        previousQuestions.push(questionsPerLevels[level].pop());
-        return previousQuestions;
-      }
+    const q1 = validatedQuestions[0];
+    const q2 = validatedQuestions[1];
+    if (q1.level === q2.level && !q1.valid && !q2.valid) {
+      return getQuestionForDifficulty(levels.indexOf(q1.level) - 1);
     }
 
     for (let i = 0; i < 5; i++) {
-      const rate = difficulties[i].total
-        ? difficulties[i].valid / difficulties[i].total
-        : 0;
-      if (rate < 0.75) {
-        let j = i;
-        // we get questions from this level, or lower, if there are any
-        while (j >= 0) {
-          let level = levels[j];
-          if (questionsPerLevels[level]?.length) {
-            console.log("getting level", level);
-            previousQuestions.push(questionsPerLevels[level].pop());
-            return previousQuestions;
-          }
-          j--;
-        }
+      const total = difficulties[i].total;
+      const valid = difficulties[i].valid;
+      const rate = total ? valid / total : 0;
+      if (total < 3 || rate < 0.8) {
+        return getQuestionForDifficulty(i);
       }
     }
-    // we get questions from the expert level, or lower, if there aren't any
-    let j = 4;
-    while (j >= 0) {
-      let level = levels[j];
-      if (questionsPerLevels[level]?.length) {
-        console.log("highest level", level);
-        previousQuestions.push(questionsPerLevels[level].pop());
-        return previousQuestions;
-      }
-      j--;
-    }
-    // this case cannot happen we have scanned all the questions
-    console.log("no more questions");
-    return previousQuestions;
+    return getQuestionForDifficulty(4);
   };
 
   const getQuestionsPerLevels = (questions) => {
@@ -160,23 +139,27 @@ export default function () {
       }, {});
 
     // randomize the order of the questions in the levels
-    questionsPerLevels = Object.keys(questionsPerLevels).reduce((acc, level) => {
-      acc[level] = questionsPerLevels[level].sort((a, b) => a.order - b.order);
-      return acc;
-    }, {});
+    questionsPerLevels = Object.keys(questionsPerLevels).reduce(
+      (acc, level) => {
+        acc[level] = questionsPerLevels[level].sort(
+          (a, b) => a.order - b.order
+        );
+        return acc;
+      },
+      {}
+    );
     return questionsPerLevels;
   };
 
   const initQuestionResponse = (question) => {
-    if (question.response !== undefined)
-      return question.response;
-    return question.type === "checkbox" ? [] : undefined
+    if (question.response !== undefined) return question.response;
+    return question.type === "checkbox" ? [] : undefined;
   };
   const initQuestionResponseWithAnswer = (question, answeredQuestion) => {
-    if(question.type === "checkbox") {
+    if (question.type === "checkbox") {
       return answeredQuestion.userResponse.split(",");
     }
-    if(question.type === "radio") {
+    if (question.type === "radio") {
       return Number(answeredQuestion.userResponse);
     }
     return answeredQuestion.userResponse;
@@ -186,8 +169,6 @@ export default function () {
     previousQuestions = [];
     questions = inputQuestions.map((q) => ({ ...q }));
 
-    questionsPerLevels = getQuestionsPerLevels(questions);
-
     // pre-populate the questions with the answers
     if (answeredQuestions?.length) {
       answeredQuestions.forEach((answeredQuestion, idx) => {
@@ -196,17 +177,23 @@ export default function () {
           return;
         }
         const question = questions.find(
-          (q) => q.id === answeredQuestion.questionId,
+          (q) => q.id === answeredQuestion.questionId
         );
         if (!question) {
           return;
         }
-        question.response = initQuestionResponseWithAnswer(question, answeredQuestion);
+        question.response = initQuestionResponseWithAnswer(
+          question,
+          answeredQuestion
+        );
         question.validated = true;
         question.valid = answeredQuestion.isValid;
         question.order = -answeredQuestions.length + idx;
       });
     }
+
+    questionsPerLevels = getQuestionsPerLevels(questions);
+
     let validAnswers = 0;
     questions.forEach((question) => {
       question.answers.forEach((answer) => {
@@ -216,12 +203,13 @@ export default function () {
         validAnswers++;
       }
       question.response = initQuestionResponse(question);
-      question.time = question.time || 0;
-      question.level = question.level || "intermediate";
-      question.order = question.order || Math.random();
-      question.difficulty =
-        question.difficulty || levels.indexOf(question.level) + 1 || 3;
-      if (!question.explanations && (question.type === "shorttext" || question.type === "word")) {
+      question.time ??= 0;
+      question.level ??= "intermediate";
+      question.order ??= Math.random();
+      if (
+        !question.explanations &&
+        (question.type === "shorttext" || question.type === "word")
+      ) {
         question.explanations =
           "Valid answers: '" +
           question.answers
@@ -237,7 +225,7 @@ export default function () {
   const getColor = (question, answer) => {
     if (!question.validated) return undefined;
     return answer.valid ? "positive" : "negative";
-  }
+  };
   const getOptions = (question) => {
     if (!question) return {};
     if (question.type === "radio" || question.type === "checkbox") {
@@ -246,7 +234,7 @@ export default function () {
         label: answer.text,
         value: index,
         checkedIcon: question.type === "radio" ? "task_alt" : undefined,
-        color: getColor(question, answer)
+        color: getColor(question, answer),
       }));
       // randomize order of options
       options.sort((a, b) => a.order - b.order);
