@@ -43,7 +43,7 @@
             :max="5"
             adaptative
             initial-level="intermediate"
-            @finished="sortRevisitedConcepts"
+            @finished="quizFinished"
             @results="
               conceptActionService.updateQuestionsResults(
                 conceptsToRevisit[0].action
@@ -96,6 +96,7 @@
 </template>
 
 <script setup lang="js">
+const { notify } = useQuasar();
 
 // References to hold categorized concepts
 const conceptsToRevisit = ref([]);
@@ -136,6 +137,23 @@ const generateLastDays = () => {
     });
   }
   return days;
+};
+
+const quizFinished = () => {
+  // mark today as having an action
+  const today = new Date().toISOString().split('T')[0];
+  const historyDay = history.value.find(day => day.date === today);
+  if (historyDay) {
+    if (!historyDay.hasAction){
+      // notify the user that they have completed a quiz today
+      notify({
+        message: 'Congratulation, a quiz a day, keeps the learning curve at bay!',
+      });
+    }
+    historyDay.hasAction = true;
+  }
+
+  sortRevisitedConcepts();
 };
 
 const sortRevisitedConcepts = () => {

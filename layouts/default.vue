@@ -122,7 +122,6 @@ function toggleRightDrawer() {
 watch(teacherMode, handleTeacherModeToggle);
 function handleTeacherModeToggle() {
   notify({
-
     message: teacherMode.value ? "Teacher Mode Activated" : "Teacher Mode Deactivated",
   });
   LocalStorage.set('teacherMode', teacherMode.value);
