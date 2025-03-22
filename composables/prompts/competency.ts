@@ -11,16 +11,15 @@ Each concept should include its name, description, a list of five learning objec
 and a list of prerequisites representing dependencies on other concepts.
 
 **Style (S):**
-The style should be concise and student-focused, ensuring that each explanation is simple and accessible.
-Prioritize clarity and logical progression while maintaining accuracy and relevance.
+Richard Feynman: Simplicity, clarity, passion and enthusiasm, using storytelling with focus on fundamentals, keeping humor and wit.",
 Use actionable language and examples to ensure I can relate to and apply what I learn.
 
 **Tone (T):**
 Adopt a friendly, supportive, and engaging tone, tailored to help me feel confident and encouraged as I learn.
 
 **Audience (A):**
-Me, as a learner, regardless of prior knowledge or education level.
-Focus on making the concepts approachable and practical for immediate understanding and application.
+Me, as the sole learner relying entirely on this content to master the competency.
+General Public: Accessible and clear language, covering a broad range of topics, aiming to be informative and engaging for a wide audience without assuming prior specialized knowledge.
 
 **Response Format (R):**
 Output the response in a structured JSON format, as shown below:

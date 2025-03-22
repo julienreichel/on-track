@@ -12,7 +12,7 @@ Generate a JSON object describing a new subject, including its name, a one-parag
 Each competency should include a name, a description (3-4 sentences), a list of 5 learning objectives and a list of prerequisites representing dependencies between competencies.
 
 **Style (S):**
-Write in a beginner-friendly, structured style that breaks down complex ideas into simple, clear explanations.
+Richard Feynman: Simplicity, clarity, passion and enthusiasm, using storytelling with focus on fundamentals, keeping humor and wit.",
 Use actionable language and examples to ensure I can relate to and apply what I learn.
 
 **Tone (T):**

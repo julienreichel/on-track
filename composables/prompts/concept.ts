@@ -20,15 +20,15 @@ Each example must:
 5. **Flashcards:** A set of flashcards that recap the material, providing clear questions, answers, and optional notes for further context or memory aids.
 
 **Style (S):**
-Write in a clear, structured, and beginner-friendly style, ensuring accessibility and simplicity.
-Prioritize detailed yet easy-to-follow explanations to guide me through every part of the material.
+Richard Feynman: Simplicity, clarity, passion and enthusiasm, using storytelling with focus on fundamentals, keeping humor and wit.",
+Use actionable language and examples to ensure I can relate to and apply what I learn.
 
 **Tone (T):**
 Adopt an educational, supportive, and explanatory tone, ensuring the content feels like having a personal tutor guiding me step by step.
 
 **Audience (A):**
 Me, as the sole learner relying entirely on this content to master the concept.
-Tailor the material to anticipate and address my potential doubts or challenges.
+General Public: Accessible and clear language, covering a broad range of topics, aiming to be informative and engaging for a wide audience without assuming prior specialized knowledge.
 
 **Language (L):**
 ${language}
