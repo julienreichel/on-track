@@ -253,7 +253,8 @@
       <!-- NEXT STEPS TAB -->
       <q-tab-panel name="nextSteps" class="q-pa-none">
         <div class="q-pa-sm">
-          <concept-cards :concepts="nextConcepts" />
+          <concept-cards v-if="nextConcepts.length" :concepts="nextConcepts" />
+          <competency-cards v-else :competencies="otherCompetencies" />
         </div>
       </q-tab-panel>
     </q-tab-panels>
@@ -268,6 +269,7 @@
 const route = useRoute();
 const conceptService = useConcept();
 const conceptActionService = useConceptAction();
+const competencyService = useCompetency();
 const { loading } = useQuasar();
 
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
@@ -275,17 +277,42 @@ const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 const activeTab = ref("objectives");
 const concept = ref(null);
 const conceptAction = ref(null);
-
+const otherUndoneConcepts = ref([]);
+const otherCompetencies = ref([]);
 const teacherMode = inject("teacherMode");
 
 onMounted(async () => {
   try {
     const conceptId = route.params.id;
     concept.value = await conceptService.get(conceptId);
+    
+    const { userId, username } = await getCurrentUser();
 
+    if(!concept.value.followUps.length){
+      // let's check if there are some other concept in the competency that have not been done yet
+      const competency = await competencyService.get(concept.value.competency.id);
+      await Promise.all(
+        competency.concepts.filter((c) => c.id !== conceptId).map(async (c) => {
+          const actions = await conceptActionService.list({
+            conceptId: c.id,
+            userId,
+            username,
+          });
+          const started = actions[0]?.actionTimestamps?.some(
+            (a) => a.actionType === "started"
+          );
+          if (!started) {
+            otherUndoneConcepts.value.push(c);
+          }
+        })
+      );
+      if (!otherUndoneConcepts.value.length) {
+        // nothing left to be done in this competency, so lets propose followups
+        otherCompetencies.value = competency.followUps.map((f) => f.competency);
+      }
+    }
     // Check or create ConceptAction
     if (!teacherMode.value) {
-      const { userId, username } = await getCurrentUser();
       const actions = await conceptActionService.list({
         conceptId,
         userId,
@@ -349,6 +376,9 @@ const nextConcepts = computed(() => {
   const nextConcepts = [];
   if (concept.value?.followUps) {
     concept.value.followUps.forEach((f) => nextConcepts.push(f.concept));
+  }
+  if (!nextConcepts.length) {
+    otherUndoneConcepts.value.forEach((c) => nextConcepts.push(c));
   }
   return nextConcepts;
 });
@@ -430,18 +460,15 @@ const markAsRead = async (field) => {
 
 let objectives = [];
 const createObjective = async (o) => {
-  console.log("Create objective", o);
   objectives = o;
 };
 
 watch(activeTab, (newQName, oldName) => {
-  console.log("Active tab", oldName);
   if (oldName === "objectives") {
     finaliseObjective();
   }
 });
 const finaliseObjective = async () => {
-  console.log("Finalise objectives", objectives);
   if (teacherMode.value || !conceptAction.value) {
     return;
   }
