@@ -189,7 +189,8 @@ watch(
   { immediate: true },
 );
 
-const hasResults = computed(() =>
+const hasResults = computed(() => 
+  realMax.value === activeQuestions.value.length &&
   activeQuestions.value.every((q) => q.validated),
 );
 watch(hasResults, (hasResults) => {

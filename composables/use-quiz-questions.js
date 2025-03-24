@@ -110,8 +110,9 @@ export default function () {
       difficulties[i].valid += 1;
     }
 
+    const minQuestionPerlLevel = realMax > 5 ? 3 : 2;
     console.log("difficulties", difficulties);
-    if (validatedQuestions.length < 2) {
+    if (validatedQuestions.length < minQuestionPerlLevel) {
       return getQuestionForDifficulty(initialDifficulty);
     }
 
@@ -127,7 +128,7 @@ export default function () {
       const total = difficulties[i].total;
       const valid = difficulties[i].valid;
       const rate = total ? valid / total : 0;
-      if (total < 2 || rate < 0.75) {
+      if (total < minQuestionPerlLevel || rate < 0.75) {
         return getQuestionForDifficulty(i);
       }
     }
@@ -198,8 +199,6 @@ export default function () {
       });
     }
 
-    questionsPerLevels = getQuestionsPerLevels(questions);
-
     let validAnswers = 0;
     questions.forEach((question) => {
       question.answers.forEach((answer) => {
@@ -225,6 +224,7 @@ export default function () {
           "'";
       }
     });
+    questionsPerLevels = getQuestionsPerLevels(questions);
     return validAnswers ? validAnswers < questions.length : false;
   };
 
