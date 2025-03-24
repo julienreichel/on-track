@@ -6,14 +6,6 @@
       :competencies="[concept.competency]"
     />
 
-    <concept-flow
-      :concepts="relatedConcepts"
-      :prerequisites="relatedLinks"
-      direction="LR"
-      :style="{ height: `${height}px`, width: '100%' }"
-      class="gt-xs q-px-sm"
-    />
-
     <editable-text
       :value="concept.name"
       :enable-editing="teacherMode"
@@ -295,19 +287,6 @@ const hasDoneFlashcards = computed(
     concept.value.flashCards?.length
 );
 
-const relatedConcepts = computed(() => {
-  const relatedConcepts = [concept.value];
-  if (concept.value?.prerequisites) {
-    concept.value.prerequisites.forEach((p) =>
-      relatedConcepts.push(p.prerequisite)
-    );
-  }
-  if (concept.value?.followUps) {
-    concept.value.followUps.forEach((f) => relatedConcepts.push(f.concept));
-  }
-  return relatedConcepts;
-});
-
 const nextConcepts = computed(() => {
   const nextConcepts = [];
   if (concept.value?.followUps) {
@@ -319,35 +298,6 @@ const nextConcepts = computed(() => {
   return nextConcepts;
 });
 
-const relatedLinks = computed(() => {
-  const relatedLinks = [];
-
-  if (concept.value?.prerequisites) {
-    concept.value.prerequisites.forEach((p) =>
-      relatedLinks.push({
-        id: p.prerequisite.id,
-        prerequisiteId: p.prerequisite.id,
-        conceptId: concept.value.id,
-      })
-    );
-  }
-  if (concept.value?.followUps) {
-    concept.value.followUps.forEach((f) =>
-      relatedLinks.push({
-        id: f.concept.id,
-        prerequisiteId: concept.value.id,
-        conceptId: f.concept.id,
-      })
-    );
-  }
-  return relatedLinks;
-});
-
-const height = computed(() => {
-  const c = concept.value;
-  if (!c) return 0;
-  return Math.max(c.prerequisites?.length || 0, c.followUps?.length || 0) * 100;
-});
 
 const generateConceptData = async () => {
   loading.show();
