@@ -35,7 +35,7 @@ const progress = computed(() => {
 
   if (objectives?.length) progress += 10;
   if (theory) progress += 15;
-  if (examples) progress += 10;
+  if (examples) progress += 15;
   if (usedFlashCards) {
     progress += Math.min(5, usedFlashCards.length) * 5;
   }
@@ -49,9 +49,9 @@ const nbFlashCards = computed(() => Math.min(props.concept.flashCards?.length, 5
 const nbQuestion = computed(() => Math.min(props.concept.questions?.length || 0, 10));
 // A sucess, means, all the theory and examples are read
 // the flashcards have been used and the 10 questions have been answered with at leat 80% of success
-const success = computed(() => 10 + 15 + 10 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 0.8);
+const success = computed(() => 10 + 15 + 15 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 0.7);
 // A review is a success + all falshcard + 3 quiz of 5 question with at least 4 correct
-const review = computed(() => Math.max(10 + 15 + 10 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 2.5 * 0.8, progress.value));
+const review = computed(() => Math.max(10 + 15 + 15 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 2.5 * 0.7, progress.value));
 
 const finished = computed(() => progress.value >= success.value);
 const color = computed(() => (finished.value ? "primary" : "secondary"));
