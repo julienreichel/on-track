@@ -98,7 +98,7 @@ export default function () {
         }
         j++;
       }
-      return null;
+      return previousQuestions;
     };
     // find the difficulty to use for the next question
     // start with initialLevel if user answered less than 3 questions

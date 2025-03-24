@@ -184,15 +184,12 @@ watch(
     step.value = 0;
     hasValidatedAnswers.value = resetQuestions(props.questions, props.answeredQuestions);
     activeQuestions.value = getActiveQuestions(props);
-    console.log("activeQuestions", activeQuestions.value);
   },
   { immediate: true },
 );
 
-const hasResults = computed(() => 
-  realMax.value === activeQuestions.value.length &&
-  activeQuestions.value.every((q) => q.validated),
-);
+const hasResults = ref(false);
+
 watch(hasResults, (hasResults) => {
   if (hasResults) {
     emit("results", activeQuestions.value);
@@ -240,6 +237,9 @@ const nextCliked = () => {
     if (valid && !props.alwaysShowHints) {
       step.value++;
     }
+  }
+  if (step.value === activeQuestions.value.length && activeQuestions.value.length === realMax.value) {
+    hasResults.value = true;
   }
   if (activeQuestions.value.length <= step.value) {
     // we are building question dynamically
