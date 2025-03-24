@@ -31,7 +31,7 @@ export default function () {
       let q = [];
       let i = 0;
       while (q.length < realMax) {
-        const keys = Object.keys(questionsPerLevels.filter((q) => q.length));
+        const keys = Object.keys(questionsPerLevels);
         let level = keys[i % keys.length];
         if (questionsPerLevels[level].length) {
           q.push(questionsPerLevels[level].pop());
