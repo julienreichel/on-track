@@ -22,7 +22,6 @@
       @update="(text) => updateConcept('description', text)"
     />
 
-    <!-- TABS -->
     <concept-status
       :concept="concept"
       :concept-action="conceptAction"
@@ -30,59 +29,22 @@
       @finished="conceptDone"
     />
 
-    <q-tabs
-      v-model="activeTab"
-      inline-label
-      align="justify"
-      narrow-indicator
-      class="bg-primary text-white"
-    >
-
+    <!-- STEPPER -->
+    <q-stepper 
+      v-model="activeTab" 
+      flat 
+      header-nav
+      active-icon="school" 
+      :contracted="$q.screen.lt.md"
+      >
       <!-- 2. THEORY -->
-      <q-tab
+      <q-step
         v-if="teacherMode || concept.theory"
         name="theory"
-        label="Theory"
+        title="Theory"
         icon="article"
-      />
-
-      <!-- 3. EXAMPLES -->
-      <q-tab
-        v-if="concept.examples"
-        name="examples"
-        label="Examples"
-        icon="ballot"
-      />
-
-      <!-- 4. FLASHCARDS -->
-      <q-tab
-        v-if="concept.flashCards?.length"
-        name="flashcards"
-        label="Flashcards"
-        icon="check_box"
-      />
-
-      <!-- 5. QUIZ -->
-      <q-tab
-        v-if="teacherMode || concept.questions?.length"
-        name="quiz"
-        label="Quiz"
-        icon="help_center"
-      />
-
-      <!-- 7. NEXT STEPS (when no longer in-progress) -->
-      <q-tab
-        name="nextSteps"
-        label="Next steps"
-        icon="exit_to_app"
-      />
-    </q-tabs>
-
-    <!-- TAB PANELS -->
-    <q-tab-panels v-model="activeTab" animated>
-
-      <!-- THEORY TAB -->
-      <q-tab-panel name="theory" class="q-pa-none">
+        :done="hasDoneTheory"
+      >
         <div class="q-py-sm q-px-none">
           <div v-if="!teacherMode && concept.theory">
             <concept-runner
@@ -103,10 +65,16 @@
             Generate
           </q-btn>
         </div>
-      </q-tab-panel>
+      </q-step>
 
-      <!-- EXAMPLES TAB -->
-      <q-tab-panel name="examples" class="q-pa-none">
+      <!-- 3. EXAMPLES -->
+      <q-step
+        v-if="concept.examples"
+        name="examples"
+        title="Examples"
+        icon="ballot"
+        :done="hasDoneExamples"
+      >
         <div class="q-py-sm q-px-none">
           <div v-if="!teacherMode && concept.examples">
             <concept-runner
@@ -124,10 +92,16 @@
             @update="(text) => updateConcept('examples', text)"
           />
         </div>
-      </q-tab-panel>
+      </q-step>
 
-      <!-- FLASHCARDS TAB -->
-      <q-tab-panel name="flashcards" class="q-pa-none">
+      <!-- 4. FLASHCARDS -->
+      <q-step
+        v-if="concept.flashCards?.length"
+        name="flashcards"
+        title="Flashcards"
+        icon="check_box"
+        :done="hasDoneFlashcards"
+      >
         <flashcard-list
           v-if="teacherMode"
           v-model="concept.flashCards"
@@ -140,10 +114,16 @@
             @finished="activeTab = 'quiz'"
           />
         </div>
-      </q-tab-panel>
+      </q-step>
 
-      <!-- QUIZ TAB -->
-      <q-tab-panel name="quiz" class="q-pa-none">
+      <!-- 5. QUIZ -->
+      <q-step
+        v-if="teacherMode || concept.questions?.length"
+        name="quiz"
+        title="Quiz"
+        icon="help_center"
+        :done="hasDoneQuiz"
+      >
         <template #header>
           <!-- Battery Icons (if desired) -->
           <q-item-section
@@ -182,16 +162,20 @@
             <q-btn @click="generateQuizData()">Generate</q-btn>
           </div>
         </div>
-      </q-tab-panel>
+      </q-step>
 
-      <!-- NEXT STEPS TAB -->
-      <q-tab-panel name="nextSteps" class="q-pa-none">
+      <!-- 7. NEXT STEPS -->
+      <q-step
+        name="nextSteps"
+        title="Next steps"
+        icon="exit_to_app"
+      >
         <div class="q-pa-sm">
           <concept-cards v-if="nextConcepts.length" :concepts="nextConcepts" />
           <competency-cards v-else :competencies="otherCompetencies" />
         </div>
-      </q-tab-panel>
-    </q-tab-panels>
+      </q-step>
+    </q-stepper>
   </div>
 
   <div v-else>
@@ -267,6 +251,7 @@ onMounted(async () => {
   }
 });
 
+
 const nextTab = computed(() => {
   if (conceptAction.value?.inProgress) {
     if (!hasDoneTheory.value) {
@@ -286,6 +271,7 @@ const hasDoneFlashcards = computed(
     conceptAction.value?.usedFlashCards?.length ===
     concept.value.flashCards?.length
 );
+const hasDoneQuiz = computed(() => !conceptAction.value?.inProgress);
 
 const nextConcepts = computed(() => {
   const nextConcepts = [];
