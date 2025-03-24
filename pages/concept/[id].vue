@@ -300,26 +300,26 @@ onMounted(async () => {
         });
       }
     }
-    if (conceptAction.value?.inProgress) {
-      if (!hasObjectives.value) {
-        activeTab.value = "objectives";
-      } else if (!hasDoneTheory.value) {
-        activeTab.value = "theory";
-      } else if (!hasDoneExamples.value) {
-        activeTab.value = "examples";
-      } else if (!hasDoneFlashcards.value) {
-        activeTab.value = "flashcards";
-      } else {
-        activeTab.value = "quiz";
-      }
-    } else {
-      activeTab.value = "quiz";
-    }
+    activeTab.value = nextTab.value;
   } catch (error) {
     console.error("Failed to fetch concept or user action:", error);
   }
 });
 
+const nextTab = computed(() => {
+  if (conceptAction.value?.inProgress) {
+    if (!hasObjectives.value) {
+      return "objectives";
+    } else if (!hasDoneTheory.value) {
+      return "theory";
+    } else if (!hasDoneExamples.value) {
+      return "examples";
+    } else if (!hasDoneFlashcards.value) {
+      return "flashcards";
+    } 
+  }
+  return"quiz";
+})
 const hasObjectives = computed(() => conceptAction.value?.objectives?.length);
 const hasDoneTheory = computed(() => conceptAction.value?.theory);
 const hasDoneExamples = computed(() => conceptAction.value?.examples);
@@ -425,11 +425,7 @@ const markAsRead = async (field) => {
     await conceptActionService.update(conceptAction.value);
   }
 
-  if (field === "theory") {
-    activeTab.value = "examples";
-  } else if (field === "examples") {
-    activeTab.value = "flashcards";
-  }
+  activeTab.value = nextTab.value;
 };
 
 let objectives = [];
@@ -506,7 +502,7 @@ const updateFlashCard = async ({ flashCardId, status }) => {
   await conceptActionService.update(conceptAction.value);
 
   if (triggerOpenQuiz) {
-    activeTab.value = "quiz";
+    activeTab.value = nextTab.value;
   }
 };
 
