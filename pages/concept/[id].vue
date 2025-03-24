@@ -21,7 +21,7 @@
       @update="(text) => updateConcept('name', text)"
     />
     <editable-text
-      v-if="concept.description && !hasObjectives"
+      v-if="concept.description"
       :value="concept.description"
       :enable-editing="teacherMode"
       type="textarea"
@@ -45,13 +45,6 @@
       narrow-indicator
       class="bg-primary text-white"
     >
-      <!-- 1. OBJECTIVES (when in-progress or teacherMode) -->
-      <q-tab
-        v-if="teacherMode || !hasObjectives"
-        name="objectives"
-        label="Objectives"
-        icon="fact_check"
-      />
 
       <!-- 2. THEORY -->
       <q-tab
@@ -85,17 +78,8 @@
         icon="help_center"
       />
 
-      <!-- 6. COMPLETED OBJECTIVES (when no longer in-progress) -->
-      <q-tab
-        v-if="checkObjectives"
-        name="objectivesDone"
-        label="Objectives"
-        icon="fact_check"
-      />
-
       <!-- 7. NEXT STEPS (when no longer in-progress) -->
       <q-tab
-        v-if="!conceptAction?.inProgress"
         name="nextSteps"
         label="Next steps"
         icon="exit_to_app"
@@ -104,35 +88,6 @@
 
     <!-- TAB PANELS -->
     <q-tab-panels v-model="activeTab" animated>
-      <!-- OBJECTIVES TAB -->
-      <q-tab-panel name="objectives" class="q-pa-none">
-        <editable-text
-          v-if="teacherMode"
-          :value="concept.objectives.join('\n\n')"
-          :enable-editing="teacherMode"
-          type="textarea"
-          class="q-pa-sm"
-          use-rich-text
-          @update="
-            (text) =>
-              updateConcept(
-                'objectives',
-                text.split('\n').filter((o) => o)
-              )
-          "
-        />
-        <objective-select
-          v-else-if="!hasObjectives"
-          :objectives="concept.objectives"
-          @selected="createObjective"
-          @finished="activeTab = 'theory'"
-        />
-        <objective-list
-          v-else
-          :objectives="conceptAction?.objectives.map((o) => o.objective)"
-          :disabled="true"
-        />
-      </q-tab-panel>
 
       <!-- THEORY TAB -->
       <q-tab-panel name="theory" class="q-pa-none">
@@ -237,19 +192,6 @@
         </div>
       </q-tab-panel>
 
-      <!-- COMPLETED OBJECTIVES TAB (objectives when no longer in progress) -->
-      <q-tab-panel name="objectivesDone" class="q-pa-none">
-        <div class="q-pa-sm">
-          <objective-list
-            :objectives="conceptAction?.objectives.map((o) => o.objective)"
-            :default-check="conceptAction?.objectives.map((o) => o.isDone)"
-            :disabled="disableObjectives"
-            @check-objective="updateObjective"
-            @finished="activeTab = 'nextSteps'"
-          />
-        </div>
-      </q-tab-panel>
-
       <!-- NEXT STEPS TAB -->
       <q-tab-panel name="nextSteps" class="q-pa-none">
         <div class="q-pa-sm">
@@ -335,9 +277,7 @@ onMounted(async () => {
 
 const nextTab = computed(() => {
   if (conceptAction.value?.inProgress) {
-    if (!hasObjectives.value) {
-      return "objectives";
-    } else if (!hasDoneTheory.value) {
+    if (!hasDoneTheory.value) {
       return "theory";
     } else if (!hasDoneExamples.value) {
       return "examples";
@@ -347,16 +287,12 @@ const nextTab = computed(() => {
   }
   return"quiz";
 })
-const hasObjectives = computed(() => conceptAction.value?.objectives?.length);
 const hasDoneTheory = computed(() => conceptAction.value?.theory);
 const hasDoneExamples = computed(() => conceptAction.value?.examples);
 const hasDoneFlashcards = computed(
   () =>
     conceptAction.value?.usedFlashCards?.length ===
     concept.value.flashCards?.length
-);
-const checkObjectives = computed(
-  () => !conceptAction.value?.inProgress && hasObjectives.value
 );
 
 const relatedConcepts = computed(() => {
@@ -458,47 +394,6 @@ const markAsRead = async (field) => {
   activeTab.value = nextTab.value;
 };
 
-let objectives = [];
-const createObjective = async (o) => {
-  objectives = o;
-};
-
-watch(activeTab, (newQName, oldName) => {
-  if (oldName === "objectives") {
-    finaliseObjective();
-  }
-});
-const finaliseObjective = async () => {
-  if (teacherMode.value || !conceptAction.value) {
-    return;
-  }
-  if (!objectives.length) {
-    return;
-  }
-
-  conceptAction.value.objectives = objectives.map((o) => ({
-    objective: o,
-    isDone: false,
-  }));
-  await conceptActionService.update(conceptAction.value);
-};
-
-const updateObjective = async (objectives) => {
-  if (teacherMode.value || !conceptAction.value) {
-    return;
-  }
-  let modified = updateStarted();
-  conceptAction.value.objectives.forEach((o, index) => {
-    if (o.isDone !== objectives[index]) {
-      modified = true;
-      o.isDone = objectives[index];
-    }
-  });
-  if (modified) {
-    await conceptActionService.update(conceptAction.value);
-  }
-};
-
 const updateFlashCard = async ({ flashCardId, status }) => {
   if (teacherMode.value || !conceptAction.value) {
     return;
@@ -537,11 +432,7 @@ const updateQuestionsFinished = () => {
   if (conceptAction.value?.inProgress) {
     return;
   }
-  if (hasObjectives.value) {
-    activeTab.value = "objectivesDone";
-  } else {
-    activeTab.value = "nextSteps";
-  }
+  activeTab.value = "nextSteps";
 };
 
 const updateQuestionsProgress = async (questions) => {
@@ -576,7 +467,6 @@ const conceptDone = async () => {
 
   await conceptActionService.update(conceptAction.value);
 };
-const disableObjectives = computed(() => conceptAction.value?.inProgress);
 const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
 const quizLevel = computed(() => conceptAction.value?.inProgress ? "beginner" : "intermediate");
 
