@@ -41,6 +41,7 @@
     <action-card
       v-else-if="onGoingConcept"
       title="Continue"
+      label="Continue"
       :to="`/concept/${onGoingConcept.id}`"
     >
       <p>Let's continue learning where you left off on <b>{{onGoingConcept?.name}}</b>.</p>
@@ -49,6 +50,7 @@
     <action-card
       v-else-if="quizStatus === 'quiz'"
       title="Let's start learning now"
+      label="Open Concept"
       :to="`/concept/${initialConcept.id}`"
     >
       <p>We will tackle te follwing concept: <b>{{initialConcept?.name}}</b>.</p>
@@ -57,6 +59,7 @@
     <action-card
       v-else
       :title="quizLabel"
+      label="Start Quiz"
       @activated="startPreCheck"
     >
       <p>Let's run a quiz to see where you stand.</p>

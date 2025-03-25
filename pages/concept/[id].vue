@@ -13,7 +13,7 @@
       @update="(text) => updateConcept('name', text)"
     />
     <editable-text
-      v-if="concept.description"
+      v-if="showIntro || teacherMode"
       :value="concept.description"
       :enable-editing="teacherMode"
       type="textarea"
@@ -28,9 +28,19 @@
       class="q-pb-sm"
       @finished="conceptDone"
     />
+    <action-card
+      v-if="showIntro"
+      title="Ready to learn?"
+      label="Start learning"
+      @activated="showIntro = false"
+    >
+      <p>Learning is composed of several steps: theory, examples, flashcards, quiz. </p>
+      <p>You can run them in any order, but you need to complete them all to finish the concept.</p>
+    </action-card>
 
     <!-- STEPPER -->
     <q-stepper 
+      v-if="!showIntro"
       v-model="activeTab" 
       flat 
       header-nav
@@ -199,6 +209,8 @@ const otherUndoneConcepts = ref([]);
 const otherCompetencies = ref([]);
 const teacherMode = inject("teacherMode");
 
+const showIntro = ref(true);
+
 onMounted(async () => {
   try {
     const conceptId = route.params.id;
@@ -238,12 +250,17 @@ onMounted(async () => {
       });
       if (actions.length) {
         conceptAction.value = actions[0];
+        if (hasDoneSomething.value) {
+          showIntro.value = false;
+        }
       } else {
         conceptAction.value = await conceptActionService.create({
           conceptId,
           inProgress: true,
         });
       }
+    } else {
+      showIntro.value = false;
     }
     activeTab.value = nextTab.value;
   } catch (error) {
@@ -272,6 +289,7 @@ const hasDoneFlashcards = computed(
     concept.value.flashCards?.length
 );
 const hasDoneQuiz = computed(() => !conceptAction.value?.inProgress);
+const hasDoneSomething = computed(() => hasDoneTheory.value || hasDoneExamples.value || hasDoneFlashcards.value || hasDoneQuiz.value);
 
 const nextConcepts = computed(() => {
   const nextConcepts = [];

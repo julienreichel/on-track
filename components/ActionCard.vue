@@ -13,7 +13,8 @@
       <q-btn
         square
         size="md"
-        icon="chevron_right"
+        :icon-right="icon"
+        :label="label"
         color="primary"
         padding="sm 64px"
         :to="to"
@@ -27,6 +28,8 @@
 defineProps({
   title: { type: String, default: null },
   description: { type: String, default: null },
+  label: { type: String, default: null },
+  icon: { type: String, default: "chevron_right" },
   to: { type: String, default: null },
 });
 
