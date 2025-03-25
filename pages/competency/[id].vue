@@ -15,7 +15,7 @@
       @update="(text) => updateCompetency('name', text)"
     />
     <editable-text
-      v-if="competency.description"
+      v-if="competency.description && !showQuiz"
       :value="competency.description"
       :enable-editing="teacherMode"
       type="textarea"
@@ -23,29 +23,6 @@
       use-rich-text
       @update="(text) => updateCompetency('description', text)"
     />
-
-    <div v-if="!showQuiz && !teacherMode" class="q-py-sm row">
-      <q-btn
-        v-if="onGoingConcept"
-        label="Continue"
-        color="primary"
-        class="q-ma-sm col"
-        :to="`/concept/${onGoingConcept.id}`"
-      />
-      <q-btn
-        v-else-if="quizStatus === 'quiz'"
-        label="Go, let's start learning now"
-        color="primary"
-        class="q-ma-sm col"
-        @click="startCompetency"
-      />
-      <q-btn
-        :label="quizLabel"
-        :color="quizStatus === 'quiz' ? undefined : 'primary'"
-        class="q-ma-sm col"
-        @click="startPreCheck"
-      />
-    </div>
 
     <quiz-runner
       v-if="showQuiz"
@@ -61,18 +38,32 @@
       @progress="updateQuestionsProgress"
     />
 
-    <div v-if="competency.concepts?.length">
-      <div class="gt-xs q-pb-md">
-        <concept-flow
-          :concepts="competency.concepts"
-          :direction="direction"
-          :style="{ height: `${heightConcepts}px`, width: '100%' }"
-          class="q-pa-sm"
-        />
-        <q-banner v-if="!teacherMode && quizStatus !== 'final-quiz'" class="bg-info q-mt-md text-white">
-          Select a concept to learn more about it.
-        </q-banner>
-      </div>
+    <action-card
+      v-else-if="onGoingConcept"
+      title="Continue"
+      :to="`/concept/${onGoingConcept.id}`"
+    >
+      <p>Let's continue learning where you left off on <b>{{onGoingConcept?.name}}</b>.</p>
+      <p>If you prefere studing another concept, you can click on any concept in the list bellow</p>
+    </action-card>
+    <action-card
+      v-else-if="quizStatus === 'quiz'"
+      title="Let's start learning now"
+      :to="`/concept/${initialConcept.id}`"
+    >
+      <p>We will tackle te follwing concept: <b>{{initialConcept?.name}}</b>.</p>
+      <p>If you prefere starting with another concept, you can click on any concept in the list bellow</p>
+    </action-card>
+    <action-card
+      v-else
+      :title="quizLabel"
+      @activated="startPreCheck"
+    >
+      <p>Let's run a quiz to see where you stand.</p>
+      <p>If you prefere, you can also directly start studying a concept from the list bellow.</p>
+    </action-card>
+    
+    <div v-if="competency.concepts?.length && !showQuiz">
       <concept-cards
         :concepts="competency.concepts"
         :allow-delete="teacherMode"
@@ -261,12 +252,14 @@ const startPreCheck = async () => {
   }
 };
 
+const initialConcept = computed(() => {
+  return competency.value?.concepts?.find((c) => !c.prerequisites?.length) || competency.value?.concepts[0];
+});
+
 const startCompetency = () => {
-  const concept = competency.value.concepts.find(
-    (c) => !c.prerequisites?.length
-  );
-  router.push(`/concept/${concept.id}`);
+  router.push(`/concept/${initialConcept.value.id}`);
 };
+
 const updateQuestionsFinished = () => {
   showQuiz.value = false;
   quizStatus.value = "quiz";
