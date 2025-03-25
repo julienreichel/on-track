@@ -176,6 +176,8 @@ const realMax = computed(() =>
 
 const activeQuestions = ref([]);
 
+const hasResults = ref(false);
+
 const hasValidatedAnswers = ref(false);
 // this is the main initialization loop
 watch(
@@ -184,11 +186,10 @@ watch(
     step.value = 0;
     hasValidatedAnswers.value = resetQuestions(props.questions, props.answeredQuestions);
     activeQuestions.value = getActiveQuestions(props);
+    hasResults.value = false;
   },
   { immediate: true },
 );
-
-const hasResults = ref(false);
 
 watch(hasResults, (hasResults) => {
   if (hasResults) {
