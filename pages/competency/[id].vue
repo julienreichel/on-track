@@ -60,7 +60,7 @@
       @activated="startPreCheck"
     >
       <p>Let's run a quiz to see where you stand.</p>
-      <p>If you prefere, you can also directly start studying a concept from the list bellow.</p>
+      <p v-if="quizStatus !== 'final-quiz'">If you prefere, you can also directly start studying a concept from the list bellow.</p>
     </action-card>
     
     <div v-if="competency.concepts?.length && !showQuiz">
@@ -91,8 +91,7 @@ const conceptService = useConcept();
 const competencyActionService = useCompetencyAction();
 const conceptActionService = useConceptAction();
 const route = useRoute();
-const router = useRouter();
-const { loading, screen } = useQuasar();
+const { loading } = useQuasar();
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
 const teacherMode = inject("teacherMode");
@@ -179,35 +178,6 @@ onMounted(async () => {
   }
 });
 
-const direction = computed(() => (screen.lt.sm ? "TB" : "LR"));
-
-const heightConcepts = computed(() => {
-  if (!competency.value?.concepts?.length) {
-    return 0;
-  }
-  const concepts = competency.value.concepts;
-  if (screen.lt.sm) {
-    return concepts[concepts.length - 1].order * 150;
-  } else {
-    let height = 1;
-    const dep = {};
-    concepts.forEach((c) => {
-      if (!c.prerequisites?.length) {
-        return;
-      }
-      c.prerequisites.forEach((p) => {
-        if (!dep[p.prerequisiteId]) {
-          dep[p.prerequisiteId] = 0;
-        }
-        dep[p.prerequisiteId]++;
-      });
-      height = Math.max(height, c.prerequisites.length || 0);
-    });
-    const maxDep = Math.max(...Object.values(dep), height);
-    return maxDep * 100 + 20;
-  }
-});
-
 const currentUserLevel = computed(() => {
   if (!competencyAction.value) {
     return "novice";
@@ -256,10 +226,6 @@ const initialConcept = computed(() => {
   return competency.value?.concepts?.find((c) => !c.prerequisites?.length) || competency.value?.concepts[0];
 });
 
-const startCompetency = () => {
-  router.push(`/concept/${initialConcept.value.id}`);
-};
-
 const updateQuestionsFinished = () => {
   showQuiz.value = false;
   quizStatus.value = "quiz";
@@ -267,9 +233,9 @@ const updateQuestionsFinished = () => {
 
 const quizLabel = computed(() => {
   const mapping = {
-    "pre-quiz": "Pre Check, where do I stand",
+    "pre-quiz": "Pre Check, where do you stand",
     quiz: "Test me again",
-    "final-quiz": "Final Quiz, I am ready",
+    "final-quiz": "Final Quiz, are you ready?",
   };
   return mapping[quizStatus.value] || "Pre Check";
 });
