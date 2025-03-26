@@ -171,7 +171,8 @@ const schema = a.schema({
     .secondaryIndexes((index) => [
       index("owner").name("byOwner").sortKeys(["createdAt"]),
       index("conceptId").name("byConcept").sortKeys(["owner"]),
-      index("competencyId").name("byCompetency").sortKeys(["owner"])
+      index("competencyId").name("byCompetency").sortKeys(["owner"]),
+      index("subjectId").name("bySubject").sortKeys(["owner"])
     ])
     .authorization((allow) => [
       allow.owner(),
@@ -194,7 +195,8 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [
       index("owner").name("byOwner").sortKeys(["createdAt"]),
-      index("competencyId").name("byCompetency").sortKeys(["owner"])
+      index("competencyId").name("byCompetency").sortKeys(["owner"]),
+      index("subjectId").name("bySubject").sortKeys(["owner"])
     ])
     .authorization((allow) => [
       allow.owner(),

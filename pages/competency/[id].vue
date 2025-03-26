@@ -198,11 +198,13 @@ onMounted(async () => {
           return;
         }
         concept.action = ca;
+      });
+      competency.value.concepts.forEach((c) => {
         // check if the action is started and/or finished
-        const started = ca.actionTimestamps?.some(
+        const started = c.action.actionTimestamps?.some(
           (a) => a.actionType === "started"
         );
-        const finished = ca.actionTimestamps?.some(
+        const finished = c.action.actionTimestamps?.some(
           (a) => a.actionType === "finished"
         );
         status.push({ started, finished });
@@ -212,6 +214,7 @@ onMounted(async () => {
         if (finished) {
           finishedConcepts.value.push(concept);
         }
+        
       });
       if (status.some((s) => s.started)) {
         quizStatus.value = "quiz";
@@ -281,6 +284,9 @@ const initialConcept = computed(() => {
 });
 
 const nextConcept = computed(() => {
+  if (!finishedConcepts.value.length) {
+    return null;
+  }
   const finishedConceptsIds = finishedConcepts.value.map((c) => c.id);
   const toDoConcept = competency.value?.concepts?.filter((c) => !finishedConceptsIds.includes(c.id)); 
   const next = toDoConcept?.find(

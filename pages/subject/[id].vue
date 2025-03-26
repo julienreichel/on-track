@@ -70,38 +70,51 @@ onMounted(async () => {
 
     if (subject.value?.competencies) {
       competencyService.sort(subject.value.competencies);
+    } else {
+      subject.value.competencies = [];
     }
+    subject.value.competencies.forEach((c) => {
+      c.concepts ??= [];
+    });
     if (!teacherMode.value) {
       const { userId, username } = await getCurrentUser();
-      await Promise.all(
-        subject.value.competencies.map(async (c) => {
-          const actions = await competencyActionService.list({
-            competencyId: c.id,
-            userId,
-            username,
-          });
-          c.action = actions[0];
-          if (c.action?.actionTimestamps?.length) {
+      const competencyActions = await competencyActionService.list({
+        subjectId,
+        userId,
+        username,
+      });
+      competencyActions.forEach((a) => {
+        const competency = subject.value.competencies.find(
+          (c) => c.id === a.competencyId
+        );
+        if (competency) {
+          competency.action = a;
+          if (a.actionTimestamps?.length) {
             hasStarted.value = true;
           }
-          const conceptActions = await conceptActionService.list({
-            competencyId: c.id,
-            userId,
-            username,
-          });
-          if (!c.concepts) {
-            c.concepts = [];
+        }
+      });
+
+      const conceptActions = await conceptActionService.list({
+        subjectId,
+        userId,
+        username,
+      });
+      conceptActions.forEach((a) => {
+        const competency = subject.value.competencies.find(
+          (c) => c.id === a.competencyId
+        );
+        if (competency) {
+          const concept = competency.concepts.find(
+            (cc) => cc.id === a.conceptId
+          );
+          if (concept) {
+            concept.action = a;
+          } else {
+            competency.concepts.push({ id: a.conceptId, action: a });
           }
-          conceptActions.forEach((ca) => {
-            const concept = c.concepts.find((cc) => cc.id === ca.conceptId);
-            if (concept) {
-              concept.action = ca;
-            } else {
-              c.concepts.push({ id: ca.conceptId, action: ca });
-            }
-            console.log("concept", c.concepts);
-        });
-      }));
+        }
+      });
     }
   } catch (error) {
     console.error("Failed to fetch subject:", error);
