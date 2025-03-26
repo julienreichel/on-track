@@ -1,5 +1,5 @@
 <template>
-  <div v-if="subject" class="q-pa-sm q-gutter-sm">
+  <div v-if="subject" class="q-px-none q-py-sm q-gutter-sm">
     <editable-text
       :value="subject.name"
       :enable-editing="teacherMode"
@@ -16,28 +16,28 @@
     />
     <q-btn v-else @click="generateSubjectData()">Generate</q-btn>
 
-    <div class="q-pa-sm">
-      <q-btn
-        v-if="!teacherMode && !hasStarted"
-        label="Let's get started"
-        color="primary"
-        class="q-ma-md full-width"
-        @click="startSubject"
-      />
-    </div>
+    <action-card
+      v-if="!hasStarted"
+      title="Let's get started"
+      label="Start"
+      :to="`/competency/${initialCompetency.id}`"
+    >
+      <p>This subject is composed of multiple competencies, let's start with <b>{{initialCompetency?.name}}</b>.</p>
+      <p>If you prefere to start with another competencies, you can click on any competency in the list bellow</p>
+    </action-card>
+    <action-card
+      v-else-if="onGoingCompentecy"
+      title="Continue"
+      label="Continue"
+      :to="`/competency/${onGoingCompentecy.id}`"
+    >
+      <p>Let's continue learning where you left off on <b>{{onGoingCompentecy?.name}}</b>.</p>
+      <p>If you prefere studing another competency, you can click on any competency in the list bellow</p>
+    </action-card>
 
     <div v-if="subject.competencies?.length">
-      <div class="gt-xs q-pb-md">
-        <competency-flow
-          :competencies="subject.competencies"
-          :direction="direction"
-          :style="{ height: `${height}px`, width: '100%' }"
-        />
-        <q-banner v-if="!teacherMode" class="bg-info q-mt-md text-white">
-          Select a competency to learn more about it.
-        </q-banner>
-      </div>
       <competency-cards
+        class="q-pa-sm"
         :competencies="subject.competencies"
         :allow-delete="teacherMode"
         @delete="deleteCompetency"
@@ -55,8 +55,7 @@ const competencyService = useCompetency();
 const competencyActionService = useCompetencyAction();
 const conceptActionService = useConceptAction();
 const route = useRoute();
-const router = useRouter();
-const { loading, screen } = useQuasar();
+const { loading } = useQuasar();
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
 const hasStarted = ref(false);
@@ -109,43 +108,28 @@ onMounted(async () => {
   }
 });
 
-const startSubject = () => {
-  const competency = subject.value.competencies.find(
+const initialCompetency = computed(() => subject.value.competencies.find(
     (c) => !c.prerequisites?.length
-  );
-  router.push(`/competency/${competency.id}`);
-};
+  ) || subject.value.competencies[0]);
 
-const direction = computed(() => (screen.lt.sm ? "TB" : "LR"));
+const onGoingCompentecy = computed(() => subject.value.competencies.find(
+  (c) => {
+    // check if the user did a pre-check test, and not a final test
+    const started = c.action?.actionTimestamps?.some(
+      (a) => a.actionType === "pre-quiz"
+    )
+    const conceptStarted = c.concepts?.find((cc) => cc.action.actionTimestamps?.some(
+        (a) => a.actionType === "started"
+      ));
 
-const height = computed(() => {
-  if (!subject.value?.competencies?.length) {
-    return 0;
-  }
-  const competencies = subject.value.competencies;
-  if (screen.lt.sm) {
-    return competencies[competencies.length - 1].order * 150;
-  } else {
-    const dep = {};
-    let height = 1;
-    let starters = 0;
-    competencies?.forEach((c) => {
-      if (!c.prerequisites?.length) {
-        starters++;
-        return;
-      }
-      c.prerequisites.forEach((p) => {
-        if (!dep[p.prerequisiteId]) {
-          dep[p.prerequisiteId] = 0;
-        }
-        dep[p.prerequisiteId]++;
-      });
-      height = Math.max(height, c.prerequisites?.length || 0);
-    });
-    const maxDep = Math.max(...Object.values(dep), height, starters);
-    return maxDep * 100 + 20;
-  }
-});
+    const finished = c.action?.actionTimestamps?.some(
+      (a) => a.actionType === "final-quiz"
+    );
+    if ((started || conceptStarted) && !finished) {
+      return true;
+    }
+  })
+);
 
 const generateSubjectData = async () => {
   loading.show();
