@@ -134,22 +134,6 @@
         icon="help_center"
         :done="hasDoneQuiz"
       >
-        <template #header>
-          <!-- Battery Icons (if desired) -->
-          <q-item-section
-            v-if="conceptAction && !conceptAction.inProgress && !teacherMode"
-            side
-          >
-            <div class="row items-center">
-              <q-icon
-                v-for="i in 5"
-                :key="i"
-                :name="getBatteryIcon(conceptAction, i)"
-              />
-            </div>
-          </q-item-section>
-        </template>
-
         <div class="q-py-sm q-px-none">
           <div v-if="concept.questions?.length">
             <question-list
@@ -423,20 +407,6 @@ const conceptDone = async () => {
 };
 const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
 const quizLevel = computed(() => conceptAction.value?.inProgress ? "beginner" : "intermediate");
-
-const getBatteryIcon = (action, index) => {
-  const correctAnswers =
-    action.answeredQuestions?.filter((q) => q.isValid).length || 0;
-  const fullBatteries = Math.floor(correctAnswers / 4);
-  if (index <= fullBatteries) return "battery_full";
-  const remaining = correctAnswers % 4;
-  if (index === fullBatteries + 1) {
-    if (remaining >= 3) return "battery_6_bar";
-    if (remaining >= 2) return "battery_4_bar";
-    if (remaining >= 1) return "battery_2_bar";
-  }
-  return "battery_0_bar";
-};
 
 const updateConcept = async (field, value) => {
   concept.value[field] = value;
