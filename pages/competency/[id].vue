@@ -5,7 +5,7 @@
     <competency-level
       v-if="competencyAction"
       class="float-right"
-      :action="competencyAction"
+      :competency="competency"
     />
 
     <editable-text
@@ -138,6 +138,7 @@ onMounted(async () => {
       if (inProgress) {
         startPreCheck();
       }
+      competency.value.action = competencyAction.value;
 
       // laod all concepts actions
       const status = [];

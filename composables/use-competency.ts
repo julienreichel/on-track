@@ -176,6 +176,9 @@ export default function () {
     return (
       action.actionTimestamps?.reduce(
         (acc, a) => {
+          if (a.actionType === "started" || a.actionType === "finished") {
+            return acc;
+          } 
           const time = new Date(a.createdAt).getTime();
           if (lastQuizTime && time >= lastQuizTime) {
             return acc;
@@ -189,13 +192,41 @@ export default function () {
 
   const levels = ["novice", "beginner", "intermediate", "advanced", "expert"];
 
-  const computeLevel = (action) => {
+  const computeLevel = (competency) => {
+
+    const action = competency.action;
+
     const lastQuizTime = getLastQuizTime(action).time;
     const prevQuizTime = getLastQuizTime(action, lastQuizTime).time;
 
-    const questions = action.answeredQuestions?.filter((q) => {
+    let questions = action.answeredQuestions?.filter((q) => {
       const date = new Date(q.createdAt).getTime();
       return date > prevQuizTime && date <= lastQuizTime;
+    }) || [];
+
+    // did we run question in the conconcept, if yes:
+    // - find all the question that are part of the conceptm and remove them from the list
+    // - add the latest run of question 
+    competency.concepts?.forEach((concept) => {
+      if (!concept.action) {
+        return;
+      }
+      // have we run a quiz for this concept
+      const conceptLastQuizTime = getLastQuizTime(concept.action).time;
+      if (!conceptLastQuizTime) {
+        return;
+      }
+      // remove questions that are in the answeredQuestions of the concept
+      const conceptQuestionsIds = concept.action.answeredQuestions?.map((q) => q.questionId);
+      questions = questions.filter((q) => !conceptQuestionsIds.includes(q.questionId));
+
+      // add the latest question
+      const conceptPrevQuizTime = getLastQuizTime(concept.action, conceptLastQuizTime).time;
+      const conceptQuestions = concept.action.answeredQuestions?.filter((q) => {
+        const date = new Date(q.createdAt).getTime();
+        return date > conceptPrevQuizTime && date <= conceptLastQuizTime;
+      });
+      questions.push(...conceptQuestions);
     });
 
     if (!questions || questions.length === 0) {

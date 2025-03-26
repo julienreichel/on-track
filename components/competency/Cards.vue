@@ -11,7 +11,7 @@
       @click="$router.push(`/competency/${competency.id}`)"
     >
       <q-card-section >
-        <competency-level v-if="competency.action" class="float-right q-mr-none" :action="competency.action" />
+        <competency-level v-if="competency.action" class="float-right q-mr-none" :competency="competency" />
         <div class="text-h6 text-bold">{{ competency.name }}</div>
         <div class="q-mt-sm truncated-description">
           {{ competency.description }}

@@ -9,11 +9,11 @@
 const { computeLevel, getLastQuizTime }  = useCompetency();
 
 const props = defineProps({
-  action: { type: Object, required: true },
+  competency: { type: Object, required: true },
 });
 
-const lastQuizeType = computed(() => getLastQuizTime(props.action).type);
-const computedLevel = computed(() => computeLevel(props.action));
+const lastQuizeType = computed(() => getLastQuizTime(props.competency.action).type);
+const computedLevel = computed(() => computeLevel(props.competency));
 
 const chipColor = computed(() => {
   if (lastQuizeType.value === "final-quiz") {
