@@ -116,6 +116,9 @@ const schema = a.schema({
       locale: a.string(),
       description: a.string(),
       competencies: a.hasMany("Competency", "subjectId"),
+
+      competencyActions: a.hasMany("CompetencyAction", "subjectId"),
+      conceptActions: a.hasMany("ConceptAction", "subjectId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
@@ -154,6 +157,9 @@ const schema = a.schema({
       competencyId: a.id().required(),
       competency: a.belongsTo("Competency", "competencyId"),
 
+      subjectId: a.id().required(),
+      subject: a.belongsTo("Subject", "subjectId"),
+
       inProgress: a.boolean(),
       objectives: a.ref("ObjectiveAction").array(),
       theory: a.boolean(),
@@ -179,6 +185,9 @@ const schema = a.schema({
       owner: a.string(),
       competencyId: a.id().required(),
       competency: a.belongsTo("Competency", "competencyId"),
+
+      subjectId: a.id().required(),
+      subject: a.belongsTo("Subject", "subjectId"),
 
       answeredQuestions: a.ref("QuestionAction").array(),
       actionTimestamps: a.ref("ActionTimestamp").array(),

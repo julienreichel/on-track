@@ -241,6 +241,7 @@ onMounted(async () => {
         conceptAction.value = await conceptActionService.create({
           conceptId,
           competencyId: concept.value.competency.id,
+          subjectId: concept.value.competency.subject.id,
           inProgress: true,
         });
       }

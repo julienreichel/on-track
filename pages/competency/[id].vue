@@ -161,6 +161,7 @@ onMounted(async () => {
       } else {
         competencyAction.value = await competencyActionService.create({
           competencyId,
+          subjectId: competency.value.subjectId,
         });
       }
       const lastQuizTime = competencyService.getLastQuizTime(

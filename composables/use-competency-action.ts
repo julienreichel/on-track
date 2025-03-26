@@ -29,6 +29,11 @@ export default function () {
       if (params.owner) {
         params.owner = { eq: params.owner };
       }
+    } else if (params.subjectId) {
+      query = "listCompetencyActionBySubjectIdAndOwner";
+      if (params.owner) {
+        params.owner = { eq: params.owner };
+      }
     } else if (params.owner) {
       query = "listCompetencyActionByOwnerAndCreatedAt";
       if (!params.sortDirection) {
