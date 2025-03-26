@@ -178,35 +178,40 @@ onMounted(async () => {
       }
       competency.value.action = competencyAction.value;
 
-      // laod all concepts actions
       const status = [];
-      await Promise.all(
-        competency.value.concepts.map(async (c) => {
-          const actions = await conceptActionService.list({
-            conceptId: c.id,
-            userId,
-            username,
-          });
-          // little hack to make sure the preogression status is corect as the questions and flashcards are not loaded at this point
-          c.questions = c.questions || Array(20).fill(null);
-          c.flashCards = c.flashCards || Array(5).fill(null);
-          c.action = actions[0] || {};
-          // check if the action is started and/or finished
-          const started = c.action.actionTimestamps?.some(
-            (a) => a.actionType === "started"
-          );
-          const finished = c.action.actionTimestamps?.some(
-            (a) => a.actionType === "finished"
-          );
-          status.push({ started, finished });
-          if (started && !finished) {
-            onGoingConcept.value = c;
-          }
-          if (finished) {
-            finishedConcepts.value.push(c);
-          }
-        })
-      );
+      // load all concepts actions
+      competency.value.concepts.forEach((c) => {
+        // little hack to make sure the preogression status is corect as the questions and flashcards are not loaded at this point
+        c.action = {};
+        c.questions = c.questions || Array(20).fill(null);
+        c.flashCards = c.flashCards || Array(5).fill(null);
+      });
+      const conceptActions = await conceptActionService.list({
+        competencyId,
+        userId,
+        username,
+      });
+      conceptActions.forEach((ca) => {
+        const concept = competency.value.concepts.find((c) => c.id === ca.conceptId);
+        if (!concept) {
+          return;
+        }
+        concept.action = ca;
+        // check if the action is started and/or finished
+        const started = ca.actionTimestamps?.some(
+          (a) => a.actionType === "started"
+        );
+        const finished = ca.actionTimestamps?.some(
+          (a) => a.actionType === "finished"
+        );
+        status.push({ started, finished });
+        if (started && !finished) {
+          onGoingConcept.value = concept;
+        }
+        if (finished) {
+          finishedConcepts.value.push(concept);
+        }
+      });
       if (status.some((s) => s.started)) {
         quizStatus.value = "quiz";
       }
