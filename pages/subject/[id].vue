@@ -53,6 +53,7 @@
 const subjectService = useSubject();
 const competencyService = useCompetency();
 const competencyActionService = useCompetencyAction();
+const conceptActionService = useConceptAction();
 const route = useRoute();
 const router = useRouter();
 const { loading, screen } = useQuasar();
@@ -84,8 +85,24 @@ onMounted(async () => {
           if (c.action?.actionTimestamps?.length) {
             hasStarted.value = true;
           }
-        })
-      );
+          const conceptActions = await conceptActionService.list({
+            competencyId: c.id,
+            userId,
+            username,
+          });
+          if (!c.concepts) {
+            c.concepts = [];
+          }
+          conceptActions.forEach((ca) => {
+            const concept = c.concepts.find((cc) => cc.id === ca.conceptId);
+            if (concept) {
+              concept.action = ca;
+            } else {
+              c.concepts.push({ id: ca.conceptId, action: ca });
+            }
+            console.log("concept", c.concepts);
+        });
+      }));
     }
   } catch (error) {
     console.error("Failed to fetch subject:", error);

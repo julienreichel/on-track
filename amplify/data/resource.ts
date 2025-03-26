@@ -96,6 +96,7 @@ const schema = a.schema({
       followUps: a.hasMany("CompetencyDependency", "prerequisiteId"),
 
       competencyActions: a.hasMany("CompetencyAction", "competencyId"),
+      conceptActions: a.hasMany("ConceptAction", "competencyId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
@@ -150,6 +151,9 @@ const schema = a.schema({
       conceptId: a.id().required(),
       concept: a.belongsTo("Concept", "conceptId"),
 
+      competencyId: a.id().required(),
+      competency: a.belongsTo("Competency", "competencyId"),
+
       inProgress: a.boolean(),
       objectives: a.ref("ObjectiveAction").array(),
       theory: a.boolean(),
@@ -160,7 +164,8 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [
       index("owner").name("byOwner").sortKeys(["createdAt"]),
-      index("conceptId").name("byConcept").sortKeys(["owner"])
+      index("conceptId").name("byConcept").sortKeys(["owner"]),
+      index("competencyId").name("byCompetency").sortKeys(["owner"])
     ])
     .authorization((allow) => [
       allow.owner(),

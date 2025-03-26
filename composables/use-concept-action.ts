@@ -62,6 +62,11 @@ export default function () {
       if (params.owner) {
         params.owner = { eq: params.owner };
       }
+    } else if (params.competencyId) {
+      query = "listConceptActionByCompetencyIdAndOwner";
+      if (params.owner) {
+        params.owner = { eq: params.owner };
+      }
     } else if (params.owner) {
       query = "listConceptActionByOwnerAndCreatedAt";
       if (!params.sortDirection) {
