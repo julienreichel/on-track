@@ -1,6 +1,9 @@
 <template>
   <div v-if="competency" class="q-px-none q-py-sm q-gutter-sm">
-    <subject-list :subjects="[competency.subject]" class="bg-primary q-px-sm text-white"/>
+    <subject-list
+      :subjects="[competency.subject]"
+      class="bg-primary q-px-sm text-white"
+    />
 
     <competency-level
       v-if="competencyAction"
@@ -44,8 +47,31 @@
       label="Continue"
       :to="`/concept/${onGoingConcept.id}`"
     >
-      <p>Let's continue learning where you left off on <b>{{onGoingConcept?.name}}</b>.</p>
-      <p>If you prefere studing another concept, you can click on any concept in the list bellow</p>
+      <p>
+        Let's continue learning where you left off on
+        <b>{{ onGoingConcept?.name }}</b
+        >.
+      </p>
+      <p>
+        If you prefere studing another concept, you can click on any concept in
+        the list bellow
+      </p>
+    </action-card>
+    <action-card
+      v-else-if="nextConcept"
+      title="Continue"
+      label="Continue"
+      :to="`/concept/${nextConcept.id}`"
+    >
+      <p>
+        Let's start the next concept: 
+        <b>{{ nextConcept?.name }}</b
+        >.
+      </p>
+      <p>
+        If you prefere studing another concept, you can click on any concept in
+        the list bellow
+      </p>
     </action-card>
     <action-card
       v-else-if="quizStatus === 'quiz'"
@@ -53,8 +79,14 @@
       label="Open Concept"
       :to="`/concept/${initialConcept.id}`"
     >
-      <p>We will tackle te follwing concept: <b>{{initialConcept?.name}}</b>.</p>
-      <p>If you prefere starting with another concept, you can click on any concept in the list bellow</p>
+      <p>
+        We will tackle te follwing concept: <b>{{ initialConcept?.name }}</b
+        >.
+      </p>
+      <p>
+        If you prefere starting with another concept, you can click on any
+        concept in the list bellow
+      </p>
     </action-card>
     <action-card
       v-else
@@ -63,14 +95,17 @@
       @activated="startPreCheck"
     >
       <p>Let's run a quiz to see where you stand.</p>
-      <p v-if="quizStatus !== 'final-quiz'">If you prefere, you can also directly start studying a concept from the list bellow.</p>
+      <p v-if="quizStatus !== 'final-quiz'">
+        If you prefere, you can also directly start studying a concept from the
+        list bellow.
+      </p>
     </action-card>
-    
+
     <div v-if="competency.concepts?.length && !showQuiz">
       <concept-cards
         :concepts="competency.concepts"
         :allow-delete="teacherMode"
-        class="q-pa-sm lt-sm2"
+        class="q-pa-sm"
         @delete="deleteConcept"
       />
       <q-btn
@@ -106,6 +141,7 @@ const showQuiz = ref(false);
 const competencyAction = ref(null);
 const quizStatus = ref("pre-quiz");
 const onGoingConcept = ref(null);
+const finishedConcepts = ref([]);
 
 onMounted(async () => {
   try {
@@ -127,7 +163,9 @@ onMounted(async () => {
           competencyId,
         });
       }
-      const lastQuizTime = competencyService.getLastQuizTime(competencyAction.value).time;
+      const lastQuizTime = competencyService.getLastQuizTime(
+        competencyAction.value
+      ).time;
       const inProgress = competencyAction.value.answeredQuestions?.some(
         (q) => new Date(q.createdAt).getTime() > lastQuizTime
       );
@@ -163,6 +201,9 @@ onMounted(async () => {
           status.push({ started, finished });
           if (started && !finished) {
             onGoingConcept.value = c;
+          }
+          if (finished) {
+            finishedConcepts.value.push(c);
           }
         })
       );
@@ -227,7 +268,19 @@ const startPreCheck = async () => {
 };
 
 const initialConcept = computed(() => {
-  return competency.value?.concepts?.find((c) => !c.prerequisites?.length) || competency.value?.concepts[0];
+  return (
+    competency.value?.concepts?.find((c) => !c.prerequisites?.length) ||
+    competency.value?.concepts[0]
+  );
+});
+
+const nextConcept = computed(() => {
+  const finishedConceptsIds = finishedConcepts.value.map((c) => c.id);
+  const toDoConcept = competency.value?.concepts?.filter((c) => !finishedConceptsIds.includes(c.id)); 
+  const next = toDoConcept?.find(
+      (c) =>
+        c.prerequisites?.every((p) => finishedConceptsIds.includes(p.prerequisiteId)));
+  return next;
 });
 
 const updateQuestionsFinished = () => {
