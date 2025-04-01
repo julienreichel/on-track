@@ -42,6 +42,8 @@ export default function () {
     'createdAt',
     'owner',
     'conceptId',
+    'competencyId',
+    'subjectId',
     'inProgress',
     'objectives.*',
     'theory',

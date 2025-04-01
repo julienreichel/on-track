@@ -174,7 +174,7 @@ export default function () {
 
   const getLastQuizTime = (action, lastQuizTime = 0) => {
     return (
-      action.actionTimestamps?.reduce(
+      action?.actionTimestamps?.reduce(
         (acc, a) => {
           if (a.actionType === "started" || a.actionType === "finished") {
             return acc;
@@ -199,7 +199,7 @@ export default function () {
     const lastQuizTime = getLastQuizTime(action).time;
     const prevQuizTime = getLastQuizTime(action, lastQuizTime).time;
 
-    let questions = action.answeredQuestions?.filter((q) => {
+    let questions = action?.answeredQuestions?.filter((q) => {
       const date = new Date(q.createdAt).getTime();
       return date > prevQuizTime && date <= lastQuizTime;
     }) || [];

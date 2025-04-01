@@ -3,13 +3,14 @@
     <editable-text
       :value="subject.name"
       :enable-editing="teacherMode"
-      class="text-h3"
+      class="text-h3 q-px-sm"
       @update="(text) => updateSubject('name', text)"
     />
     <editable-text
       v-if="subject.description"
       :value="subject.description"
       :enable-editing="teacherMode"
+      class="q-px-md"
       type="textarea"
       use-rich-text
       @update="(text) => updateSubject('description', text)"

@@ -22,7 +22,7 @@
       :value="competency.description"
       :enable-editing="teacherMode"
       type="textarea"
-      class="q-px-sm"
+      class="q-px-md"
       use-rich-text
       @update="(text) => updateCompetency('description', text)"
     />
@@ -302,7 +302,7 @@ const updateQuestionsFinished = () => {
 
 const quizLabel = computed(() => {
   const mapping = {
-    "pre-quiz": "Pre Check, where do you stand",
+    "pre-quiz": "Pre-check, where do you stand",
     quiz: "Test me again",
     "final-quiz": "Final Quiz, are you ready?",
   };

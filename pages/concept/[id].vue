@@ -17,7 +17,7 @@
       :value="concept.description"
       :enable-editing="teacherMode"
       type="textarea"
-      class="q-px-sm"
+      class="q-px-md"
       use-rich-text
       @update="(text) => updateConcept('description', text)"
     />

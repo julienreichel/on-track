@@ -1,11 +1,5 @@
 <template>
   <div class="row">
-    <div class="q-pa-xs q-py-md">
-      <q-btn
-        label="Help me to chose"
-        to="/subject/wizard"
-        />
-    </div>
     <q-space />
     <div class="q-pa-xs q-py-md col-12 col-sm-6 col-md-4">
       <q-input
@@ -31,6 +25,9 @@
           @click="$router.push(`/subject/${subject.id}`)"
         >
           <q-card-section>
+            <q-chip v-if="subject.inProgress" color="secondary" square class="float-right q-mr-none" text-color="white">
+              In Progress
+            </q-chip>
             <div class="text-h6 text-bold">{{ subject.name }}</div>
             <div class="q-mt-sm truncated-description">
               {{ subject.description }}
