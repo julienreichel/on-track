@@ -137,7 +137,6 @@ onMounted(async () => {
   } catch (error) {
     console.error("Failed to fetch user attributes:", error);
   }
-  console.log("Layout mounted");
 });
 
 const logout = async () => {

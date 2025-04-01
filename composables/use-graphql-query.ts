@@ -48,7 +48,7 @@ export default function (
       ...defaultOptions,
       ...options,
     };
-    console.log("useGraphqlQuery", request, input, options);
+    //console.log("useGraphqlQuery", request, input, options);
     if (request === "list") {
       input = {
         ...options,

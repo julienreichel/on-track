@@ -7,7 +7,7 @@
         </div>
         </q-card-section>
     </q-card>
-    <cards-history v-if="hasHistory" :history="history" />
+    <cards-history v-if="hasHistory > 3" :history="history" />
     <!-- TABS -->
     <q-tabs
       v-model="activeTab"
@@ -40,59 +40,56 @@
         name="review"
         class="q-pa-none"
       >
-        <div class="q-py-sm q-px-none">
-          <action-card 
-            v-if="emptyState"
-            title="No concepts to review"
-            label="Subjects"
-            to="/subjects"
-            >
-            <div class="text-subtitle2 ">
-              You haven't started yet. Let's get started by selecting a subject to learn.
-            </div>
-          </action-card>
-          <action-card 
-            v-else-if="!conceptsToRevisit.length"
-            title="No concepts to review"
-            @click="activeTab = conceptsInProgress.length ? 'continue' : 'explore'"
-            >
-            <div class="text-subtitle2 ">
-              You have no more concepts to review today. Keep up the good work!
-            </div>
-            <div v-if="conceptsInProgress.length">
-              You can continue your progress on the concepts you are currently working on.
-            </div>
-            <div v-else>
-              You can explore new concepts to learn.
-            </div>
-          </action-card>
-          <div v-else class="q-pa-sm">
-            
-            <quiz-runner
-              :questions="conceptsToRevisit[0].questions"
-              :max="5"
-              adaptative
-              initial-level="intermediate"
-              @finished="quizFinished"
-              @results="
-                conceptActionService.updateQuestionsResults(
+        <action-card 
+          v-if="emptyState"
+          title="No concepts to review"
+          label="Subjects"
+          to="/subjects"
+          >
+          <div class="text-subtitle2 ">
+            You haven't started yet. Let's get started by selecting a subject to learn.
+          </div>
+        </action-card>
+        <action-card 
+          v-else-if="!conceptsToRevisit.length"
+          title="No concepts to review"
+          @click="activeTab = conceptsInProgress.length ? 'continue' : 'explore'"
+          >
+          <div class="text-subtitle2 ">
+            You have no more concepts to review today. Keep up the good work!
+          </div>
+          <div v-if="conceptsInProgress.length">
+            You can continue your progress on the concepts you are currently working on.
+          </div>
+          <div v-else>
+            You can explore new concepts to learn.
+          </div>
+        </action-card>
+        <div v-else class="q-py-sm q-px-none"> 
+          <quiz-runner
+            :questions="conceptsToRevisit[0].questions"
+            :max="5"
+            adaptative
+            initial-level="intermediate"
+            @finished="quizFinished"
+            @results="
+              conceptActionService.updateQuestionsResults(
+                conceptsToRevisit[0].action
+              )
+            "
+            @progress="
+              (q) =>
+                conceptActionService.updateQuestionsProgress(
+                  q,
                   conceptsToRevisit[0].action
                 )
-              "
-              @progress="
-                (q) =>
-                  conceptActionService.updateQuestionsProgress(
-                    q,
-                    conceptsToRevisit[0].action
-                  )
-              "
-            />
+            "
+          />
 
-            <concept-cards
-              class="q-pa-sm gt-sm"
-              :concepts="conceptsToRevisit.slice(0, 3)"
-            />
-          </div>
+          <concept-cards
+            class="q-pa-sm gt-sm"
+            :concepts="conceptsToRevisit.slice(0, 3)"
+          />
         </div>
       </q-tab-panel>
 
@@ -168,13 +165,14 @@ const emptyState = ref(false);
 
 // Reference to hold history data
 const history = ref([]);
-const hasHistory = ref(false); 
+const hasHistory = ref(0); 
 const activeTab = ref('')  // Will hold "review", "continue", or "explore"
 
 // Access services
 const conceptService = useConcept();
 const conceptActionService = useConceptAction();
-const router = useRouter();
+const compentencyService = useCompetency();
+const competencyActionService = useCompetencyAction();
 
 // Utility function to format dates
 const formatDate = (date) => {
@@ -215,7 +213,7 @@ const quizFinished = () => {
       });
     }
     historyDay.hasAction = true;
-    hasHistory.value = true;
+    hasHistory.value = hasHistory.value + 3;
   }
 
   sortRevisitedConcepts();
@@ -246,16 +244,64 @@ const sortRevisitedConcepts = () => {
   }
 };
 
+const updateHistoryFromAction = ({ createdAt, actionType }) => {
+  if(!createdAt) return;
+  if (actionType !== 'quiz' && actionType !== 'pre-quiz' && actionType !== 'final-quiz') return;
+  const actionDate = new Date(createdAt).toISOString().split('T')[0];
+  const historyDay = history.value.find(day => day.date === actionDate);
+  if (historyDay && !historyDay.hasAction) {
+    historyDay.hasAction = true;
+    hasHistory.value = hasHistory.value + 1;
+  }
+};
+
+const checkToReview = (action) => {
+  const nbReviews = action.actionTimestamps?.filter(({ actionType }) => actionType === 'review').length;
+  return nbReviews < 3;
+};
+
+const fetchCompetencyConcepts = async (userId, username) => {
+  const concepts = [];
+  try {
+    // Fetch competency actions for the user
+    const actions = await competencyActionService.list({
+      userId,
+      username
+    });
+
+    // Collect all action timestamps
+    const allActionTimestamps = [];
+
+    // Fetch all compentency in parallel
+    const competenciesPromises = actions.map(action => compentencyService.get(action.competencyId));
+    const competencies = await Promise.all(competenciesPromises);
+
+    
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+      const competency = competencies[i];
+      conceptService.sort(competency.concepts);
+      competency.concepts.forEach((concept) => concepts.push(concept));
+
+      // Collect all actionTimestamps
+      if (action.actionTimestamps && action.actionTimestamps.length) {
+        allActionTimestamps.push(...action.actionTimestamps);
+      }
+    }
+
+    // Update history based on actionTimestamps
+    allActionTimestamps.forEach(updateHistoryFromAction);
+
+  } catch (error) {
+    console.error('Error fetching competency actions:', error);
+  }
+  return concepts;
+};
 // Function to fetch and categorize actions
-const fetchConceptActions = async () => {
+const fetchConceptActions = async (userId, username) => {
   try {
     // Initialize history
     history.value = generateLastDays();
-
-    // Get current user
-    const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
-    const currentUser = await getCurrentUser();
-    const { userId, username } = currentUser;
 
     // Fetch concept actions for the user
     const actions = await conceptActionService.list({
@@ -263,11 +309,9 @@ const fetchConceptActions = async () => {
       username
     });
 
-    emptyState.value = actions.length === 0;
-
     actions.sort((a, b) => {
-      if (a.actionTimestamps.length === 0) return -1;
-      if (b.actionTimestamps.length === 0) return 1;
+      if (!a.actionTimestamps?.length) return -1;
+      if (!b.actionTimestamps?.length) return 1;
       const lastActionsA = a.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
       const lastActionsB = b.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
       return new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt);
@@ -277,6 +321,11 @@ const fetchConceptActions = async () => {
     const fetchedConcepts = new Set();
     const relatedConcept = {};
 
+    const competencyConcepts = await fetchCompetencyConcepts(userId, username);
+    competencyConcepts.forEach((concept) => {
+      relatedConcept[concept.id] = concept;
+    });
+
     // Reset categorized concepts
     conceptsInProgress.value = [];
     conceptsToRevisit.value = [];
@@ -285,7 +334,14 @@ const fetchConceptActions = async () => {
     const allActionTimestamps = [];
 
     // Fetch all concepts in parallel
-    const conceptPromises = actions.map(action => conceptService.get(action.conceptId));
+    const conceptPromises = actions.map(action => {
+      // Check if the concept is already fetched
+      const cc = competencyConcepts.find(c => c.id === action.conceptId);
+      if (cc && !checkToReview(action)) {
+        return cc;
+      }
+      return conceptService.get(action.conceptId)
+    });
     const concepts = await Promise.all(conceptPromises);
 
     for (let i = 0; i < actions.length; i++) {
@@ -295,7 +351,7 @@ const fetchConceptActions = async () => {
       concept.action = action;
       if (action.inProgress) {
         conceptsInProgress.value.push(concept);
-      } else if (action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length < 3) {
+      } else if (checkToReview(action)) {
         conceptsToRevisit.value.push(concept);
       }
       fetchedConcepts.add(action.conceptId);
@@ -306,26 +362,20 @@ const fetchConceptActions = async () => {
       }
 
       // Collect followUp concepts
-      for (const followUp of concept.followUps) {
-        relatedConcept[followUp.concept.id] = followUp.concept;
+      if (concept.followUps?.length) {
+        for (const followUp of concept.followUps) {
+          relatedConcept[followUp.concept.id] = followUp.concept;
+        }
       }
     }
 
     // Update history based on actionTimestamps
-    allActionTimestamps.forEach(({ createdAt, actionType }) => {
-      if(!createdAt) return;
-      if (actionType !== 'quiz' && actionType !== 'pre-quiz' && actionType !== 'review' && actionType !== 'final-quiz') return;
-      const actionDate = new Date(createdAt).toISOString().split('T')[0];
-      const historyDay = history.value.find(day => day.date === actionDate);
-      if (historyDay) {
-        historyDay.hasAction = true;
-        hasHistory.value = true;
-      }
-    });
+    allActionTimestamps.forEach(updateHistoryFromAction);
 
     // Fetch related concepts, excluding already fetched concepts
     relatedConcepts.value = Object.values(relatedConcept).filter(concept => !fetchedConcepts.has(concept.id));
 
+    emptyState.value = relatedConcepts.value.length === 0;
     sortRevisitedConcepts();
 
   } catch (error) {
@@ -336,7 +386,10 @@ const fetchConceptActions = async () => {
 // Fetch data on component mount
 const userName = ref("");
 onMounted(async () => {
-  fetchConceptActions();
+  const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
+  const currentUser = await getCurrentUser();
+  const { userId, username } = currentUser;
+  fetchConceptActions(userId, username);
   const userAttributes = await fetchUserAttributes();
   userName.value = userAttributes.name || "";
 });

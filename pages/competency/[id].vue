@@ -184,8 +184,6 @@ onMounted(async () => {
       competency.value.concepts.forEach((c) => {
         // little hack to make sure the preogression status is corect as the questions and flashcards are not loaded at this point
         c.action = {};
-        c.questions = c.questions || Array(20).fill(null);
-        c.flashCards = c.flashCards || Array(5).fill(null);
       });
       const conceptActions = await conceptActionService.list({
         competencyId,
@@ -209,10 +207,10 @@ onMounted(async () => {
         );
         status.push({ started, finished });
         if (started && !finished) {
-          onGoingConcept.value = concept;
+          onGoingConcept.value = c;
         }
         if (finished) {
-          finishedConcepts.value.push(concept);
+          finishedConcepts.value.push(c);
         }
         
       });
