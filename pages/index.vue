@@ -309,7 +309,7 @@ const fetchConceptActions = async (userId, username) => {
       username
     });
 
-    actions.sort((a, b) => {
+    actions.filter((a) => Boolean(a)).sort((a, b) => {
       if (!a.actionTimestamps?.length) return -1;
       if (!b.actionTimestamps?.length) return 1;
       const lastActionsA = a.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
