@@ -221,9 +221,14 @@ const quizFinished = () => {
 
 const sortRevisitedConcepts = () => {
   conceptsToRevisit.value = conceptsToRevisit.value.filter((concept) => {
-    const nbReviews = concept.action.actionTimestamps.filter(({ actionType }) => actionType === 'review').length;
-    const lastReview = concept.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-    return nbReviews < 3 && new Date() - new Date(lastReview.createdAt) > 12 * 60 * 60 * 1000;
+    const { actionTimestamps, answeredQuestions}  = concept.action;
+    const nbReviews = actionTimestamps.filter(({ actionType }) => actionType === 'review').length;
+    const lastReview = actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+    const validQuestions = answeredQuestions.filter((q) => q.isValid).length;
+    // we increase the time between reviews up to 5 days
+    const nextReviewIn = Math.min(10, (nbReviews + 1) * (nbReviews + 1)) * 12 * 60 * 60 * 1000;
+    return validQuestions < 25 && new Date() - new Date(lastReview.createdAt) > nextReviewIn;
   });
 
   conceptsToRevisit.value.sort((a, b) => {
