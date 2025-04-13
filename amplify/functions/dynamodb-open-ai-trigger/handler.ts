@@ -1,3 +1,5 @@
+import { env } from "$amplify/env/dynamodb-open-ai-trigger";
+
 import type { DynamoDBStreamHandler } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -5,8 +7,6 @@ import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
-
-import { env } from "$amplify/env/dynamodb-open-ai-trigger";
 
 export const handler: DynamoDBStreamHandler = async (event) => {
   const apiKey = env.OPENAI_API_KEY;
@@ -46,7 +46,7 @@ export const handler: DynamoDBStreamHandler = async (event) => {
 
         const format = row.format?.S || "text";
         const model = row.model?.S || env.OPENAI_MODEL || "gpt-4o-mini";
-        let messages = [];
+        const messages = [];
         if (row.system?.S) {
           messages.push({ role: "system", content: row.system?.S });
         }
@@ -66,7 +66,7 @@ export const handler: DynamoDBStreamHandler = async (event) => {
           response_format,
         };
 
-        let data = await request(body);
+        const data = await request(body);
 
         // write the result into the table
         if (data.error) {
