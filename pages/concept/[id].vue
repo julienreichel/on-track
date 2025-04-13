@@ -275,7 +275,7 @@ const hasDoneFlashcards = computed(
     conceptAction.value?.usedFlashCards?.length ===
     concept.value.flashCards?.length
 );
-const hasDoneQuiz = computed(() => !conceptAction.value?.inProgress);
+const hasDoneQuiz = computed(() => conceptAction.value && !conceptAction.value.inProgress);
 const hasDoneSomething = computed(() => hasDoneTheory.value || hasDoneExamples.value || hasDoneFlashcards.value || hasDoneQuiz.value);
 
 const nextConcepts = computed(() => {
