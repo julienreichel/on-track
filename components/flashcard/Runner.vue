@@ -7,11 +7,11 @@
       <q-linear-progress :value="progress" class="q-mt-md" size="lg" />
     </q-card-section>
     <q-card-section class="q-pa-sm">
-      <q-banner v-if="showBanner" class="bg-info q-mb-md">
+      <notification-text :show="showBanner">
         Test yourself using flashcards, then mark them as correct
         <q-icon class="text-positive" name="check" /> or incorrect
         <q-icon class="text-negative" name="close" />.
-      </q-banner>
+      </notification-text>
       <div class="row justify-center">
         <flashcard-view :flash-card="currentCard" @success="updateFlashCard" />
       </div>

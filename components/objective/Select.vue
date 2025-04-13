@@ -36,12 +36,11 @@
           />
         </template>
       </q-input>
-      <q-banner
+      <notification-text
         v-if="selectedObjectives.length < minObjectives"
-        class="bg-info q-mt-md text-white"
       >
         Please select at least {{ minObjectives }} learning objectives, you can use proposed one, or create your own.
-      </q-banner>  
+      </notification-text>  
     </q-card-section>
     <q-card-actions class="q-px-none q-py-lg">
           

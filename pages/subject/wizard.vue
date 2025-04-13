@@ -41,9 +41,9 @@
             </div>
           </q-slide-item>
         </q-list>
-        <q-banner v-if="showBanner" class="bg-info q-mt-md text-white">
+        <notification-text v-if="showBanner">
           Swipe to the right to accept the subject, or to the left to reject it.
-        </q-banner>
+        </notification-text>
       </q-card-section>
 
       <q-card-actions class="q-px-none q-py-lg">
