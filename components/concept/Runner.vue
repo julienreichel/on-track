@@ -54,7 +54,7 @@ watch(
 );
 
 const currentSlide = computed(() => slides.value[step.value]);
-const progress = computed(() => (slides.value.length > 0 ? ( step.value + 1) / slides.value.length : 0));
+const progress = computed(() => (slides.value.length > 0 ? ( step.value ) / (slides.value.length - 1) : 0));
 const isLastSlide = computed(() => step.value === slides.value.length - 1);
 
 const nextSlide = () => {

@@ -57,7 +57,7 @@ const realMaxCards = computed(() =>
   Math.min(props.flashCards.length, props.maxCards)
 );
 const progress = computed(() =>
-  realMaxCards.value > 0 ? (step.value + 1) / realMaxCards.value : 0
+  realMaxCards.value > 0 ? step.value / (realMaxCards.value - 1) : 0
 );
 const isLastCard = computed(() => step.value === realMaxCards.value - 1);
 
