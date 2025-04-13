@@ -109,7 +109,7 @@
         <quiz-summary-responses
           v-if="wrongQuestions.length"
           :questions="wrongQuestions"
-          :title="`Lets review (${wrongQuestions.length})`"
+          :title="`Let's review (${wrongQuestions.length})`"
           icon="highlight_off"
           color="bg-negative"
           @activate="goToQuestion"

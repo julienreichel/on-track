@@ -57,12 +57,13 @@
       
         <action-card 
           v-if="emptyState"
-          title="No concepts to review"
+          title="Nothing to review yet!"
           label="Subjects"
           to="/subjects"
           >
           <div class="text-subtitle2 ">
-            You haven't started yet. Let's get started by selecting a subject to learn.
+            <p>Once you’ve started learning, we’ll remind you to review key concepts at the perfect time — so they really stick.</p>
+            <p><q-icon name="arrow_forward" class="primary" /> Start by picking a subject to explore!</p>
           </div>
         </action-card>
         <action-card 
@@ -125,12 +126,13 @@
         </notification-text>
         <action-card 
           v-if="emptyState"
-          title="No concepts to continue"
+          title="You haven’t started your journey yet!"
           label="Subjects"
           to="/subjects"
           >
           <div class="text-subtitle2 ">
-            You haven't started yet. Let's get started by selecting a subject to learn.
+            <p>When you come back, this is where you’ll find the next step in your learning path.</p>
+            <p><q-icon name="arrow_forward" class="primary" /> To begin, head over to the subject list and choose your first topic!</p>
           </div>
         </action-card>
         <action-card 
@@ -158,18 +160,19 @@
         class="q-pa-none"
       >
         <notification-text v-if="relatedConcepts.length" :show="hasHistory <= 7">
-          <p class="q-pt-md">Let's start a new concept!
-          </p>         
+          <p class="q-pt-md">Let's start a new concept!</p>         
           <p>Select a card bellow to start learning.</p> 
         </notification-text>
         <action-card 
           v-if="!relatedConcepts.length"
-          title="New Subject"
+          title="Let’s get started!"
           label="Subjects"
           to="/subjects"
           >
           <div>
-            Let's select a subject to learn.
+            <p>This is your learning dashboard. To begin your journey, choose a subject that interests you.</p>
+            <p><q-icon name="arrow_forward" class="primary" /> Click the “Subjects” button to browse all topics and pick one to dive into.</p>
+          
           </div>
         </action-card>
         <div class="q-pa-sm">

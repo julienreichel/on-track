@@ -23,8 +23,8 @@
       label="Start"
       :to="`/competency/${initialCompetency.id}`"
     >
-      <p>This subject is composed of multiple competencies, let's start with <b>{{initialCompetency?.name}}</b>.</p>
-      <p>If you prefere to start with another competencies, you can click on any competency in the list bellow</p>
+      <p>This subject includes several key competencies. We recommend starting with <b>{{initialCompetency?.name}}</b> — it builds the foundation you'll need for everything else.</p>
+      <p>Prefer a different starting point? No problem! Just click on any topic below to explore it.</p>
     </action-card>
     <action-card
       v-else-if="onGoingCompentecy"
@@ -33,7 +33,7 @@
       :to="`/competency/${onGoingCompentecy.id}`"
     >
       <p>Let's continue learning where you left off on <b>{{onGoingCompentecy?.name}}</b>.</p>
-      <p>If you prefere studing another competency, you can click on any competency in the list bellow</p>
+      <p>If you prefer studying another topic, you can click on any topic in the list below.</p>
     </action-card>
 
     <div v-if="subject.competencies?.length">
@@ -41,6 +41,7 @@
         class="q-pa-sm"
         :competencies="subject.competencies"
         :allow-delete="teacherMode"
+        :primary-card-id="initialCompetency?.id || onGoingCompentecy?.id"
         @delete="deleteCompetency"
       />
     </div>

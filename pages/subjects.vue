@@ -4,13 +4,13 @@
       <q-card-section class="q-pb-none">
         <div class="text-h5 text-primary">Subjects list</div>
       </q-card-section>
-      <q-card-section>
-        <p v-if="notStarted" >
+      <q-card-section class="q-px-none">
+        <notification-text :show="notStarted">
           Pick any subject from the list bellow to start your learning journey.
-        </p>
-        <p v-else >
+        </notification-text>
+        <notification-text :show="!notStarted">
           Explore any subject from the list bellow to continue your learning journey.
-        </p>
+        </notification-text>
       </q-card-section>
       </q-card>
     <subject-cards :subjects="subjects" :allow-delete="teacherMode" @delete="deleteSubject"/>
@@ -40,7 +40,6 @@ const fetchUserActions = async (subjects) => {
     });
     // very simple flag for now, ideally we want to indicate some notion of progress
     competencyActions.forEach((a) => {
-      console.log(a);
       const subject = subjects.find(
         (s) => s.id === a.subjectId
       );

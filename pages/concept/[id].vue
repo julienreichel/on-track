@@ -34,8 +34,14 @@
       label="Start learning"
       @activated="showIntro = false"
     >
-      <p>Learning is composed of several steps: theory, examples, flashcards, quiz. </p>
-      <p>You can run them in any order, but you need to complete them all to finish the concept.</p>
+    <p>You’ll go through:</p>
+    <ul>
+      <li><q-icon name="article" class="text-primary"/> Theory – Understand the core ideas</li>
+      <li><q-icon name="ballot" class="text-primary"/> Examples – See it in action</li>
+      <li><q-icon name="check_box" class="text-primary"/> Flashcards – Practice key points</li>
+      <li><q-icon name="help_center" class="text-primary"/> Quiz – Test your knowledge</li>
+    </ul>
+    <p>You can explore them in any order, but complete them all to finish the concept!</p>
     </action-card>
 
     <!-- STEPPER -->

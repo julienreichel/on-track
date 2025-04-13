@@ -8,6 +8,9 @@
       flat
       bordered
       class="cursor-pointer"
+      :class="{
+        'primary-card': primaryCardId === competency.id,
+      }"
       @click="$router.push(`/competency/${competency.id}`)"
     >
       <q-card-section >
@@ -36,18 +39,9 @@
 defineProps({
   competencies: { type: Array, required: true },
   allowDelete: { type: Boolean, default: false },
+  primaryCardId: { type: String, default: null },
 });
 
 defineEmits(["delete"]);
 </script>
 
-<style scoped>
-.truncated-description {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-}
-</style>

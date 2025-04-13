@@ -215,4 +215,8 @@ ol {
   text-overflow: ellipsis;
   white-space: normal;
 }
+
+.primary-card {
+  border-color: var(--q-primary);
+}
 </style>

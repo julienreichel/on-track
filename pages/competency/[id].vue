@@ -53,8 +53,7 @@
         >.
       </p>
       <p>
-        If you prefere studing another concept, you can click on any concept in
-        the list bellow
+        If you prefer studying another concept, you can click on any concept in the list below.
       </p>
     </action-card>
     <action-card
@@ -70,7 +69,7 @@
       </p>
       <p>
         If you prefere studing another concept, you can click on any concept in
-        the list bellow
+        the list below
       </p>
     </action-card>
     <action-card
@@ -79,13 +78,11 @@
       label="Open Concept"
       :to="`/concept/${initialConcept.id}`"
     >
-      <p>
-        We will tackle te follwing concept: <b>{{ initialConcept?.name }}</b
-        >.
-      </p>
+      <p>We will tackle the following concept: <b>{{ initialConcept?.name }}</b>.</p>
+      <p>Ready to dive in? Click below to open your first concept.</p>
       <p>
         If you prefere starting with another concept, you can click on any
-        concept in the list bellow
+        concept in the list bellow.
       </p>
     </action-card>
     <action-card
@@ -94,10 +91,10 @@
       label="Start Quiz"
       @activated="startPreCheck"
     >
-      <p>Let's run a quiz to see where you stand.</p>
+      <p>Take a short quiz to see where you stand<span v-if="quizStatus !== 'final-quiz'"> — no pressure, just to personalize your journey</span>.</p>
+      <p>The quiz is composed of 20 questions and will take less than 10 minutes to complete.</p>
       <p v-if="quizStatus !== 'final-quiz'">
-        If you prefere, you can also directly start studying a concept from the
-        list bellow.
+        Prefer to dive right in? You can also pick any concept below to start learning. You can always come back to the quiz later.
       </p>
     </action-card>
 
@@ -105,6 +102,7 @@
       <concept-cards
         :concepts="competency.concepts"
         :allow-delete="teacherMode"
+        :primary-card-id="initialConcept?.id || onGoingConcept?.id || nextConcept?.id"
         class="q-pa-sm"
         @delete="deleteConcept"
       />
@@ -300,7 +298,7 @@ const updateQuestionsFinished = () => {
 
 const quizLabel = computed(() => {
   const mapping = {
-    "pre-quiz": "Pre-check, where do you stand",
+    "pre-quiz": "Quick Check-In: What Do You Already Know?",
     quiz: "Test me again",
     "final-quiz": "Final Quiz, are you ready?",
   };

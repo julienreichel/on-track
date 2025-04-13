@@ -8,6 +8,9 @@
       flat
       bordered
       class="cursor-pointer"
+      :class="{
+        'primary-card': primaryCardId === concept.id,
+      }"
       @click="$router.push(`/concept/${concept.id}`)"
     >
       <q-card-section>
@@ -42,18 +45,9 @@
 defineProps({
   concepts: { type: Array, required: true },
   allowDelete: { type: Boolean, default: false },
+  primaryCardId: { type: String, default: null },
 });
 
 defineEmits(["delete"]);
 </script>
 
-<style scoped>
-.truncated-description {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-}
-</style>
