@@ -79,7 +79,7 @@
       <p>Ready to dive in? Click below to open your first concept.</p>
       <p>
         If you prefere starting with another concept, you can click on any
-        concept in the list bellow.
+        concept in the list below.
       </p>
     </action-card>
     <action-card
@@ -88,8 +88,10 @@
       label="Start Quiz"
       @activated="startPreCheck"
     >
-      <p>Take a short quiz to see where you stand<span v-if="quizStatus !== 'final-quiz'"> — no pressure, just to personalize your journey</span>.</p>
-      <p>The quiz is composed of 20 questions and will take less than 10 minutes to complete.</p>
+      <p v-if="quizStatus !== 'final-quiz'">Take a short quiz to see where you stand — no pressure, just to personalize your journey.</p>
+      <p v-else>You’ve completed all the learning steps — nice work!</p>
+      <p v-if="quizStatus !== 'final-quiz'">The quiz has 20 quick questions and takes under 10 minutes — a great way to start smart.</p>
+      <p v-else>Take this short 20-question quiz (under 10 minutes) to check your understanding and lock in your mastery.</p>
       <p v-if="quizStatus !== 'final-quiz'">
         Prefer to dive right in? You can also pick any concept below to start learning. You can always come back to the quiz later.
       </p>
@@ -297,7 +299,7 @@ const quizLabel = computed(() => {
   const mapping = {
     "pre-quiz": "Quick Check-In: What Do You Already Know?",
     quiz: "Test me again",
-    "final-quiz": "Final Quiz, are you ready?",
+    "final-quiz": "Ready for the Final Challenge?",
   };
   return mapping[quizStatus.value] || "Pre Check";
 });
