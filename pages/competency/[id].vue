@@ -58,18 +58,15 @@
     </action-card>
     <action-card
       v-else-if="nextConcept"
-      title="Continue"
-      label="Continue"
+      title="You're making great progress! Let’s keep going"
+      label="Start Next"
       :to="`/concept/${nextConcept.id}`"
     >
       <p>
-        Let's start the next concept: 
-        <b>{{ nextConcept?.name }}</b
-        >.
+        Up next: <b>{{ nextConcept?.name }}</b> 
       </p>
       <p>
-        If you prefere studing another concept, you can click on any concept in
-        the list below
+        Already curious about something else? Feel free to jump ahead by picking any concept below.
       </p>
     </action-card>
     <action-card
