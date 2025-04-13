@@ -33,6 +33,7 @@
       <q-btn v-if="step > 0" square size="md" icon="chevron_left" @click="prevSlide" />
       <q-space />
       <q-btn
+        ref="nextButton"
         square
         size="md"
         :icon="isLastSlide ? nextActionsIcon : 'chevron_right'"
@@ -60,11 +61,20 @@ const slides = computed(() => props.markdownContent
   .filter((slide) => slide !== "")
 );
 
+const focusNextButton = () => {
+  nextTick(() => {
+    if (nextButton.value?.$el) {
+      nextButton.value.$el.focus();
+    }
+  });
+};
+
 // Process markdown content into slides
 watch(
   () => props.markdownContent,
   () => {    
     step.value = 0;
+    focusNextButton();
   },
   { immediate: true }
 );
@@ -73,17 +83,20 @@ const slidesTitles = computed(() =>
     let title = slide.split("\n")[0].replaceAll("#", "").trim();
     // cut after the first . for long titles
     const dotIndex = title.indexOf(".");
-    if (dotIndex !== -1 && title.length > 70) {
+    if (dotIndex !== -1 && title.length > 55) {
       title = title.slice(0, dotIndex + 1).trim();
     }
-    return title.length > 70 ? title.slice(0, 67) + "..." : title;
+    return title.length > 55 ? title.slice(0, 52) + "..." : title;
   })
 );
-console.log(slidesTitles.value);
 
 const currentSlide = computed(() => slides.value[step.value]);
 const progress = computed(() => (slides.value.length > 0 ? ( step.value ) / (slides.value.length - 1) : 0));
 const isLastSlide = computed(() => step.value === slides.value.length - 1);
+
+const nextButton = ref(null);
+
+
 
 const nextSlide = () => {
   if (step.value < slides.value.length - 1) {
