@@ -8,9 +8,25 @@
     </q-card-section>
     <q-card-section class="q-pa-sm">
       <q-card square>
-        <q-card-section>
-          <rich-text-renderer :markdown-content="currentSlide" />
-        </q-card-section>
+        <q-card-section horizontal>        
+          <q-card-section class="q-pt-md gt-sm" style="width: 20%;">
+            <q-list bordered>
+              <q-item 
+                v-for="(item, index) in slidesTitles" 
+                :key="index" 
+                clickable 
+                @click="goToSlide(index)"
+              >
+                <q-item-section>
+                  {{ item }}
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-card-section>
+          <q-card-section>
+            <rich-text-renderer :markdown-content="currentSlide" />
+          </q-card-section>
+      </q-card-section>
       </q-card>
     </q-card-section>
     <q-card-actions class="q-px-none q-py-lg">
@@ -38,20 +54,32 @@ const props = defineProps({
 const emit = defineEmits(["finished"]);
 
 const step = ref(0);
-const slides = ref([]);
+const slides = computed(() => props.markdownContent
+  .split(/\n(?=#)/) // Split by lines starting with `#`
+  .map((slide) => slide.trim())
+  .filter((slide) => slide !== "")
+);
 
 // Process markdown content into slides
 watch(
   () => props.markdownContent,
-  (newContent) => {
-    slides.value = newContent
-      .split(/\n(?=#)/) // Split by lines starting with `#`
-      .map((slide) => slide.trim())
-      .filter((slide) => slide !== "");
+  () => {    
     step.value = 0;
   },
   { immediate: true }
 );
+const slidesTitles = computed(() =>
+  slides.value.map((slide) => {
+    let title = slide.split("\n")[0].replaceAll("#", "").trim();
+    // cut after the first . for long titles
+    const dotIndex = title.indexOf(".");
+    if (dotIndex !== -1 && title.length > 70) {
+      title = title.slice(0, dotIndex + 1).trim();
+    }
+    return title.length > 70 ? title.slice(0, 67) + "..." : title;
+  })
+);
+console.log(slidesTitles.value);
 
 const currentSlide = computed(() => slides.value[step.value]);
 const progress = computed(() => (slides.value.length > 0 ? ( step.value ) / (slides.value.length - 1) : 0));
@@ -69,5 +97,9 @@ const prevSlide = () => {
   if (step.value > 0) {
     step.value--;
   }
+};
+
+const goToSlide = (index) => {
+  step.value = index;
 };
 </script>
