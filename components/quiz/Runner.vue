@@ -18,13 +18,13 @@
         <q-separator inset />
         <q-card-section
           v-if="question.type === 'radio' || question.type === 'checkbox'"
-          class="q-gutter-sm"
+          class="q-gutter-sm"      
         >
           <q-option-group
             v-model="question.response"
             :options="options"
             :type="question.type"
-            :disable="question.validated"
+            :disable="question.validated"            
           >
             <template #label="opt">
               <!-- eslint-disable vue/no-v-html -->
@@ -41,6 +41,7 @@
             clearable
             dense
             :readonly="question.validated"
+            @keydown.enter="nextCliked"
           >
             <template v-if="question.validated" #before>
               <q-icon
