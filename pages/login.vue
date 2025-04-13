@@ -47,6 +47,6 @@ watch(auth, () => {
 
 <style>
 .amplify-button--primary {
-  background-color: #3993DD;
+  background-color: var(--q-primary);
 }
 </style>

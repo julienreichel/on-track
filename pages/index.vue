@@ -3,9 +3,9 @@
     <q-card flat class="q-pa-sm">
       <q-card-section class="q-pa-none">
         <div class="q-gutter-sm q-px-sm">
-          <div class="text-h4 text-primary">Welcome {{userName}}</div>
+          <div class="text-h4 text-primary">Welcome {{ userName }}</div>
         </div>
-        </q-card-section>
+      </q-card-section>
     </q-card>
     <cards-history v-if="hasHistory > 3" :history="history" />
     <!-- TABS -->
@@ -14,74 +14,69 @@
       inline-label
       align="justify"
       narrow-indicator
-      class="bg-primary text-white"
+      indicator-color="primary"
+      active-bg-color="primary"
+      class="bg-blue-3 text-white"
     >
-      <q-tab
-        icon="help_center"
-        name="review"
-        label="Review"
-      />
-      <q-tab
-        icon="slideshow"
-        name="continue"
-        label="Continue"
-      />
-      <q-tab
-        icon="pageview"
-        name="explore"
-        label="Explore"
-      />
+      <q-tab icon="help_center" name="review" label="Review" />
+      <q-tab icon="slideshow" name="continue" label="Continue" />
+      <q-tab icon="pageview" name="explore" label="Explore" />
     </q-tabs>
 
     <q-tab-panels v-model="activeTab" animated>
-
       <!-- REVIEW TAB -->
-      <q-tab-panel
-        name="review"
-        class="q-pa-none"
-      >
-      <notification-text v-if="!emptyState && conceptsToRevisit.length" :show="hasHistory <= 3">
-        <p class="q-pt-md">Let's review some concepts! 
-         </p> 
-        <p> To learn effectively, you should review concepts in a periodic manner until you reach 
-          a mastery level. This reviewing process is indicated by  
-        <q-icon class="primary" name="battery_full" />
-        <q-icon class="primary" name="battery_full" />
-        <q-icon class="primary" name="battery_4_bar" />
-        <q-icon class="primary" name="battery_0_bar" />
-        <q-icon class="primary" name="battery_0_bar" />.
-        Once all battery are full, mastery level is reached.
-        </p>
-        <p>You can also open the concept to revisit the theory or the example by selecting the concept card bellow.</p> 
-      </notification-text>
-      
-        <action-card 
+      <q-tab-panel name="review" class="q-pa-none">
+        <notification-text
+          v-if="!emptyState && conceptsToRevisit.length"
+          :show="hasHistory <= 3"
+        >
+          <p class="q-pt-md">Let's review some concepts!</p>
+          <p>
+            Let’s boost your memory! Review each concept a few times to fully
+            charge your mastery battery
+            <q-icon class="primary" name="battery_full" />
+            <q-icon class="primary" name="battery_full" />
+            <q-icon class="primary" name="battery_4_bar" />
+            <q-icon class="primary" name="battery_0_bar" />
+            <q-icon class="primary" name="battery_0_bar" />. Once it’s full,
+            you’re all set.
+          </p>
+          <p>Want to revisit the theory? Just click the concept card.</p>
+        </notification-text>
+        <action-card
           v-if="emptyState"
           title="Nothing to review yet!"
           label="Subjects"
           to="/subjects"
-          >
-          <div class="text-subtitle2 ">
-            <p>Once you’ve started learning, we’ll remind you to review key concepts at the perfect time — so they really stick.</p>
-            <p><q-icon name="arrow_forward" class="primary" /> Start by picking a subject to explore!</p>
+        >
+          <div class="text-subtitle2">
+            <p>
+              Once you’ve started learning, we’ll remind you to review key
+              concepts at the perfect time — so they really stick.
+            </p>
+            <p>
+              <q-icon name="arrow_forward" class="primary" /> Start by picking a
+              subject to explore!
+            </p>
           </div>
         </action-card>
-        <action-card 
+        <action-card
           v-else-if="!conceptsToRevisit.length"
           title="No concepts to review"
-          @click="activeTab = conceptsInProgress.length ? 'continue' : 'explore'"
-          >
-          <div class="text-subtitle2 ">
+          @click="
+            activeTab = conceptsInProgress.length ? 'continue' : 'explore'
+          "
+        >
+          <div class="text-subtitle2">
             You have no more concepts to review today. Keep up the good work!
           </div>
           <div v-if="conceptsInProgress.length">
-            You can continue your progress on the concepts you are currently working on.
+            You can continue your progress on the concepts you are currently
+            working on.
           </div>
-          <div v-else>
-            You can explore new concepts to learn.
-          </div>
+          <div v-else>You can explore new concepts to learn.</div>
         </action-card>
-        <div v-else class="q-py-sm q-px-none"> 
+        <div v-else class="q-py-sm q-px-none">
           <quiz-runner
             :questions="conceptsToRevisit[0].questions"
             :max="5"
@@ -90,14 +85,14 @@
             @finished="quizFinished"
             @results="
               conceptActionService.updateQuestionsResults(
-                conceptsToRevisit[0].action
+                conceptsToRevisit[0].action,
               )
             "
             @progress="
               (q) =>
                 conceptActionService.updateQuestionsProgress(
                   q,
-                  conceptsToRevisit[0].action
+                  conceptsToRevisit[0].action,
                 )
             "
           />
@@ -110,78 +105,83 @@
       </q-tab-panel>
 
       <!-- CONTINUE TAB -->
-      <q-tab-panel
-        name="continue"
-        class="q-pa-none"
-      >
-        <notification-text v-if="!emptyState && conceptsInProgress.length === 1" :show="hasHistory <= 5">
-          <p class="q-pt-md">Let's continue the concept you are currently working on!
-          </p>         
-          <p>Select the concept card bellow to start learning.</p> 
+      <q-tab-panel name="continue" class="q-pa-none">
+        <notification-text
+          v-if="!emptyState && conceptsInProgress.length === 1"
+          :show="hasHistory <= 5"
+        >
+          <p class="q-pt-md">Here are the concept you’re working on.</p>
+          <p>Let’s pick up from where you left off.</p>
         </notification-text>
-        <notification-text v-if="!emptyState && conceptsInProgress.length > 1" :show="hasHistory <= 5">
-          <p class="q-pt-md">Let's continue the concepts you are currently working on!
-          </p>         
-          <p>Select one of the concept card bellow to start learning.</p> 
+        <notification-text
+          v-if="!emptyState && conceptsInProgress.length > 1"
+          :show="hasHistory <= 5"
+        >
+          <p class="q-pt-md">Here are the concepts you’re working on.</p>
+          <p>Let’s pick up from where you left off.</p>
         </notification-text>
-        <action-card 
+        <action-card
           v-if="emptyState"
           title="You haven’t started your journey yet!"
           label="Subjects"
           to="/subjects"
-          >
-          <div class="text-subtitle2 ">
-            <p>When you come back, this is where you’ll find the next step in your learning path.</p>
-            <p><q-icon name="arrow_forward" class="primary" /> To begin, head over to the subject list and choose your first topic!</p>
+        >
+          <div class="text-subtitle2">
+            <p>
+              When you come back, this is where you’ll find the next step in
+              your learning path.
+            </p>
+            <p>
+              <q-icon name="arrow_forward" class="primary" /> To begin, head
+              over to the subject list and choose your first topic!
+            </p>
           </div>
         </action-card>
-        <action-card 
+        <action-card
           v-else-if="!conceptsInProgress.length"
           title="No concepts to continue"
           @click="activeTab = 'explore'"
-          >
-          <div class="text-subtitle2 ">
+        >
+          <div class="text-subtitle2">
             You have no more concepts to continue.
           </div>
-          <div>
-            You can explore new concepts to learn.
-          </div>
+          <div>You can explore new concepts to learn.</div>
         </action-card>
         <div v-else class="q-pa-sm">
-          <concept-cards
-            :concepts="conceptsInProgress"
-          />
+          <concept-cards :concepts="conceptsInProgress" />
         </div>
       </q-tab-panel>
 
       <!-- EXPLORE TAB -->
-      <q-tab-panel
-        name="explore"
-        class="q-pa-none"
-      >
-        <notification-text v-if="relatedConcepts.length" :show="hasHistory <= 7">
-          <p class="q-pt-md">Let's start a new concept!</p>         
-          <p>Select a card bellow to start learning.</p> 
+      <q-tab-panel name="explore" class="q-pa-none">
+        <notification-text
+          v-if="relatedConcepts.length"
+          :show="hasHistory <= 7"
+        >
+          <p class="q-pt-md">Let's start a new concept!</p>
+          <p>Select a card bellow to start learning.</p>
         </notification-text>
-        <action-card 
+        <action-card
           v-if="!relatedConcepts.length"
           title="Let’s get started!"
           label="Subjects"
           to="/subjects"
-          >
+        >
           <div>
-            <p>This is your learning dashboard. To begin your journey, choose a subject that interests you.</p>
-            <p><q-icon name="arrow_forward" class="primary" /> Click the “Subjects” button to browse all topics and pick one to dive into.</p>
-          
+            <p>
+              This is your learning dashboard. To begin your journey, choose a
+              subject that interests you.
+            </p>
+            <p>
+              <q-icon name="arrow_forward" class="primary" /> Click the
+              “Subjects” button to browse all topics and pick one to dive into.
+            </p>
           </div>
         </action-card>
         <div class="q-pa-sm">
-          <concept-cards
-            :concepts="relatedConcepts"
-          />
+          <concept-cards :concepts="relatedConcepts" />
         </div>
       </q-tab-panel>
-
     </q-tab-panels>
   </div>
 </template>
@@ -194,12 +194,12 @@ const { fetchUserAttributes } = useNuxtApp().$Amplify.Auth;
 const conceptsToRevisit = ref([]);
 const conceptsInProgress = ref([]);
 const relatedConcepts = ref([]);
-const emptyState = ref(false); 
+const emptyState = ref(false);
 
 // Reference to hold history data
 const history = ref([]);
-const hasHistory = ref(0); 
-const activeTab = ref('')  // Will hold "review", "continue", or "explore"
+const hasHistory = ref(0);
+const activeTab = ref(""); // Will hold "review", "continue", or "explore"
 
 // Access services
 const conceptService = useConcept();
@@ -209,12 +209,12 @@ const competencyActionService = useCompetencyAction();
 
 // Utility function to format dates
 const formatDate = (date) => {
-  const options = { month: 'short', day: 'numeric' };
+  const options = { month: "short", day: "numeric" };
   return date.toLocaleDateString(undefined, options);
 };
 
 const getWeekday = (date) => {
-  return date.toLocaleDateString(undefined, { weekday: 'short' });
+  return date.toLocaleDateString(undefined, { weekday: "short" });
 };
 
 // Function to generate the last 14 days
@@ -225,7 +225,7 @@ const generateLastDays = () => {
     const day = new Date();
     day.setDate(today.getDate() - i);
     days.unshift({
-      date: day.toISOString().split('T')[0], // YYYY-MM-DD
+      date: day.toISOString().split("T")[0], // YYYY-MM-DD
       shortDate: formatDate(day),
       weekday: getWeekday(day),
       hasAction: false,
@@ -236,13 +236,14 @@ const generateLastDays = () => {
 
 const quizFinished = () => {
   // mark today as having an action
-  const today = new Date().toISOString().split('T')[0];
-  const historyDay = history.value.find(day => day.date === today);
+  const today = new Date().toISOString().split("T")[0];
+  const historyDay = history.value.find((day) => day.date === today);
   if (historyDay) {
-    if (!historyDay.hasAction){
+    if (!historyDay.hasAction) {
       // notify the user that they have completed a quiz today
       notify({
-        message: 'Congratulation, a quiz a day, keeps the learning curve at bay!',
+        message:
+          "Congratulation, a quiz a day, keeps the learning curve at bay!",
       });
     }
     historyDay.hasAction = true;
@@ -254,39 +255,68 @@ const quizFinished = () => {
 
 const sortRevisitedConcepts = () => {
   conceptsToRevisit.value = conceptsToRevisit.value.filter((concept) => {
-    const { actionTimestamps, answeredQuestions}  = concept.action;
-    const nbReviews = actionTimestamps.filter(({ actionType }) => actionType === 'review').length;
-    const lastReview = actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    const { actionTimestamps, answeredQuestions } = concept.action;
+    const nbReviews = actionTimestamps.filter(
+      ({ actionType }) => actionType === "review",
+    ).length;
+    const lastReview = actionTimestamps.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    )[0];
 
     const validQuestions = answeredQuestions.filter((q) => q.isValid).length;
     // we increase the time between reviews up to 5 days
-    const nextReviewIn = Math.min(10, (nbReviews + 1) * (nbReviews + 1)) * 12 * 60 * 60 * 1000;
-    return validQuestions < 25 && new Date() - new Date(lastReview.createdAt) > nextReviewIn;
+    const nextReviewIn =
+      Math.min(10, (nbReviews + 1) * (nbReviews + 1)) * 12 * 60 * 60 * 1000;
+    return (
+      validQuestions < 25 &&
+      new Date() - new Date(lastReview.createdAt) > nextReviewIn
+    );
   });
 
   conceptsToRevisit.value.sort((a, b) => {
     if (a.action.actionTimestamps.length === 0) return -1;
     if (b.action.actionTimestamps.length === 0) return 1;
-    const lastActionsA = a.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-    const lastActionsB = b.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    const lastActionsA = a.action.actionTimestamps.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    )[0];
+    const lastActionsB = b.action.actionTimestamps.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    )[0];
     return new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt);
   });
 
   // Pick a default active tab
   if (conceptsToRevisit.value.length) {
-    activeTab.value = 'review'
+    activeTab.value = "review";
   } else if (conceptsInProgress.value.length) {
-    activeTab.value = 'continue'
+    if (activeTab.value === "review"){
+      notify({
+          message:
+            "Great job reviewing! Ready to continue your journey?",
+        });
+    }
+    activeTab.value = "continue";
   } else {
-    activeTab.value = 'explore'
+    if (activeTab.value === "review"){
+      notify({
+          message:
+            "Great job reviewing! Ready to start a new journey?",
+        });
+    }
+    activeTab.value = "explore";
   }
 };
 
 const updateHistoryFromAction = ({ createdAt, actionType }) => {
-  if(!createdAt) return;
-  if (actionType !== 'quiz' && actionType !== 'pre-quiz' && actionType !== 'final-quiz') return;
-  const actionDate = new Date(createdAt).toISOString().split('T')[0];
-  const historyDay = history.value.find(day => day.date === actionDate);
+  if (!createdAt) return;
+  if (
+    actionType !== "quiz" &&
+    actionType !== "pre-quiz" &&
+    actionType !== "final-quiz"
+  )
+    return;
+  const actionDate = new Date(createdAt).toISOString().split("T")[0];
+  const historyDay = history.value.find((day) => day.date === actionDate);
   if (historyDay && !historyDay.hasAction) {
     historyDay.hasAction = true;
     hasHistory.value = hasHistory.value + 1;
@@ -294,7 +324,9 @@ const updateHistoryFromAction = ({ createdAt, actionType }) => {
 };
 
 const checkToReview = (action) => {
-  const nbReviews = action.actionTimestamps?.filter(({ actionType }) => actionType === 'review').length;
+  const nbReviews = action.actionTimestamps?.filter(
+    ({ actionType }) => actionType === "review",
+  ).length;
   return nbReviews < 3;
 };
 
@@ -304,21 +336,23 @@ const fetchCompetencyConcepts = async (userId, username) => {
     // Fetch competency actions for the user
     const actions = await competencyActionService.list({
       userId,
-      username
+      username,
     });
 
     // Collect all action timestamps
     const allActionTimestamps = [];
 
     // Fetch all compentency in parallel
-    const competenciesPromises = actions.map(action => compentencyService.get(action.competencyId));
+    const competenciesPromises = actions.map((action) =>
+      compentencyService.get(action.competencyId),
+    );
     const competencies = await Promise.all(competenciesPromises);
-    
+
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       const competency = competencies[i];
       conceptService.sort(competency.concepts);
-      if(action.actionTimestamps?.length) {
+      if (action.actionTimestamps?.length) {
         competency.concepts.forEach((concept) => concepts.push(concept));
       }
       // Collect all actionTimestamps
@@ -329,9 +363,8 @@ const fetchCompetencyConcepts = async (userId, username) => {
 
     // Update history based on actionTimestamps
     allActionTimestamps.forEach(updateHistoryFromAction);
-
   } catch (error) {
-    console.error('Error fetching competency actions:', error);
+    console.error("Error fetching competency actions:", error);
   }
   return concepts;
 };
@@ -344,16 +377,24 @@ const fetchConceptActions = async (userId, username) => {
     // Fetch concept actions for the user
     const actions = await conceptActionService.list({
       userId,
-      username
+      username,
     });
 
-    actions.filter((a) => Boolean(a)).sort((a, b) => {
-      if (!a.actionTimestamps?.length) return -1;
-      if (!b.actionTimestamps?.length) return 1;
-      const lastActionsA = a.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-      const lastActionsB = b.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-      return new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt);
-    });
+    actions
+      .filter((a) => Boolean(a))
+      .sort((a, b) => {
+        if (!a.actionTimestamps?.length) return -1;
+        if (!b.actionTimestamps?.length) return 1;
+        const lastActionsA = a.actionTimestamps.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+        )[0];
+        const lastActionsB = b.actionTimestamps.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+        )[0];
+        return (
+          new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt)
+        );
+      });
 
     // Initialize sets for fetched concepts and related concepts
     const fetchedConcepts = new Set();
@@ -369,13 +410,13 @@ const fetchConceptActions = async (userId, username) => {
     const allActionTimestamps = [];
 
     // Fetch all concepts in parallel
-    const conceptPromises = actions.map(action => {
+    const conceptPromises = actions.map((action) => {
       // Check if the concept is already fetched
-      const cc = competencyConcepts.find(c => c.id === action.conceptId);
+      const cc = competencyConcepts.find((c) => c.id === action.conceptId);
       if (cc && !checkToReview(action)) {
         return cc;
       }
-      return conceptService.get(action.conceptId)
+      return conceptService.get(action.conceptId);
     });
     const concepts = await Promise.all(conceptPromises);
 
@@ -412,13 +453,14 @@ const fetchConceptActions = async (userId, username) => {
     allActionTimestamps.forEach(updateHistoryFromAction);
 
     // Fetch related concepts, excluding already fetched concepts
-    relatedConcepts.value = Object.values(relatedConcept).filter(concept => !fetchedConcepts.has(concept.id));
+    relatedConcepts.value = Object.values(relatedConcept).filter(
+      (concept) => !fetchedConcepts.has(concept.id),
+    );
 
     emptyState.value = relatedConcepts.value.length === 0;
     sortRevisitedConcepts();
-
   } catch (error) {
-    console.error('Error fetching concept actions:', error);
+    console.error("Error fetching concept actions:", error);
   }
 };
 
