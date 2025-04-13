@@ -46,6 +46,7 @@
       header-nav
       active-icon="school" 
       :contracted="$q.screen.lt.md"
+      class="concept-runner"
       >
       <!-- 2. THEORY -->
       <q-step
@@ -55,7 +56,7 @@
         icon="article"
         :done="hasDoneTheory"
       >
-        <div class="q-py-sm q-px-none">
+        <div>
           <div v-if="!teacherMode && concept.theory">
             <concept-runner
               :markdown-content="concept.theory"
@@ -85,7 +86,7 @@
         icon="ballot"
         :done="hasDoneExamples"
       >
-        <div class="q-py-sm q-px-none">
+        <div>
           <div v-if="!teacherMode && concept.examples">
             <concept-runner
               :markdown-content="concept.examples"
@@ -134,7 +135,7 @@
         icon="help_center"
         :done="hasDoneQuiz"
       >
-        <div class="q-py-sm q-px-none">
+        <div >
           <div v-if="concept.questions?.length">
             <question-list
               v-if="teacherMode"
@@ -415,3 +416,10 @@ const updateConcept = async (field, value) => {
   await conceptService.update(concept.value);
 };
 </script>
+
+<style>
+.concept-runner .q-stepper__step-inner {
+  padding: 0px;
+  padding-top: 8px;
+}
+</style>
