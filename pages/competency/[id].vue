@@ -102,7 +102,7 @@
       <concept-cards
         :concepts="competency.concepts"
         :allow-delete="teacherMode"
-        :primary-card-id="initialConcept?.id || onGoingConcept?.id || nextConcept?.id"
+        :primary-card-id="onGoingConcept?.id || nextConcept?.id || initialConcept?.id"
         class="q-pa-sm"
         @delete="deleteConcept"
       />
