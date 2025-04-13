@@ -1,10 +1,11 @@
 <template>
   <q-list>
     <q-expansion-item
-      v-for="(question, index) in questions"
+      v-for="(question, index) in sortedQuestions"
       :key="question.id"
       class="q-pa-none"
       :label="question.text"
+      :icon="levelIconMap[question.level]"
       group="questions"
     >
       <q-card>
@@ -28,13 +29,15 @@
         </q-card-actions>
       </q-card>
     </q-expansion-item>
-    <q-item>
+    <q-item class="q-pa-sm">
       <q-item-section>
-        <q-btn
-          v-if="teacherMode"
-          label="Add Question"
-          @click="addQuestion"
-        />
+        <div>
+          <q-btn
+            v-if="teacherMode"
+            label="Add Question"
+            @click="addQuestion"
+          />
+        </div>
       </q-item-section>
     </q-item>
   </q-list>
@@ -49,9 +52,14 @@ const props = defineProps({
   concept: { type: Object, required: true },
 });
 
-// Compute the text representation of each question
+const sortedQuestions = computed(() =>
+  [...questions.value].sort((a, b) => {
+    const levelOrder = ["novice", "beginner", "intermediate", "advanced", "expert"];
+    return levelOrder.indexOf(a.level) - levelOrder.indexOf(b.level);
+  })
+);
 const questionsAsText = computed(() =>
-  questions.value.map((q) => {
+  sortedQuestions.value.map((q) => {
     const answersText = q.answers
       .map((a) => (a.valid ? `- [x] ${a.text}` : `- [ ] ${a.text}`))
       .join("\n");
@@ -60,6 +68,14 @@ const questionsAsText = computed(() =>
   })
 );
 
+const levelIconMap = {
+  novice: "signal_cellular_alt_1_bar",
+  beginner: "signal_cellular_alt_2_bar",
+  intermediate: "signal_cellular_alt",
+  advanced: "signal_cellular_4_bar",
+  expert: "signal_cellular_4_bar",
+};
+
 const updateQuestionContent = (updatedText, index) => {
   const levels = ["novice", "beginner", "intermediate", "advanced", "expert"];
 
@@ -67,7 +83,7 @@ const updateQuestionContent = (updatedText, index) => {
 
   if (lines.length < 3) return; // Ensure valid format
 
-  const updatedQuestion = { ...questions.value[index] };
+  const updatedQuestion = { ...sortedQuestions.value[index] };
 
   updatedQuestion.text = lines[0].replace("##### ", "").trim();
   updatedQuestion.level = lines[1].replace("[", "").replace("]", "").trim();

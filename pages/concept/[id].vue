@@ -152,9 +152,13 @@
               @results="updateQuestionsResults"
               @progress="updateQuestionsProgress"
             />
-          </div>
-          <div v-else-if="teacherMode">
-            <q-btn @click="generateQuizData()">Generate</q-btn>
+            <div v-if="teacherMode" class="q-pa-sm q-gutter-sm">
+              <q-btn @click="generateQuizData()">Generate all</q-btn>
+              <q-btn @click="generateQuizData(1)">Generate novice</q-btn>
+              <q-btn @click="generateQuizData(2)">Generate beginner</q-btn>
+              <q-btn @click="generateQuizData(3)">Generate intermediate</q-btn>
+              <q-btn @click="generateQuizData(4)">Generate advanced</q-btn>
+            </div>
           </div>
         </div>
       </q-step>
