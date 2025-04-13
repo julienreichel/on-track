@@ -63,6 +63,7 @@
         <action-card
           v-else-if="!conceptsToRevisit.length"
           title="No concepts to review"
+          :label="conceptsInProgress.length ? 'Continue' : 'Explore'"
           @click="
             activeTab = conceptsInProgress.length ? 'continue' : 'explore'
           "
@@ -140,12 +141,13 @@
         <action-card
           v-else-if="!conceptsInProgress.length"
           title="No concepts to continue"
+          label="Explore"
           @click="activeTab = 'explore'"
         >
           <div class="text-subtitle2">
-            You have no more concepts to continue.
+            You’ve completed all active learning paths for now. 
           </div>
-          <div>You can explore new concepts to learn.</div>
+          <div>You can explore a new concept to begin learning.</div>
         </action-card>
         <div v-else class="q-pa-sm">
           <concept-cards :concepts="conceptsInProgress" />
@@ -159,7 +161,8 @@
           :show="hasHistory <= 7"
         >
           <p class="q-pt-md">Let's start a new concept!</p>
-          <p>Select a card bellow to start learning.</p>
+          <p v-if="!conceptsInProgress.length && !conceptsToRevisit.length">You’ve completed your reviews and ongoing concepts. Here’s something new to explore!</p>
+          <p v-else>Select a card bellow to start learning.</p>
         </notification-text>
         <action-card
           v-if="!relatedConcepts.length"
