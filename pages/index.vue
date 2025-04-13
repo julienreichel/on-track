@@ -40,6 +40,21 @@
         name="review"
         class="q-pa-none"
       >
+      <notification-text v-if="!emptyState && conceptsToRevisit.length" :show="hasHistory <= 3">
+        <p class="q-pt-md">Let's review some concepts! 
+         </p> 
+        <p> To learn effectively, you shoul review concepts in a periodic manner until you reach 
+          a mastery level. This reviewing process is indicated by  
+        <q-icon class="primary" name="battery_full" />
+        <q-icon class="primary" name="battery_full" />
+        <q-icon class="primary" name="battery_4_bar" />
+        <q-icon class="primary" name="battery_0_bar" />
+        <q-icon class="primary" name="battery_0_bar" />.
+        Once all battery are full, mastery level is reached.
+        </p>
+        <p>You can also open the concept to revisit the theory or the example by selecting the concept card bellow.</p> 
+      </notification-text>
+      
         <action-card 
           v-if="emptyState"
           title="No concepts to review"
@@ -98,6 +113,16 @@
         name="continue"
         class="q-pa-none"
       >
+        <notification-text v-if="!emptyState && conceptsInProgress.length === 1" :show="hasHistory <= 5">
+          <p class="q-pt-md">Let's continue the concept you are currently working on!
+          </p>         
+          <p>Select the concept card bellow to start learning.</p> 
+        </notification-text>
+        <notification-text v-if="!emptyState && conceptsInProgress.length > 1" :show="hasHistory <= 5">
+          <p class="q-pt-md">Let's continue the concepts you are currently working on!
+          </p>         
+          <p>Select one of the concept card bellow to start learning.</p> 
+        </notification-text>
         <action-card 
           v-if="emptyState"
           title="No concepts to continue"
@@ -132,6 +157,11 @@
         name="explore"
         class="q-pa-none"
       >
+        <notification-text v-if="relatedConcepts.length" :show="hasHistory <= 7">
+          <p class="q-pt-md">Let's start a new concept!
+          </p>         
+          <p>Select a card bellow to start learning.</p> 
+        </notification-text>
         <action-card 
           v-if="!relatedConcepts.length"
           title="New Subject"
@@ -280,14 +310,14 @@ const fetchCompetencyConcepts = async (userId, username) => {
     // Fetch all compentency in parallel
     const competenciesPromises = actions.map(action => compentencyService.get(action.competencyId));
     const competencies = await Promise.all(competenciesPromises);
-
     
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       const competency = competencies[i];
       conceptService.sort(competency.concepts);
-      competency.concepts.forEach((concept) => concepts.push(concept));
-
+      if(action.actionTimestamps?.length) {
+        competency.concepts.forEach((concept) => concepts.push(concept));
+      }
       // Collect all actionTimestamps
       if (action.actionTimestamps && action.actionTimestamps.length) {
         allActionTimestamps.push(...action.actionTimestamps);
@@ -327,9 +357,6 @@ const fetchConceptActions = async (userId, username) => {
     const relatedConcept = {};
 
     const competencyConcepts = await fetchCompetencyConcepts(userId, username);
-    competencyConcepts.forEach((concept) => {
-      relatedConcept[concept.id] = concept;
-    });
 
     // Reset categorized concepts
     conceptsInProgress.value = [];
@@ -373,6 +400,10 @@ const fetchConceptActions = async (userId, username) => {
         }
       }
     }
+    // put the compentency concepts in the end of the list
+    competencyConcepts.forEach((concept) => {
+      relatedConcept[concept.id] = concept;
+    });
 
     // Update history based on actionTimestamps
     allActionTimestamps.forEach(updateHistoryFromAction);
