@@ -13,9 +13,9 @@
           <q-item-section>{{ objective }}</q-item-section>
         </q-item>
       </q-list>
-      <q-banner v-if="!allChecked" class="bg-info q-mt-md text-white">
+      <notification-text v-if="!allChecked">
         Have you met your objectives?
-      </q-banner>
+      </notification-text>
     </q-card-section>
     <q-card-actions class="q-px-none q-py-lg">
       <q-space />
