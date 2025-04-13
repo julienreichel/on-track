@@ -43,7 +43,7 @@
       <notification-text v-if="!emptyState && conceptsToRevisit.length" :show="hasHistory <= 3">
         <p class="q-pt-md">Let's review some concepts! 
          </p> 
-        <p> To learn effectively, you shoul review concepts in a periodic manner until you reach 
+        <p> To learn effectively, you should review concepts in a periodic manner until you reach 
           a mastery level. This reviewing process is indicated by  
         <q-icon class="primary" name="battery_full" />
         <q-icon class="primary" name="battery_full" />
