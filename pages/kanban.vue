@@ -280,16 +280,12 @@ const fetchKanbanData = async () => {
       }
 
       // Determine the column
-      const reviews = action.actionTimestamps?.filter(
-        (timestamp) => timestamp.actionType === 'review'
-      ) || [];
-      reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
+      const nbOfValidQuestions = action.answeredQuestions?.filter(q => q.isValid).length || 0;
       if (!action.actionTimestamps?.length) {
         groupedByCompetency[competency.id].columns.ToDo.push(concept);
       } else if (action.inProgress) {
         groupedByCompetency[competency.id].columns.Learning.push(concept);
-      } else if (reviews.length < 3) {
+      } else if (nbOfValidQuestions < 20) {
         groupedByCompetency[competency.id].columns.Revision.push(concept);
       } else {
         groupedByCompetency[competency.id].columns.Done.push(concept);
