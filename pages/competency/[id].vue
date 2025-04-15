@@ -1,13 +1,20 @@
 <template>
-  <div v-if="competency" class="q-px-none q-py-sm q-gutter-sm">
-    <subject-list
-      :subjects="[competency.subject]"
-      class="bg-primary q-px-sm text-white"
-    />
+  <div v-if="competency" class="q-px-none q-py-sm q-gutter-sm ">
+    <q-breadcrumbs class="q-px-sm q-pt-sm text-primary">
+      <q-breadcrumbs-el
+        label="Subjects"
+        to="/subjects"
+        class="gt-sm"
+      />
+      <q-breadcrumbs-el
+        :label="competency.subject?.name"
+        :to="`/subject/${competency.subject?.id}`"
+      />
+    </q-breadcrumbs>
 
     <competency-level
       v-if="competencyAction"
-      class="float-right"
+      class="float-right q-mt-lg"
       :competency="competency"
     />
 
@@ -366,9 +373,3 @@ const updateCompetency = async (field, value) => {
   await competencyService.update(competency.value);
 };
 </script>
-
-<style scoped>
-.q-chip {
-  text-transform: capitalize;
-}
-</style>

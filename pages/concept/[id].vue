@@ -1,10 +1,21 @@
 <template>
   <div v-if="concept" class="q-px-none q-py-sm q-gutter-sm">
-    <!-- Existing concept header/flow/etc. -->
-    <competency-list
-      class="bg-primary q-px-sm text-white"
-      :competencies="[concept.competency]"
-    />
+    <q-breadcrumbs class="q-px-sm q-pt-sm text-primary">
+      <q-breadcrumbs-el
+        label="Subjects"
+        to="/subjects"
+        class="gt-sm"
+      />
+      <q-breadcrumbs-el
+        :label="concept.competency?.subject?.name"
+        :to="`/subject/${concept.competency?.subject?.id}`"
+        class="gt-sm"
+      />
+      <q-breadcrumbs-el
+        :label="concept.competency?.name"
+        :to="`/competency/${concept.competency?.id}`"
+      />
+    </q-breadcrumbs>
 
     <editable-text
       :value="concept.name"
