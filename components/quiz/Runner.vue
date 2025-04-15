@@ -157,6 +157,7 @@ const { getActiveQuestions, resetQuestions, getOptions, validateAnswers } = useQ
 const props = defineProps({
   questions: { type: Array, default: () => [] },
   answeredQuestions: { type: Array, default: () => [] },
+  pastQuestions: { type: Array, default: () => [] },
   max: { type: Number, default: 0 },
   adaptative: { type: Boolean, default: false },
   initialLevel: { type: String, default: "novice" },
@@ -185,7 +186,7 @@ watch(
   () => props.questions,
   () => {
     step.value = 0;
-    hasValidatedAnswers.value = resetQuestions(props.questions, props.answeredQuestions);
+    hasValidatedAnswers.value = resetQuestions(props.questions, props.answeredQuestions, props.pastQuestions);
     activeQuestions.value = getActiveQuestions(props);
     hasResults.value = false;
   },

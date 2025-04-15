@@ -151,6 +151,7 @@
             <quiz-runner
               v-else
               :questions="concept.questions"
+              :past-questions="conceptAction?.answeredQuestions"
               :max="quizSize"
               adaptative
               :initial-level="quizLevel"

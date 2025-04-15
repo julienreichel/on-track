@@ -172,7 +172,7 @@ export default function () {
     return answeredQuestion.userResponse;
   };
 
-  const resetQuestions = (inputQuestions, answeredQuestions = []) => {
+  const resetQuestions = (inputQuestions, answeredQuestions = [], pastQuestions = []) => {
     previousQuestions = [];
     questions = inputQuestions.map((q) => ({ ...q }));
 
@@ -210,7 +210,10 @@ export default function () {
       question.response = initQuestionResponse(question);
       question.time ??= 0;
       question.level ??= "intermediate";
-      question.order ??= Math.random();
+      // has the user already responded to this question?
+      const previous = pastQuestions?.find((q) => q.questionId === question.id);
+      const offset = !previous ? 0 : previous.isValid ? -1 : -0.5;
+      question.order ??= Math.random() + offset;
       if (
         !question.explanations &&
         (question.type === "shorttext" || question.type === "word")
