@@ -144,12 +144,7 @@ export default function () {
       const answeredQuestion = conceptAction.answeredQuestions.find(
         (aq) => aq.questionId === q.questionId
       );
-      if (answeredQuestion){
-        if (answeredQuestion.userResponse === q.userResponse) {
-          return;
-        }
-        Object.assign(answeredQuestion, q);
-        hasChanges = true;
+      if (answeredQuestion?.userResponse === q.userResponse) {
         return;
       }
       hasChanges = true;
