@@ -260,14 +260,29 @@ onMounted(async () => {
         if (hasDoneSomething.value) {
           showIntro.value = false;
         }
+        if (!conceptAction.value.actionTimestamps) {
+          conceptAction.value.actionTimestamps = [];
+        }
+        // will be saved with the next action, i.e. we do not record when user does nothing
+        conceptAction.value.actionTimestamps.push({
+          actionType: "loaded",
+          createdAt: new Date().toISOString(),
+        });
       } else {
         conceptAction.value = await conceptActionService.create({
           conceptId,
           competencyId: concept.value.competency.id,
           subjectId: concept.value.competency.subject.id,
           inProgress: true,
+          actionTimestamps: [
+            {
+              actionType: "loaded",
+              createdAt: new Date().toISOString(),
+            },
+          ],
         });
       }
+      
     } else {
       showIntro.value = false;
     }

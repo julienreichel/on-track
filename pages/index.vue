@@ -291,6 +291,10 @@ const sortRevisitedConcepts = () => {
   // Pick a default active tab
   if (conceptsToRevisit.value.length) {
     activeTab.value = "review";
+    conceptsToRevisit.value[0].action.actionTimestamps.push({
+      actionType: "loaded",
+      createdAt: new Date().toISOString(),
+    });
   } else if (conceptsInProgress.value.length) {
     if (activeTab.value === "review"){
       notify({
@@ -308,6 +312,7 @@ const sortRevisitedConcepts = () => {
     }
     activeTab.value = "explore";
   }
+
 };
 
 const updateHistoryFromAction = ({ createdAt, actionType }) => {
