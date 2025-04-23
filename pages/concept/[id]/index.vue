@@ -291,7 +291,7 @@ onMounted(async () => {
   }
 });
 
-const loadedTime = null;
+let loadedTime = null;
 watch(activeTab, (newTab) => {
   if (newTab === "quiz" ) {
     loadedTime = new Date();
