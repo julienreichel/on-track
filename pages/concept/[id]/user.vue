@@ -4,7 +4,7 @@
       <div
         v-for="(stat, index) in statistics"
         :key="index"
-        class="col-12 col-sm-6 col-md-4"
+        class="col-12 col-sm-6 col-md-3"
       >
         <q-card class="full-height">
           <q-card-section class="text-center">
@@ -14,7 +14,9 @@
         </q-card>
       </div>
     </div>
-
+    <div class="text-h3 text-center q-mt-md">
+      Test Reviews
+    </div>
     <div class="row q-pa-sm q-col-gutter-md">
       <div
         v-for="(review, index) in testReviews"
@@ -30,6 +32,7 @@
               <span v-if="review.type !== 'dropped'">
                 <p>{{ toHumanDuration(review.duration) }}</p>
                 <p>{{ review.success }}/{{ review.questions }} questions</p>
+                <p>{{ review.time.toLocaleDateString(undefined, { month: "short", day: "numeric" }) }}</p>
               </span>
               <span v-else>{{ review.questions }} questions</span>
             </p>
@@ -108,7 +111,7 @@ const startedAt = computed(() => {
   const startAction = conceptAction.value?.actionTimestamps.find(
     (a) => a.actionType === "started",
   );
-  return startAction ? startAction.createdAt.toLocaleDateString() : "N/A";
+  return startAction ? startAction.createdAt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "N/A";
 });
 
 const isFinished = computed(() => {
@@ -123,7 +126,7 @@ const isReviewed = computed(() => {
   return (
     conceptAction.value?.answeredQuestions.filter(
       (q) => q.isValid,
-    ).length >= 25
+    ).length >= 20
   );
 });
 
@@ -167,8 +170,6 @@ const testReviewCount = computed(() => {
 });
 
 const testReviews = computed(() => {
-  console.log(conceptAction.value?.actionTimestamps);
-  console.log(conceptAction.value?.answeredQuestions);
   const testReviewActions = conceptAction.value?.actionTimestamps.filter(
     (a) =>
       a.actionType === "quiz" ||
@@ -184,16 +185,15 @@ const testReviews = computed(() => {
     }
 
     const endTime = testReviewActions[i].createdAt;
-    console.log(startTime, endTime, [...durations]);
     const questions =
       conceptAction.value?.answeredQuestions.filter(
         (q) => q.createdAt > startTime && q.createdAt <= endTime,
       ) || [];
-    console.log(questions);
     if (endTime - startTime < maxQuizDuration) {
       const duration = endTime - startTime;
       durations.push({
         type: testReviewActions[i].actionType,
+        time: testReviewActions[i].createdAt,
         duration,
         questions: questions.length,
         success: questions.filter((q) => q.isValid).length,
@@ -209,6 +209,7 @@ const testReviews = computed(() => {
         const duration = endTime - startTime;
         durations.push({
           type: testReviewActions[i].actionType,
+          time: testReviewActions[i].createdAt,
           duration,
           questions: questions.length - j,
           success: questions.filter((q, idx) => idx >= j && q.isValid).length,
@@ -220,6 +221,7 @@ const testReviews = computed(() => {
         } else {
           durations.push({
             type: "dropped",
+            time: startTime,
             questions: 1,
           });
         }
@@ -234,6 +236,7 @@ const testReviews = computed(() => {
   if (startedQuestions.length > 0) {
     durations.push({
       type: "dropped",
+      time: startedQuestions[0].createdAt,
       questions: startedQuestions.length,
     });
   }
@@ -243,9 +246,9 @@ const testReviews = computed(() => {
 const statistics = computed(() => [
   { label: "Started", value: startedAt.value },
   { label: "Finished", value: isFinished.value ? "Yes" : "No" },
-  { label: "Reviewed", value: isReviewed.value ? "Yes" : "No" },
   { label: "Single run", value: isSingleRun.value ? "Yes" : "No" },
   { label: "Total duration", value: toHumanDuration(totalDuration.value) },
+  { label: "Reviewed", value: isReviewed.value ? "Yes" : "No" },
   { label: "Tests", value: testReviewCount.value },
 ]);
 

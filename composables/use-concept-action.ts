@@ -122,7 +122,7 @@ export default function () {
   const updateQuestionsProgress = async (questions:RunningQuestionModel[], conceptAction: ConceptActionModel) => {
     const quizType = getQuizType(conceptAction);
     const validatedQuestions = questions
-      .filter((q) => q.validated)
+      .filter((q) => q.validated && !q.saved)
       .map((q) => ({
         questionId: q.id,
         userResponse:
@@ -135,21 +135,20 @@ export default function () {
         createdAt: new Date().toISOString(),
       }));
 
+    questions.forEach((q) => {
+      q.saved = true;
+    });
+      
+
     if (!conceptAction.answeredQuestions) {
       conceptAction.answeredQuestions = [];
     }
 
     let hasChanges = updateStarted(conceptAction);
-    validatedQuestions.forEach((q) => {
-      const answeredQuestion = conceptAction.answeredQuestions.find(
-        (aq) => aq.questionId === q.questionId
-      );
-      if (answeredQuestion?.userResponse === q.userResponse) {
-        return;
-      }
+    if(validatedQuestions.length) {
       hasChanges = true;
-      conceptAction.answeredQuestions.push(q);
-    });
+      conceptAction.answeredQuestions.push(...validatedQuestions);
+    }
 
     if (hasChanges) {
       await debouncedUpdate(conceptAction);

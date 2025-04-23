@@ -271,7 +271,7 @@ const sortRevisitedConcepts = () => {
     const nextReviewIn =
       Math.min(10, (nbReviews + 1) * (nbReviews + 1)) * 12 * 60 * 60 * 1000;
     return (
-      validQuestions < 25 &&
+      validQuestions < 20 &&
       new Date() - new Date(lastReview.createdAt) > nextReviewIn
     );
   });

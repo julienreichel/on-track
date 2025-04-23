@@ -423,7 +423,7 @@ const updateQuestionsProgress = async (questions) => {
     return;
   }
   if (loadedTime){
-    conceptAction.value.push({
+    conceptAction.value.actionTimestamps.push({
       actionType: "loaded",
       createdAt: loadedTime.toISOString(),
     });
