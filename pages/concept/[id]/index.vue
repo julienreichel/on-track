@@ -263,9 +263,8 @@ onMounted(async () => {
         if (!conceptAction.value.actionTimestamps) {
           conceptAction.value.actionTimestamps = [];
         }
-        // will be saved with the next action, i.e. we do not record when user does nothing
         conceptAction.value.actionTimestamps.push({
-          actionType: "loaded",
+          actionType: "page",
           createdAt: new Date().toISOString(),
         });
       } else {
@@ -276,7 +275,7 @@ onMounted(async () => {
           inProgress: true,
           actionTimestamps: [
             {
-              actionType: "loaded",
+              actionType: "page",
               createdAt: new Date().toISOString(),
             },
           ],
@@ -292,6 +291,12 @@ onMounted(async () => {
   }
 });
 
+const loadedTime = null;
+watch(activeTab, (newTab) => {
+  if (newTab === "quiz" ) {
+    loadedTime = new Date();
+  }
+});
 
 const nextTab = computed(() => {
   if (conceptAction.value?.inProgress) {
@@ -303,7 +308,7 @@ const nextTab = computed(() => {
       return "flashcards";
     } 
   }
-  return"quiz";
+  return "quiz";
 })
 const hasDoneTheory = computed(() => conceptAction.value?.theory);
 const hasDoneExamples = computed(() => conceptAction.value?.examples);
@@ -416,6 +421,13 @@ const updateQuestionsFinished = () => {
 const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !conceptAction.value) {
     return;
+  }
+  if (loadedTime){
+    conceptAction.value.push({
+      actionType: "loaded",
+      createdAt: loadedTime.toISOString(),
+    });
+    loadedTime = null;
   }
   return conceptActionService.updateQuestionsProgress(
     questions,
