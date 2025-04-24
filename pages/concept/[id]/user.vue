@@ -20,7 +20,7 @@
         </q-card>
       </div>
     </div>
-    <div class="text-h3 text-center q-mt-md">
+    <div v-if="mergedLevelStatistics.length" class="text-h3 text-center q-mt-md">
       Level Statistics
     </div>
     <div class="row q-pa-sm q-col-gutter-md">
@@ -38,7 +38,7 @@
         </q-card>
       </div>
     </div>
-    <div class="text-h3 text-center q-mt-md">
+    <div v-if="testReviews.length" class="text-h3 text-center q-mt-md">
       Test Reviews
     </div>
     <div class="row q-pa-sm q-col-gutter-md">
@@ -169,6 +169,9 @@ const numberOfRun = computed(() => {
   const finishAction = conceptAction.value?.actionTimestamps.find(
     (a) => a.actionType === "finished",
   );
+  if (!startAction || !finishAction) {
+    return 0;
+  }
   const startTime = startAction?.createdAt || 0;
   const finishTime = finishAction?.createdAt || new Date();
   if (finishTime - startTime < maxConceptDuration) {
@@ -340,13 +343,11 @@ const averageQuizTimeByLevel = computed(() => {
 });
 
 const testReviewSuccessDistribution = computed(() => {
-  const levels = {
-    novice: { success: 0, total: 0 },
-    beginner: { success: 0, total: 0 },
-    intermediate: { success: 0, total: 0 },
-    advanced: { success: 0, total: 0 },
-  };
+  const levels = {};
   conceptAction.value?.answeredQuestions.forEach((q) => {
+    if (!levels[q.level]) {
+      levels[q.level] = { success: 0, total: 0 };
+    }
     levels[q.level].success += q.isValid ? 1 : 0;
     levels[q.level].total += 1;
   });

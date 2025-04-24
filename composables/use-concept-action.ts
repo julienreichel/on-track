@@ -107,11 +107,13 @@ export default function () {
   const debouncedUpdate = calls.debounce(update, 500); // 500 milliseconds delay
 
   const updateStarted = (conceptAction: ConceptActionModel) => {
-    if (conceptAction.actionTimestamps) {
+    if (!conceptAction.actionTimestamps) {
+      conceptAction.actionTimestamps = [];
+    }
+    if (conceptAction.actionTimestamps.some((a) => a.actionType === "started")) {
       return false;
     }
-    conceptAction.actionTimestamps = [];
-
+    
     conceptAction.actionTimestamps.push({
       actionType: "started",
       createdAt: new Date().toISOString(),

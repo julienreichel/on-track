@@ -14,7 +14,7 @@
         </q-card>
       </div>
     </div>
-    <div class="text-h3 text-center q-mt-md">
+    <div v-if="mergedLevelStatistics.length" class="text-h3 text-center q-mt-md">
       Level Statistics
     </div>
     <div class="row q-pa-sm q-col-gutter-md">
@@ -71,6 +71,9 @@ const toHumanDuration = (duration) => {
 };
 
 const calculateDuration = (startAction, finishAction) => {
+  if (!startAction || !finishAction) {
+    return 0;
+  }
   const startTime = startAction?.createdAt || 0;
   const finishTime = finishAction?.createdAt || new Date();
   return finishTime - startTime;
@@ -79,7 +82,7 @@ const calculateDuration = (startAction, finishAction) => {
 const filterActionsByDuration = (actions, maxDuration, isLessThan = true) => {
   return actions.filter((action) => {
     const duration = calculateDuration(action.startAction, action.finishAction);
-    return isLessThan ? duration < maxDuration : duration >= maxDuration;
+    return duration !==0 && (isLessThan ? duration < maxDuration : duration >= maxDuration);
   });
 };
 
@@ -95,11 +98,14 @@ const computeAverageDuration = (actions, maxDuration, isLessThan = true) => {
 const computeAverageRuns = (actions, maxDuration) => {
   const multipleRunActions = filterActionsByDuration(actions, maxDuration, false);
   const totalRuns = multipleRunActions.reduce((sum, action) => {
+    if (!action.startAction || !action.finishAction) {
+      return 0;
+    }
     const pageActions = action.actionTimestamps.filter(
       (a) =>
         a.actionType === "page" &&
         a.createdAt > action.startAction.createdAt &&
-        a.createdAt < action.finishAction.createdAt
+        a.createdAt < action.finishAction?.createdAt
     );
     return sum + (pageActions.length ? pageActions.length + 1 : 2);
   }, 0);
@@ -160,14 +166,12 @@ const percentageReviewed = computed(() => {
 });
 
 const testReviewSuccessDistribution = computed(() => {
-  const levels = {
-    novice: { success: 0, total: 0 },
-    beginner: { success: 0, total: 0 },
-    intermediate: { success: 0, total: 0 },
-    advanced: { success: 0, total: 0 },
-  };
+  const levels = {};
   conceptActions.value.forEach((action) => {
     action.answeredQuestions.forEach((q) => {
+      if (!levels[q.level]) {
+        levels[q.level] = { success: 0, total: 0 };
+      }
       levels[q.level].success += q.isValid ? 1 : 0;
       levels[q.level].total += 1;
     });
