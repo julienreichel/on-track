@@ -45,14 +45,12 @@
 </template>
 
 <script setup>
-const route = useRoute();
 const conceptActionService = useConceptAction();
 const conceptActions = ref(null);
 
 onMounted(async () => {
   try {
-    const conceptId = route.params.id;
-    const actions = await conceptActionService.listFormated({ conceptId });
+    const actions = await conceptActionService.listFormated({ });
     conceptActions.value = actions;
   } catch (error) {
     console.error("Failed to fetch concept action:", error);
@@ -62,11 +60,19 @@ onMounted(async () => {
 const maxConceptDuration = 60 * 60 * 1000; // 60 minutes
 const maxAllowedQuizTime = 2 * 60 * 1000; // 2 minutes
 
-const numberOfUsers = computed(() => conceptActions.value.length);
+const numberOfUsers = computed(() => {
+  if (!conceptActions.value || conceptActions.value.length === 0) {
+    return 0;
+  }
+  const uniqueUsers = new Set(conceptActions.value.map((action) => action.owner));
+  return uniqueUsers.size;
+});
+
+const numberOfConcept = computed(() => conceptActions.value.length);
 
 const percentageFinished = computed(() => {
   const finishedCount = conceptActions.value.filter((action) => action.finishAction).length;
-  return ((finishedCount / numberOfUsers.value) * 100).toFixed(0);
+  return ((finishedCount / numberOfConcept.value) * 100).toFixed(0);
 });
 
 const percentageReviewed = computed(() => {

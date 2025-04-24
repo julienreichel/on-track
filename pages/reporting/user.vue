@@ -45,14 +45,15 @@
 </template>
 
 <script setup>
-const route = useRoute();
+const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
+
 const conceptActionService = useConceptAction();
 const conceptActions = ref(null);
 
 onMounted(async () => {
   try {
-    const conceptId = route.params.id;
-    const actions = await conceptActionService.listFormated({ conceptId });
+    const { userId, username } = await getCurrentUser();
+    const actions = await conceptActionService.listFormated({ userId, username });
     conceptActions.value = actions;
   } catch (error) {
     console.error("Failed to fetch concept action:", error);
@@ -62,17 +63,16 @@ onMounted(async () => {
 const maxConceptDuration = 60 * 60 * 1000; // 60 minutes
 const maxAllowedQuizTime = 2 * 60 * 1000; // 2 minutes
 
-const numberOfUsers = computed(() => conceptActions.value.length);
+const numberOfConcept = computed(() => conceptActions.value.length);
 
 const percentageFinished = computed(() => {
   const finishedCount = conceptActions.value.filter((action) => action.finishAction).length;
-  return ((finishedCount / numberOfUsers.value) * 100).toFixed(0);
+  return ((finishedCount / numberOfConcept.value) * 100).toFixed(0);
 });
 
 const percentageReviewed = computed(() => {
   const reviewedCount = conceptActions.value.filter((action) => action.reviewed).length;
-  const finishedCount = conceptActions.value.filter((action) => action.finishAction).length;
-  return ((reviewedCount / finishedCount) * 100).toFixed(0);
+  return ((reviewedCount / numberOfConcept.value) * 100).toFixed(0);
 });
 
 const singleRunPercentage = computed(() => {
@@ -80,8 +80,7 @@ const singleRunPercentage = computed(() => {
     conceptActions.value,
     maxConceptDuration
   ).length;
-  const finishedCount = conceptActions.value.filter((action) => action.finishAction).length;
-  return ((singleRunCount / finishedCount) * 100).toFixed(0);
+  return ((singleRunCount / numberOfConcept.value) * 100).toFixed(0);
 });
 
 const averageRunsForMultiple = computed(() => {
@@ -101,8 +100,7 @@ const levelStatistics = computed(() => {
 });
 
 const statistics = computed(() => [
-  { label: "Users", value: numberOfUsers.value },
-  { label: "Finished", value: percentageFinished.value + "%" },
+  { label: "Finished Concepts", value: percentageFinished.value + "%" },
   { label: "Single Run", value: singleRunPercentage.value + "%" },
   { label: "Reviewed", value: percentageReviewed.value + "%" },
   { label: "Runs (Multiple)", value: averageRunsForMultiple.value },

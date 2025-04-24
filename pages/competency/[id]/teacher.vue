@@ -66,7 +66,7 @@ const numberOfUsers = computed(() => {
   if (!conceptActions.value || conceptActions.value.length === 0) {
     return 0;
   }
-  const uniqueUsers = new Set(conceptActions.value.map((action) => action.userId));
+  const uniqueUsers = new Set(conceptActions.value.map((action) => action.owner));
   return uniqueUsers.size;
 });
 
@@ -79,7 +79,8 @@ const percentageFinished = computed(() => {
 
 const percentageReviewed = computed(() => {
   const reviewedCount = conceptActions.value.filter((action) => action.reviewed).length;
-  return ((reviewedCount / numberOfConcept.value) * 100).toFixed(0);
+  const finishedCount = conceptActions.value.filter((action) => action.finishAction).length;
+  return ((reviewedCount / finishedCount) * 100).toFixed(0);
 });
 
 const singleRunPercentage = computed(() => {
@@ -87,7 +88,8 @@ const singleRunPercentage = computed(() => {
     conceptActions.value,
     maxConceptDuration
   ).length;
-  return ((singleRunCount / numberOfConcept.value) * 100).toFixed(0);
+  const finishedCount = conceptActions.value.filter((action) => action.finishAction).length;
+  return ((singleRunCount / finishedCount) * 100).toFixed(0);
 });
 
 const averageRunsForMultiple = computed(() => {
