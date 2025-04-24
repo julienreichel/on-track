@@ -21,6 +21,24 @@
       </div>
     </div>
     <div class="text-h3 text-center q-mt-md">
+      Level Statistics
+    </div>
+    <div class="row q-pa-sm q-col-gutter-md">
+      <div
+        v-for="(level, index) in mergedLevelStatistics"
+        :key="index"
+        class="col-12 col-sm-6 col-md-3"
+      >
+        <q-card class="full-height">
+          <q-card-section class="text-center">
+            <p class="text-h6 text-uppercase text-bold">{{ levelLabels[level.level] }}</p>
+            <p class="text-h4">{{ level.successPercentage }}%</p>
+            <p class="text-h5">{{ level.averageTime }}</p>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+    <div class="text-h3 text-center q-mt-md">
       Test Reviews
     </div>
     <div class="row q-pa-sm q-col-gutter-md">
@@ -30,17 +48,18 @@
         class="col-12 col-sm-6 col-md-3"
       >
         <q-card class="full-height">
-          <q-card-section>
-            <p class="text-h4 text-center">
+          <q-card-section class="text-center">
+            <p class="text-h6 text-uppercase text-bold">
               {{ testType[review.type] }}
             </p>
-            <p>{{ toHumanDuration(review.duration) }}</p>
-            <p>{{ review.success }}/{{ review.questions }} questions</p>
-            <p>{{ review.time.toLocaleDateString(undefined, { month: "short", day: "numeric" }) }}</p>
+            <p class="text-h4">{{ toHumanDuration(review.duration) }}</p>
+            <p class="text-h6">{{ review.success }}/{{ review.questions }}</p>
+            <p class="text-h6">{{ review.time.toLocaleDateString(undefined, { month: "short", day: "numeric" }) }}</p>
           </q-card-section>
         </q-card>
       </div>
     </div>
+    
   </div>
 
   <div v-else>
@@ -283,4 +302,68 @@ const testType = {
   dropped: "(Dropped)",
   loaded: "(Dropped)",
 };
+
+const levelLabels = {
+  novice: "Novice",
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  advanced: "Advanced",
+  expert: "Expert",
+};
+
+const averageQuizTimeByLevel = computed(() => {
+  const levels = {
+    novice: { totalTime: 0, count: 0 },
+    beginner: { totalTime: 0, count: 0 },
+    intermediate: { totalTime: 0, count: 0 },
+    advanced: { totalTime: 0, count: 0 },
+  };
+
+  const questions = conceptAction.value?.answeredQuestions;
+  for (let i = 1; i < questions.length; i++) {
+    const prevQuestion = questions[i - 1];
+    const currentQuestion = questions[i];
+    const timeDiff = currentQuestion.createdAt - prevQuestion.createdAt;
+
+    if (timeDiff <= maxQuizDuration && levels[currentQuestion.level]) {
+      levels[currentQuestion.level].totalTime += timeDiff;
+      levels[currentQuestion.level].count += 1;
+    }
+  }
+
+  return Object.keys(levels).map((level) => ({
+    level,
+    averageTime: levels[level].count
+      ? toHumanDuration(levels[level].totalTime / levels[level].count)
+      : "N/A",
+  }));
+});
+
+const testReviewSuccessDistribution = computed(() => {
+  const levels = {
+    novice: { success: 0, total: 0 },
+    beginner: { success: 0, total: 0 },
+    intermediate: { success: 0, total: 0 },
+    advanced: { success: 0, total: 0 },
+  };
+  conceptAction.value?.answeredQuestions.forEach((q) => {
+    levels[q.level].success += q.isValid ? 1 : 0;
+    levels[q.level].total += 1;
+  });
+  return Object.keys(levels).map((level) => ({
+    level,
+    successPercentage: ((levels[level].success / levels[level].total) * 100).toFixed(0),
+  }));
+});
+
+const mergedLevelStatistics = computed(() => {
+  return testReviewSuccessDistribution.value.map((successData) => {
+    const timeData = averageQuizTimeByLevel.value.find((time) => time.level === successData.level);
+    return {
+      level: successData.level,
+      successPercentage: successData.successPercentage,
+      averageTime: timeData ? timeData.averageTime : "N/A",
+    };
+  });
+});
 </script>
