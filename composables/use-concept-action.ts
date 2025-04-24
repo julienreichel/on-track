@@ -85,6 +85,33 @@ export default function () {
 
     return calls.call(query, {...params, ...options}) as unknown as GraphQLModel[];
   }
+  const listFormated = async (params: GraphQLParams = {}, options: GraphQLOptions = {}) => {
+    const actions = await list(params, options);
+    actions.forEach((action) => {
+      if (!action.actionTimestamps) {
+        action.actionTimestamps = [];
+      }
+      action.actionTimestamps.forEach((a) => {
+        a.createdAt = new Date(a.createdAt);
+      });
+      action.actionTimestamps.sort((a, b) => a.createdAt - b.createdAt);
+
+      action.startAction = action.actionTimestamps.find((a) => a.actionType === "started");
+      action.finishAction = action.actionTimestamps.find((a) => a.actionType === "finished");
+      
+
+      if (!action.answeredQuestions) {
+        action.answeredQuestions = [];
+      }
+      action.answeredQuestions.forEach((q) => {
+        q.createdAt = new Date(q.createdAt);
+      });
+      action.answeredQuestions.sort((a, b) => a.createdAt - b.createdAt);
+
+      action.reviewed = action.answeredQuestions.filter((q) => q.isValid).length >= 20;
+    });
+    return actions;
+  };
   const update = async (input: GraphQLModel, options: GraphQLOptions = {}) => {
     // never update the owner
     delete input.owner;
@@ -170,5 +197,5 @@ export default function () {
     });
     await debouncedUpdate(conceptAction);
   };
-  return { ...calls, list, update, updateQuestionsResults, updateQuestionsProgress, getQuizType, updateStarted };
+  return { ...calls, list, listFormated, update, updateQuestionsResults, updateQuestionsProgress, getQuizType, updateStarted };
 }

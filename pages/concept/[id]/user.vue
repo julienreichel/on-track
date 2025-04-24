@@ -103,7 +103,7 @@ onMounted(async () => {
     const conceptId = route.params.id;
 
     const { userId, username } = await getCurrentUser();
-    const actions = await conceptActionService.list({
+    const actions = await conceptActionService.listFormated({
       conceptId,
       userId,
       username,
@@ -113,24 +113,8 @@ onMounted(async () => {
       console.error("No concept action found for the given ID.");
       return;
     }
-    const action = actions[0];
-    if (!action.actionTimestamps) {
-      action.actionTimestamps = [];
-    }
-    action.actionTimestamps.forEach((a) => {
-      a.createdAt = new Date(a.createdAt);
-    });
-    action.actionTimestamps.sort((a, b) => a.createdAt - b.createdAt);
 
-    if (!action.answeredQuestions) {
-      action.answeredQuestions = [];
-    }
-    action.answeredQuestions.forEach((q) => {
-      q.createdAt = new Date(q.createdAt);
-    });
-    action.answeredQuestions.sort((a, b) => a.createdAt - b.createdAt);
-
-    conceptAction.value = action;
+    conceptAction.value = actions[0];
   } catch (error) {
     console.error("Failed to fetch concept action:", error);
   }

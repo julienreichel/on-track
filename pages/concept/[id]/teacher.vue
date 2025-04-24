@@ -115,31 +115,10 @@ const computeAverageRuns = (actions, maxDuration) => {
 onMounted(async () => {
   try {
     const conceptId = route.params.id;
-
-    const actions = await conceptActionService.list({
+    const actions = await conceptActionService.listFormated({
       conceptId
     });
-    actions.forEach((action) => {
-      if (!action.actionTimestamps) {
-        action.actionTimestamps = [];
-      }
-      action.actionTimestamps.forEach((a) => {
-        a.createdAt = new Date(a.createdAt);
-      });
-      action.actionTimestamps.sort((a, b) => a.createdAt - b.createdAt);
-
-      action.startAction = action.actionTimestamps.find((a) => a.actionType === "started");
-      action.finishAction = action.actionTimestamps.find((a) => a.actionType === "finished");
-
-      if (!action.answeredQuestions) {
-        action.answeredQuestions = [];
-      }
-      action.answeredQuestions.forEach((q) => {
-        q.createdAt = new Date(q.createdAt);
-      });
-      action.answeredQuestions.sort((a, b) => a.createdAt - b.createdAt);
-    });
-
+    
     conceptActions.value = actions;
   } catch (error) {
     console.error("Failed to fetch concept action:", error);
@@ -152,34 +131,13 @@ const maxAllowedQuizTime = 2 * 60 * 1000; // 2 minutes
 const numberOfUsers = computed(() => conceptActions.value.length);
 
 const percentageFinished = computed(() => {
-  const finishedCount = conceptActions.value.filter((action) =>
-    action.actionTimestamps.some((a) => a.actionType === "finished")
-  ).length;
+  const finishedCount = conceptActions.value.filter((action) => action.finishAction).length;
   return ((finishedCount / numberOfUsers.value) * 100).toFixed(0) ;
 });
 
 const percentageReviewed = computed(() => {
-  const reviewedCount = conceptActions.value.filter((action) =>
-    action.answeredQuestions.filter((q) => q.isValid).length >= 20
-  ).length;
+  const reviewedCount = conceptActions.value.filter((action) => action.reviewed).length;
   return ((reviewedCount / numberOfUsers.value) * 100).toFixed(0) ;
-});
-
-const testReviewSuccessDistribution = computed(() => {
-  const levels = {};
-  conceptActions.value.forEach((action) => {
-    action.answeredQuestions.forEach((q) => {
-      if (!levels[q.level]) {
-        levels[q.level] = { success: 0, total: 0 };
-      }
-      levels[q.level].success += q.isValid ? 1 : 0;
-      levels[q.level].total += 1;
-    });
-  });
-  return Object.keys(levels).map((level) => ({
-    level,
-    successPercentage: ((levels[level].success / levels[level].total) * 100).toFixed(0),
-  }));
 });
 
 const singleRunPercentage = computed(() => {
@@ -200,9 +158,7 @@ const averageDurationMultipleRuns = computed(() => {
 });
 
 const averageTestsForReviewed = computed(() => {
-  const reviewedActions = conceptActions.value.filter((action) =>
-    action.answeredQuestions.filter((q) => q.isValid).length >= 20
-  );
+  const reviewedActions = conceptActions.value.filter((action) => action.reviewed);
   const totalTests = reviewedActions.reduce((sum, action) => {
     return (
       sum +
@@ -213,33 +169,44 @@ const averageTestsForReviewed = computed(() => {
   return (totalTests / reviewedActions.length).toFixed(1);
 });
 
-const averageQuizTimeByLevel = computed(() => {
-  const levels = {
-    novice: { totalTime: 0, count: 0 },
-    beginner: { totalTime: 0, count: 0 },
-    intermediate: { totalTime: 0, count: 0 },
-    advanced: { totalTime: 0, count: 0 },
-  };
+const levelStatistics = computed(() => {
+  const levels = {};
 
   conceptActions.value.forEach((action) => {
-    const questions = action.answeredQuestions.sort((a, b) => a.createdAt - b.createdAt);
-    for (let i = 1; i < questions.length; i++) {
-      const prevQuestion = questions[i - 1];
-      const currentQuestion = questions[i];
-      const timeDiff = currentQuestion.createdAt - prevQuestion.createdAt;
-
-      if (timeDiff <= maxAllowedQuizTime && levels[currentQuestion.level]) {
-        levels[currentQuestion.level].totalTime += timeDiff;
-        levels[currentQuestion.level].count += 1;
+    action.answeredQuestions.forEach((q, index, questions) => {
+      if (!levels[q.level]) {
+        levels[q.level] = { success: 0, total: 0, totalTime: 0, count: 0 };
       }
-    }
+      levels[q.level].success += q.isValid ? 1 : 0;
+      levels[q.level].total += 1;
+
+      if (index > 0) {
+        const prevQuestion = questions[index - 1];
+        const timeDiff = q.createdAt - prevQuestion.createdAt;
+        if (timeDiff <= maxAllowedQuizTime) {
+          levels[q.level].totalTime += timeDiff;
+          levels[q.level].count += 1;
+        }
+      }
+    });
   });
 
   return Object.keys(levels).map((level) => ({
     level,
+    successPercentage: levels[level].total
+      ? ((levels[level].success / levels[level].total) * 100).toFixed(0)
+      : "0",
     averageTime: levels[level].count
       ? toHumanDuration(levels[level].totalTime / levels[level].count)
       : "N/A",
+  }));
+});
+
+const mergedLevelStatistics = computed(() => {
+  return levelStatistics.value.map((levelData) => ({
+    level: levelData.level,
+    successPercentage: levelData.successPercentage,
+    averageTime: levelData.averageTime,
   }));
 });
 
@@ -261,15 +228,4 @@ const levelLabels = {
   advanced: "Advanced",
   expert: "Expert",
 }
-
-const mergedLevelStatistics = computed(() => {
-  return testReviewSuccessDistribution.value.map((successData) => {
-    const timeData = averageQuizTimeByLevel.value.find((time) => time.level === successData.level);
-    return {
-      level: successData.level,
-      successPercentage: successData.successPercentage,
-      averageTime: timeData ? timeData.averageTime : "N/A",
-    };
-  });
-});
 </script>
