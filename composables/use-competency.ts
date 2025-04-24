@@ -218,14 +218,14 @@ export default function () {
       }
       // remove questions that are in the answeredQuestions of the concept
       const conceptQuestionsIds = concept.action.answeredQuestions?.map((q) => q.questionId);
-      questions = questions.filter((q) => !conceptQuestionsIds.includes(q.questionId));
+      questions = questions.filter((q) => !conceptQuestionsIds?.includes(q.questionId));
 
       // add the latest question
       const conceptPrevQuizTime = getLastQuizTime(concept.action, conceptLastQuizTime).time;
       const conceptQuestions = concept.action.answeredQuestions?.filter((q) => {
         const date = new Date(q.createdAt).getTime();
         return date > conceptPrevQuizTime && date <= conceptLastQuizTime;
-      });
+      }) || [];
       questions.push(...conceptQuestions);
     });
 
