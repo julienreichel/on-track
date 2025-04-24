@@ -197,5 +197,109 @@ export default function () {
     });
     await debouncedUpdate(conceptAction);
   };
-  return { ...calls, list, listFormated, update, updateQuestionsResults, updateQuestionsProgress, getQuizType, updateStarted };
+
+  const toHumanDuration = (duration: number) => {
+    duration = duration / 1000;
+    const hours = Math.floor(duration / 3600);
+    const minutes = Math.floor((duration % 3600) / 60);
+    const seconds = Math.floor(duration % 60);
+    let text = "";
+    if (hours > 0) text += `${hours}h `;
+    if (minutes > 0) text += `${minutes}min `;
+    if (seconds > 0) text += `${seconds}s`;
+    return text.length > 0 ? text : "N/A";
+  };
+
+  const calculateDuration = (startAction, finishAction) => {
+    if (!startAction || !finishAction) return 0;
+    return finishAction.createdAt - startAction.createdAt;
+  };
+
+  const filterActionsByDuration = (actions, maxDuration, isLessThan = true) => {
+    return actions.filter((action) => {
+      const duration = calculateDuration(action.startAction, action.finishAction);
+      return duration !== 0 && (isLessThan ? duration < maxDuration : duration >= maxDuration);
+    });
+  };
+
+  const computeAverageDuration = (actions, maxDuration, isLessThan = true) => {
+    const filteredActions = filterActionsByDuration(actions, maxDuration, isLessThan);
+    const durations = filteredActions.map((action) =>
+      calculateDuration(action.startAction, action.finishAction)
+    );
+    const avg = durations.reduce((sum, d) => sum + d, 0) / durations.length || 0;
+    return toHumanDuration(avg);
+  };
+
+  const computeAverageRuns = (actions, maxDuration) => {
+    const multipleRunActions = filterActionsByDuration(actions, maxDuration, false);
+    const totalRuns = multipleRunActions.reduce((sum, action) => {
+      if (!action.startAction || !action.finishAction) return 0;
+      const pageActions = action.actionTimestamps.filter(
+        (a) =>
+          a.actionType === "page" &&
+          a.createdAt > action.startAction.createdAt &&
+          a.createdAt < action.finishAction?.createdAt
+      );
+      return sum + (pageActions.length ? pageActions.length + 1 : 2);
+    }, 0);
+    return (totalRuns / multipleRunActions.length).toFixed(1);
+  };
+
+  const calculatePercentiles = (values, percentiles) => {
+    values.sort((a, b) => a - b);
+    return percentiles.map((p) => {
+      const index = (p / 100) * (values.length - 1);
+      const lower = Math.floor(index);
+      const upper = Math.ceil(index);
+      if (lower === upper) return values[lower];
+      return values[lower] + (index - lower) * (values[upper] - values[lower]);
+    });
+  };
+
+  const computeLevelStatistics = (actions, maxAllowedQuizTime) => {
+    const levels = {};
+    actions.forEach((action) => {
+      action.answeredQuestions.forEach((q, index, questions) => {
+        if (!levels[q.level]) levels[q.level] = { success: 0, total: 0, times: [] };
+        levels[q.level].success += q.isValid ? 1 : 0;
+        levels[q.level].total += 1;
+
+        if (index > 0) {
+          const prevQuestion = questions[index - 1];
+          const timeDiff = q.createdAt - prevQuestion.createdAt;
+          if (timeDiff <= maxAllowedQuizTime) levels[q.level].times.push(timeDiff);
+        }
+      });
+    });
+
+    return Object.keys(levels).map((level) => {
+      const { times, success, total } = levels[level];
+      const [p15, median, p85] = calculatePercentiles(times, [15, 50, 85]);
+      return {
+        level,
+        successPercentage: total ? ((success / total) * 100).toFixed(0) : "0",
+        medianTime: median ? toHumanDuration(median) : "N/A",
+        p15Time: p15 ? toHumanDuration(p15) : "N/A",
+        p85Time: p85 ? toHumanDuration(p85) : "N/A",
+      };
+    });
+  };
+
+  return {
+    ...calls,
+    list,
+    listFormated,
+    update,
+    updateQuestionsResults,
+    updateQuestionsProgress,
+    getQuizType,
+    updateStarted,
+    toHumanDuration,
+    calculateDuration,
+    filterActionsByDuration,
+    computeAverageDuration,
+    computeAverageRuns,
+    computeLevelStatistics,
+  };
 }

@@ -20,12 +20,12 @@
         </q-card>
       </div>
     </div>
-    <div v-if="mergedLevelStatistics.length" class="text-h3 text-center q-mt-md">
+    <div v-if="levelStatistics.length" class="text-h3 text-center q-mt-md">
       Level Statistics
     </div>
     <div class="row q-pa-sm q-col-gutter-md">
       <div
-        v-for="(level, index) in mergedLevelStatistics"
+        v-for="(level, index) in levelStatistics"
         :key="index"
         class="col-12 col-sm-6 col-md-3"
       >
@@ -33,7 +33,8 @@
           <q-card-section class="text-center">
             <p class="text-h6 text-uppercase text-bold">{{ levelLabels[level.level] }}</p>
             <p class="text-h4">{{ level.successPercentage }}%</p>
-            <p class="text-h5">{{ level.averageTime }}</p>
+            <p class="text-h5">{{ level.medianTime }}</p>
+            <p class="text-h6">[{{ level.p15Time }} - {{ level.p85Time }}]</p>
           </q-card-section>
         </q-card>
       </div>
@@ -52,7 +53,7 @@
             <p class="text-h6 text-uppercase text-bold">
               {{ testType[review.type] }}
             </p>
-            <p class="text-h4">{{ toHumanDuration(review.duration) }}</p>
+            <p class="text-h4">{{ conceptActionService.toHumanDuration(review.duration) }}</p>
             <p class="text-h6">{{ review.success }}/{{ review.questions }}</p>
             <p class="text-h6">{{ review.time.toLocaleDateString(undefined, { month: "short", day: "numeric" }) }}</p>
           </q-card-section>
@@ -78,36 +79,11 @@ const route = useRoute();
 const conceptActionService = useConceptAction();
 const conceptAction = ref(null);
 
-const toHumanDuration = (duration) => {
-  duration = duration / 1000;
-  const hours = Math.floor(duration / 3600 );
-  const minutes = Math.floor((duration % 3600)/ 60);
-  const seconds = Math.floor((duration % 60) );
-  let text = "";
-  if (hours > 0) {
-    text += `${hours}h `;
-  }
-  if (minutes > 0) {
-    text += `${minutes}min `;
-  }
-  if (seconds > 0) {
-    text += `${seconds}s`;
-  }
-  if (text.length > 0) {
-    return text;
-  }
-  return "N/A";
-};
 onMounted(async () => {
   try {
     const conceptId = route.params.id;
-
     const { userId, username } = await getCurrentUser();
-    const actions = await conceptActionService.listFormated({
-      conceptId,
-      userId,
-      username,
-    });
+    const actions = await conceptActionService.listFormated({ conceptId, userId, username });
 
     if (!actions || !actions[0]) {
       console.error("No concept action found for the given ID.");
@@ -121,81 +97,42 @@ onMounted(async () => {
 });
 
 const startedAt = computed(() => {
-  const startAction = conceptAction.value?.actionTimestamps.find(
-    (a) => a.actionType === "started",
-  );
+  const startAction = conceptAction.value?.startAction;
   return startAction ? startAction.createdAt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "N/A";
 });
 
 const isFinished = computed(() => {
-  return (
-    conceptAction.value?.actionTimestamps.some(
-      (a) => a.actionType === "finished",
-    ) || false
-  );
+  return Boolean(conceptAction.value?.finishAction);
 });
 
 const isReviewed = computed(() => {
-  return (
-    conceptAction.value?.answeredQuestions.filter(
-      (q) => q.isValid,
-    ).length >= 20
-  );
+  return conceptAction.value?.reviewed;
 });
 
 const maxConceptDuration = 60 * 60 * 1000; // 60 minutes
 const maxQuizDuration = 10 * 60 * 1000; // 10 minutes
 
 const numberOfRun = computed(() => {
-  const startAction = conceptAction.value?.actionTimestamps.find(
-    (a) => a.actionType === "started",
-  );
-  const finishAction = conceptAction.value?.actionTimestamps.find(
-    (a) => a.actionType === "finished",
-  );
-  if (!startAction || !finishAction) {
-    return 0;
-  }
-  const startTime = startAction?.createdAt || 0;
-  const finishTime = finishAction?.createdAt || new Date();
-  if (finishTime - startTime < maxConceptDuration) {
-    return 1;
-  }
-  // calculate the number of runs
-  // find all actionTimestamps between startAction and finishAction of type page
-  const pageActions = conceptAction.value?.actionTimestamps.filter(
-    (a) =>
-      a.actionType === "page" &&
-      a.createdAt > startAction.createdAt &&
-      a.createdAt < finishAction.createdAt,
-  );
-  if (pageActions.length) {
-    return pageActions.length + 1;
-  }
-  if (startAction && finishAction) {
-    return 2;
-  }
-  return 0;
+  const startAction = conceptAction.value?.startAction;
+  const finishAction = conceptAction.value?.finishAction;
+  if (!startAction || !finishAction) return 0;
+  return conceptActionService.filterActionsByDuration([conceptAction.value], maxConceptDuration).length
+    ? 1
+    : 2;
 });
 
 const totalDuration = computed(() => {
-  const startAction = conceptAction.value?.actionTimestamps.find(
-    (a) => a.actionType === "started",
-  );
-  const finishAction = conceptAction.value?.actionTimestamps.find(
-    (a) => a.actionType === "finished",
-  );
-  if (startAction && finishAction) {
-    const duration = finishAction.createdAt - startAction.createdAt;
-    return duration;
-  }
-  return "N/A";
+  const startAction = conceptAction.value?.startAction;
+  const finishAction = conceptAction.value?.finishAction;
+  return startAction && finishAction
+    ? conceptActionService.calculateDuration(startAction, finishAction)
+    : "N/A";
 });
 
 const testReviewCount = computed(() => {
   return (
     conceptAction.value?.actionTimestamps.filter(
-      (a) => a.actionType === "quiz" || a.actionType === "review",
+      (a) => a.actionType === "quiz" || a.actionType === "review"
     ).length || 0
   );
 });
@@ -274,11 +211,15 @@ const testReviews = computed(() => {
   return durations;
 });
 
+const levelStatistics = computed(() => {
+  return conceptActionService.computeLevelStatistics([conceptAction.value], maxQuizDuration);
+});
+
 const statistics = computed(() => [
   { label: "Started", value: startedAt.value },
   { label: "Finished", value: isFinished.value ? "Yes" : "No", status: true, showProgressOnly: true },
   { label: "Run", value: numberOfRun.value },
-  { label: "Duration", value: toHumanDuration(totalDuration.value) },
+  { label: "Duration", value: conceptActionService.toHumanDuration(totalDuration.value) },
   { label: "Reviewed", value: isReviewed.value ? "Yes" : "No", status: true, showReviewOnly: true },
   { label: "Tests", value: testReviewCount.value },
 ]);
@@ -297,58 +238,4 @@ const levelLabels = {
   advanced: "Advanced",
   expert: "Expert",
 };
-
-const averageQuizTimeByLevel = computed(() => {
-  const levels = {
-    novice: { totalTime: 0, count: 0 },
-    beginner: { totalTime: 0, count: 0 },
-    intermediate: { totalTime: 0, count: 0 },
-    advanced: { totalTime: 0, count: 0 },
-  };
-
-  const questions = conceptAction.value?.answeredQuestions;
-  for (let i = 1; i < questions.length; i++) {
-    const prevQuestion = questions[i - 1];
-    const currentQuestion = questions[i];
-    const timeDiff = currentQuestion.createdAt - prevQuestion.createdAt;
-
-    if (timeDiff <= maxQuizDuration && levels[currentQuestion.level]) {
-      levels[currentQuestion.level].totalTime += timeDiff;
-      levels[currentQuestion.level].count += 1;
-    }
-  }
-
-  return Object.keys(levels).map((level) => ({
-    level,
-    averageTime: levels[level].count
-      ? toHumanDuration(levels[level].totalTime / levels[level].count)
-      : "N/A",
-  }));
-});
-
-const testReviewSuccessDistribution = computed(() => {
-  const levels = {};
-  conceptAction.value?.answeredQuestions.forEach((q) => {
-    if (!levels[q.level]) {
-      levels[q.level] = { success: 0, total: 0 };
-    }
-    levels[q.level].success += q.isValid ? 1 : 0;
-    levels[q.level].total += 1;
-  });
-  return Object.keys(levels).map((level) => ({
-    level,
-    successPercentage: ((levels[level].success / levels[level].total) * 100).toFixed(0),
-  }));
-});
-
-const mergedLevelStatistics = computed(() => {
-  return testReviewSuccessDistribution.value.map((successData) => {
-    const timeData = averageQuizTimeByLevel.value.find((time) => time.level === successData.level);
-    return {
-      level: successData.level,
-      successPercentage: successData.successPercentage,
-      averageTime: timeData ? timeData.averageTime : "N/A",
-    };
-  });
-});
 </script>
