@@ -9,7 +9,13 @@
         <q-card class="full-height">
           <q-card-section class="text-center">
             <p class="text-h6 text-uppercase text-bold">{{ stat.label }}</p>
-            <p class="text-h4 text-center">{{ stat.value }}</p>
+            <concept-status
+              v-if="stat.status"
+              class="q-mt-lg"
+              :concept-action="conceptAction"
+              :show-progress-only="stat.showProgressOnly"
+              :show-review-only="stat.showReviewOnly"/>
+            <p v-else class="text-h4 text-center">{{ stat.value }}</p>
           </q-card-section>
         </q-card>
       </div>
@@ -28,14 +34,9 @@
             <p class="text-h4 text-center">
               {{ testType[review.type] }}
             </p>
-            <p class="text-left">
-              <span v-if="review.type !== 'dropped'">
-                <p>{{ toHumanDuration(review.duration) }}</p>
-                <p>{{ review.success }}/{{ review.questions }} questions</p>
-                <p>{{ review.time.toLocaleDateString(undefined, { month: "short", day: "numeric" }) }}</p>
-              </span>
-              <span v-else>{{ review.questions }} questions</span>
-            </p>
+            <p>{{ toHumanDuration(review.duration) }}</p>
+            <p>{{ review.success }}/{{ review.questions }} questions</p>
+            <p>{{ review.time.toLocaleDateString(undefined, { month: "short", day: "numeric" }) }}</p>
           </q-card-section>
         </q-card>
       </div>
@@ -59,13 +60,22 @@ const conceptActionService = useConceptAction();
 const conceptAction = ref(null);
 
 const toHumanDuration = (duration) => {
-  const minutes = Math.floor(duration / 60000);
-  const seconds = Math.floor((duration % 60000) / 1000);
+  duration = duration / 1000;
+  const hours = Math.floor(duration / 3600 );
+  const minutes = Math.floor((duration % 3600)/ 60);
+  const seconds = Math.floor((duration % 60) );
+  let text = "";
+  if (hours > 0) {
+    text += `${hours}h `;
+  }
   if (minutes > 0) {
-    return `${minutes}min ${seconds}s`;
+    text += `${minutes}min `;
   }
   if (seconds > 0) {
-    return `${seconds}s`;
+    text += `${seconds}s`;
+  }
+  if (text.length > 0) {
+    return text;
   }
   return "N/A";
 };
@@ -80,7 +90,7 @@ onMounted(async () => {
       username,
     });
 
-    if (!actions) {
+    if (!actions || !actions[0]) {
       console.error("No concept action found for the given ID.");
       return;
     }
@@ -130,21 +140,36 @@ const isReviewed = computed(() => {
   );
 });
 
-const maxConceptDuration = 60 * 60 * 1000; // 10 minutes
+const maxConceptDuration = 60 * 60 * 1000; // 60 minutes
 const maxQuizDuration = 10 * 60 * 1000; // 10 minutes
 
-const isSingleRun = computed(() => {
+const numberOfRun = computed(() => {
   const startAction = conceptAction.value?.actionTimestamps.find(
     (a) => a.actionType === "started",
   );
   const finishAction = conceptAction.value?.actionTimestamps.find(
     (a) => a.actionType === "finished",
   );
-  return (
-    startAction &&
-    finishAction &&
-    finishAction.createdAt - startAction.createdAt < maxConceptDuration
+  const startTime = startAction?.createdAt || 0;
+  const finishTime = finishAction?.createdAt || new Date();
+  if (finishTime - startTime < maxConceptDuration) {
+    return 1;
+  }
+  // calculate the number of runs
+  // find all actionTimestamps between startAction and finishAction of type page
+  const pageActions = conceptAction.value?.actionTimestamps.filter(
+    (a) =>
+      a.actionType === "page" &&
+      a.createdAt > startAction.createdAt &&
+      a.createdAt < finishAction.createdAt,
   );
+  if (pageActions.length) {
+    return pageActions.length + 1;
+  }
+  if (startAction && finishAction) {
+    return 2;
+  }
+  return 0;
 });
 
 const totalDuration = computed(() => {
@@ -179,20 +204,17 @@ const testReviews = computed(() => {
   const durations = [];
   let startTime = 0;
   for (let i = 0; i < testReviewActions.length; i++) {
-    if (testReviewActions[i].actionType === "loaded") {
-      startTime = testReviewActions[i].createdAt;
-      continue;
-    }
+    const type = testReviewActions[i].actionType;
 
     const endTime = testReviewActions[i].createdAt;
     const questions =
       conceptAction.value?.answeredQuestions.filter(
         (q) => q.createdAt > startTime && q.createdAt <= endTime,
       ) || [];
-    if (endTime - startTime < maxQuizDuration) {
+    if (endTime - startTime < maxQuizDuration && questions.length) {
       const duration = endTime - startTime;
       durations.push({
-        type: testReviewActions[i].actionType,
+        type,
         time: testReviewActions[i].createdAt,
         duration,
         questions: questions.length,
@@ -208,7 +230,7 @@ const testReviews = computed(() => {
       if (endTime - startTime < maxQuizDuration) {
         const duration = endTime - startTime;
         durations.push({
-          type: testReviewActions[i].actionType,
+          type,
           time: testReviewActions[i].createdAt,
           duration,
           questions: questions.length - j,
@@ -218,11 +240,13 @@ const testReviews = computed(() => {
       } else {
         if (durations.length > 0 && durations[durations.length - 1].type === "dropped") {
           durations[durations.length - 1].questions++;
+          durations[durations.length - 1].success += questions[j].isValid ? 1 : 0;
         } else {
           durations.push({
             type: "dropped",
             time: startTime,
             questions: 1,
+            success: questions[j].isValid ? 1: 0,
           });
         }
       }
@@ -238,6 +262,7 @@ const testReviews = computed(() => {
       type: "dropped",
       time: startedQuestions[0].createdAt,
       questions: startedQuestions.length,
+      success: startedQuestions.filter((q) => q.isValid).length,
     });
   }
   return durations;
@@ -245,10 +270,10 @@ const testReviews = computed(() => {
 
 const statistics = computed(() => [
   { label: "Started", value: startedAt.value },
-  { label: "Finished", value: isFinished.value ? "Yes" : "No" },
-  { label: "Single run", value: isSingleRun.value ? "Yes" : "No" },
-  { label: "Total duration", value: toHumanDuration(totalDuration.value) },
-  { label: "Reviewed", value: isReviewed.value ? "Yes" : "No" },
+  { label: "Finished", value: isFinished.value ? "Yes" : "No", status: true, showProgressOnly: true },
+  { label: "Run", value: numberOfRun.value },
+  { label: "Duration", value: toHumanDuration(totalDuration.value) },
+  { label: "Reviewed", value: isReviewed.value ? "Yes" : "No", status: true, showReviewOnly: true },
   { label: "Tests", value: testReviewCount.value },
 ]);
 
@@ -256,5 +281,6 @@ const testType = {
   quiz: "Quiz",
   review: "Review",
   dropped: "(Dropped)",
+  loaded: "(Dropped)",
 };
 </script>

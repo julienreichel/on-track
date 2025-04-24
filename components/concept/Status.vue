@@ -8,7 +8,7 @@
     >
       <div class="absolute-full flex flex-center">
         <q-badge
-          v-if="progressPercent < 100"
+          v-if="progressPercent < 100 || showProgressOnly || showReviewOnly"
           color="white"
           text-color="primary"
           :label="`${progressPercent} %`"
@@ -35,9 +35,19 @@ const props = defineProps({
   },
   concept: {
     type: Object,
-    required: true,
+    default: () => ({}),
+  },
+  showProgressOnly: {
+    type: Boolean,
+    default: false,
+  },
+  showReviewOnly: {
+    type: Boolean,
+    default: false,
   },
 });
+
+const reviews = computed(() => Math.min(20, props.conceptAction.answeredQuestions?.filter((q) => q.isValid).length || 0 ));
 
 const getBatteryIcon = (index) => {
   const correctAnswers =
@@ -55,6 +65,9 @@ const getBatteryIcon = (index) => {
 
 const progress = computed(() => {
   if (!props.conceptAction) return 0;
+  if (props.showReviewOnly) {
+    return reviews.value;
+  }
 
   const {
     theory,
@@ -85,6 +98,8 @@ const progress = computed(() => {
   return progress;
 });
 
+
+
 const nbFlashCards = computed(() =>
   Math.min(props.concept.flashCards?.length || 5, 5)
 );
@@ -94,13 +109,13 @@ const nbQuestion = computed(() =>
 // A sucess, means, all the theory and examples are read
 // the flashcards have been used and the 10 questions have been answered with at leat 80% of success
 const success = computed(
-  () => 20 + 20 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 0.7
+  () => props.showReviewOnly ? 20 : 20 + 20 + 5 * nbFlashCards.value + 5 * nbQuestion.value * 0.7
 );
 
 const finished = computed(() => progress.value >= success.value);
 const color = computed(() => (finished.value ? "primary" : "secondary"));
 const progressPercent = computed(
-  () => Math.floor((progress.value / success.value) * 20) * 5
+  () =>  Math.floor((progress.value / success.value) * 20) * 5
 );
 
 const emit = defineEmits(["finished"]);
