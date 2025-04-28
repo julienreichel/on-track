@@ -3,6 +3,7 @@ import subjectPrompt from "./prompts/subject";
 import competencyPrompt from "./prompts/competency";
 import conceptPrompt from "./prompts/concept";
 import quizPrompt from "./prompts/quiz";
+import languagePrompt from "./prompts/language";
 
 export type OpenAIRequest = GraphQLModel & {
   system?: string;
@@ -263,5 +264,31 @@ export default function () {
     return response.questions;
   };
 
-  return { query, querySubject, queryCompetency, queryConcept, queryQuiz };
+  const queryLanguageQuiz = async (
+    level: string,
+    previousQuestions: LanguageLevelQuestion[],
+    language: string = "English",
+  ): Promise<QuizResponse[]> => {
+
+    if( previousQuestions.length === 0) {
+      const request: OpenAIRequest = {
+        prompt: languagePrompt.initialPrompt(language, level || "A1"),
+        token: 1000,
+        format: "json",
+      };
+      const response = await query(request);
+      return response;
+    } 
+
+    const request: OpenAIRequest = {
+      system: languagePrompt.system(language, level || "A1"),
+      prompt: languagePrompt.prompt(previousQuestions),
+      token: 2000,
+      format: "json",
+    };
+    const response = await query(request);
+    return response;
+  };
+
+  return { query, querySubject, queryCompetency, queryConcept, queryQuiz, queryLanguageQuiz };
 }

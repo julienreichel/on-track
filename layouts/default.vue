@@ -25,6 +25,8 @@
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" bordered>
+      <q-separator spaced />
+      <q-item-label header>Learnings</q-item-label>
       <q-item clickable to="/">
         <q-item-section avatar>
           <q-icon name="home" />
@@ -42,6 +44,15 @@
           <q-icon name="table_chart" />
         </q-item-section>
         <q-item-section>Kanban</q-item-section>
+      </q-item>
+
+      <q-separator spaced />
+      <q-item-label header>Language</q-item-label>
+      <q-item clickable to="/language/evaluate">
+        <q-item-section avatar>
+          <q-icon name="language" />
+        </q-item-section>
+        <q-item-section>Evaluate level</q-item-section>
       </q-item>
 
       <!-- Create New Lecture Section -->
