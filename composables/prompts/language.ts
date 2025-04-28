@@ -3,7 +3,7 @@ export type LanguageLevelQuestion = {
   question: string,
   answers: {
     basic: string,
-    normal: string,
+    average: string,
     advanced: string
   },
   userAnswer: string,
@@ -44,8 +44,9 @@ Vocabulary: Specialized and technical vocabulary (e.g., legal, scientific); subt
 
 const getLevelDescription = (level: string): string => levelDescriptions[level] || "";
 
+const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
 const getAdjacentLevels = (level: string): string => {
-  const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const currentIndex = levels.indexOf(level);
   const descriptions = [];
 
@@ -62,14 +63,14 @@ const getAdjacentLevels = (level: string): string => {
   return descriptions.join("\n");
 };
 
-const initialPrompt = (language: string, level: string): string => `
+const generateSystem = (language: string, level: string): string => `
 Generate 3 questions for ${level} of the CEFR (A1–C2) in ${language}.
 
 ${level} is described as follows: ${getLevelDescription(level)}
 
 For each question, provide 3 sample answers:
 - basic: a basic answer showing understanding but limited ability
-- normal: an answer matching the expected level
+- average: an answer matching the expected level
 - advanced: an answer matching a higher level
 
 The purpose of the questions is to assess the student's ability to communicate in ${language} at ${level} level.
@@ -83,7 +84,7 @@ Return the result in a JSON format with the following structure:
       "question": "Question text",
       "answers": {
         "basic": "Basic sample answer",
-        "normal": "Normal sample answer",
+        "average": "An answer matching the expected level",
         "advanced": "Advanced (higher-level) sample answer"
       }
     },
@@ -95,90 +96,54 @@ Ensure that questions and answers match the expected grammar, vocabulary, and sk
 Ensure questions and answers are in ${language}.
 `;
 
-const system = (language: string, level: string): string => `
-You are evaluating a user's spoken or written ${language} proficiency using the CEFR scale (A1–C2).
+const generatePrompt = (questions: LanguageLevelQuestion[]): string => {
+  return "Previous questions and answers:\n\n" +
+  questions.map((q) => `
+### Question 
+${q.question}
 
-For each of the provided questions, you are given a set of:
-- LEVEL
-- question text
-- sample response for the expected level
-- the user's actual answer
+### User's answer: 
+${q.userAnswer}
+
+`).join('\n');
+};
+
+
+const evaluateSystem = (language: string, level: string): string => `
+You are evaluating a user's spoken or written ${language} proficiency using the CEFR scale (A1–C2). 
+
+For each of the provided questions, you are given:
+- Question text
+- User's actual answer
+- Level of the question
+- Sample responses for the expected level
 
 The level descriptions are as follows:
 ${getAdjacentLevels(level)}
 
-Your tasks are:
-1. For each question:
-   - Compare the user's answer with the sample response.
-   - Assess the quality of the user's answer using one of these labels: "fail", "basic", "normal", "good", or "advanced".
-   - If the user did not answer, mark it as "fail".
-   - If the answer is not relevant to the question, mark it as "fail".
-
-2. Based on the evaluations of the last 3 questions:
-   - If any answer is "fail" or more than 2 are "basic", suggest a lower level.
-   - If answers are "normal", "good" or "advanced" suggest a higher level.
-   - In case of doubt, keep the same level.
-   - Do not keep the same level more than 2 times (6 questions) in a row, always probe for a higher level.
-   - Let's call this NEW_LEVEL.
-
-3. Create 3 new questions for the user based on the user's previous answers (topics they mentioned), 
-   to make the conversation continuous and natural.
-   - Each new question must have 3 sample answers:
-     - basic: a simple answer showing understanding but limited expression
-     - normal: a correct answer expected at NEW_LEVEL
-     - advanced: a richer, more complex answer showing higher mastery
-
-4. Ensure the new questions match the complexity, grammar, and vocabulary expected at NEW_LEVEL and are in ${language}.
+Your tasks are to evaluation of each answer:
+ - Compare the user's answer with the sample responses.
+ - Assess the quality of the user's answer using only one of these labels: "fail", "basic", "average", "good", or "advanced".
+ - If the user did not answer or if the answer is irrelevant, mark it as "fail".
+ - Provide a short reason explaining the rating choice.
 
 Return the result in the following strict JSON format:
 
 {
-  "evaluation": [
+  "evaluations": [
     {
       "level": "Question level",
       "question": "Question text",
       "user_answer": "User's answer",
-      "quality": "fail | basic | normal | good | advanced"
+      "quality": "fail | basic | average | good | advanced"
+      "reason": "Why was the answer rated this way",
     },
     ...
-  ],
-  "level": "NEW_LEVEL",
-  "questions": [
-    {
-      "level": "NEW_LEVEL",
-      "question": "New Question 1 text",
-      "answers": {
-        "basic": "Basic sample answer",
-        "normal": "Normal sample answer",
-        "advanced": "Advanced sample answer"
-      }
-    },
-    {
-      "level": "NEW_LEVEL",
-      "question": "New Question 2 text",
-      "answers": {
-        "basic": "Basic sample answer",
-        "normal": "Normal sample answer",
-        "advanced": "Advanced sample answer"
-      }
-    },
-    {
-      "level": "NEW_LEVEL",
-      "question": "New Question 3 text",
-      "answers": {
-        "basic": "Basic sample answer",
-        "normal": "Normal sample answer",
-        "advanced": "Advanced sample answer"
-      }
-    }
   ]
 }
-
-Ensure that questions and answers match the expected grammar, vocabulary, and skills for the specified NEW_LEVEL level.
-Ensure questions and answers are in ${language}.
 `;
 
-const prompt = (questions: LanguageLevelQuestion[]): string => {
+const evaluatePrompt = (questions: LanguageLevelQuestion[]): string => {
   return "Previous questions and answers:\n\n" +
   questions.map((q) => `
 ### Question 
@@ -192,11 +157,11 @@ ${q.level}
 
 ### Sample answers:
 Basic: ${q.answers.basic}
-Normal: ${q.answers.normal}
+Average: ${q.answers.average}
 Advanced: ${q.answers.advanced}
 
 
 `).join('\n');
 };
 
-export default { initialPrompt, system, prompt };
+export default { generateSystem, generatePrompt, evaluateSystem, evaluatePrompt };

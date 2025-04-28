@@ -36,7 +36,7 @@
 
         <div v-else-if="step === 6">
           <div class="text-subtitle1">Final Evaluation</div>
-          <div>Final Level: {{ result.final_level }}</div>
+          <div>Estimated Level: {{ result.final_level }}</div>
           <pre>{{ result.details }}</pre>
         </div>
       </q-card-section>
@@ -83,8 +83,6 @@ const generateQuestions = async () => {
   previousQuestions.value.push(...response.questions);
   currentQuestions.value = response.questions;
   userAnswers.value = ['', '', ''];
-
-  evaluations.value = response.evaluations || [];
 }
 
 const submitAnswers = async () => {
@@ -93,34 +91,78 @@ const submitAnswers = async () => {
   previousQuestions.value[questionIdx + 1].userAnswer = userAnswers.value[1];
   previousQuestions.value[questionIdx + 2].userAnswer = userAnswers.value[2];
 
+  loading.show();
+  const response = await openAI.queryLanguageEval(
+    currentLevel.value,
+    previousQuestions.value,
+    language.value,
+  );
+  loading.hide();
+  console.log('Evaluation Response:', response);
+  evaluations.value = response.evaluations || [];
+
+  const lastEvaluations = evaluations.value.slice(-3);
+  const failCount = lastEvaluations.filter(e => e.quality === 'fail').length; 
+  const basicCount = lastEvaluations.filter(e => e.quality === 'basic').length; 
+  const positiveCount = lastEvaluations.filter(e => 
+    ['average', 'good', 'advanced'].includes(e.quality)
+  ).length;
+
+  console.log('Evaluations:', failCount, basicCount, positiveCount);
+  if (failCount > 0 || basicCount > 2) {
+    currentLevel.value = progression[Math.max(0, progression.indexOf(currentLevel.value) - 1)];
+  } else if (positiveCount >= 2) {
+    currentLevel.value = progression[Math.min(5, progression.indexOf(currentLevel.value) + 1)];
+  }
+
   if (step.value < 5) {
     step.value++;
     await generateQuestions();
   } else {
-    await generateQuestions();
     finalEvaluation();
   }
 }
 
 function finalEvaluation() {
-  const scores = { fail: 0, basic: 1, normal: 2, good: 3, advanced: 4 };
-  const levelStats = {};
+  const scores = { fail: 0, basic: 1, average: 2, good: 3, advanced: 4 };
+  const levelStats = {
+    A1: { totalScore: 0, count: 0 },
+    A2: { totalScore: 0, count: 0 },
+    B1: { totalScore: 0, count: 0 },
+    B2: { totalScore: 0, count: 0 },
+    C1: { totalScore: 0, count: 0 },
+    C2: { totalScore: 0, count: 0 }
+  };
 
+  // accelertor:
+  // any level 'average' of more at a level is also counted for in the lower levels
+  // any fail level is counted for in the upper levels
   evaluations.value.forEach(e => {
-    if (!levelStats[e.level]) {
-      levelStats[e.level] = { totalScore: 0, count: 0 };
-    }
     levelStats[e.level].totalScore += scores[e.quality] || 0;
     levelStats[e.level].count += 1;
+    if (e.quality === 'fail') {
+      for (let i = progression.indexOf(e.level) + 1; i < progression.length; i++) {
+        levelStats[progression[i]].totalScore += scores[e.quality];
+        levelStats[progression[i]].count += 1;
+      }
+    }
+    if (e.quality === 'average' || e.quality === 'good' || e.quality === 'advanced') {
+      for (let i = progression.indexOf(e.level) - 1; i >= 0; i--) {
+        levelStats[progression[i]].totalScore += scores[e.quality];
+        levelStats[progression[i]].count += 1;
+      }
+    }
   });
+
 
   let bestLevel = null;
 
   for (const level in levelStats) {
     const stat = levelStats[level];
-    const avg = stat.totalScore / stat.count;
+    const avg = stat.count ? stat.totalScore / stat.count : 0;
 
-    if (avg > 2) {
+    // all questions must be at least average
+    if (avg >= 2) {
       bestLevel = level;
     }
   }

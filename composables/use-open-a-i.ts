@@ -270,19 +270,25 @@ export default function () {
     language: string = "English",
   ): Promise<QuizResponse[]> => {
 
-    if( previousQuestions.length === 0) {
-      const request: OpenAIRequest = {
-        prompt: languagePrompt.initialPrompt(language, level || "A1"),
-        token: 1000,
-        format: "json",
-      };
-      const response = await query(request);
-      return response;
-    } 
+    const request: OpenAIRequest = {
+      system: languagePrompt.generateSystem(language, level || "A1"),
+      prompt: languagePrompt.generatePrompt(previousQuestions),
+      token: 1000,
+      format: "json",
+    };
+    const response = await query(request);
+    return response;
+  };
+
+  const queryLanguageEval = async (
+    level: string,
+    previousQuestions: LanguageLevelQuestion[],
+    language: string = "English",
+  ): Promise<QuizResponse[]> => {
 
     const request: OpenAIRequest = {
-      system: languagePrompt.system(language, level || "A1"),
-      prompt: languagePrompt.prompt(previousQuestions),
+      system: languagePrompt.evaluateSystem(language, level || "A1"),
+      prompt: languagePrompt.evaluatePrompt(previousQuestions),
       token: 2000,
       format: "json",
     };
@@ -290,5 +296,5 @@ export default function () {
     return response;
   };
 
-  return { query, querySubject, queryCompetency, queryConcept, queryQuiz, queryLanguageQuiz };
+  return { query, querySubject, queryCompetency, queryConcept, queryQuiz, queryLanguageQuiz, queryLanguageEval };
 }
