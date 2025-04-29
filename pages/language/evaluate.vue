@@ -12,6 +12,12 @@
 
         <div v-if="step === 0">
           <q-select
+            v-model="testScenario"
+            :options="['Spoken', 'Written', 'Both']"
+            label="Select Test Scenario"
+            filled
+          />
+          <q-select
             v-model="initialLevel"
             :options="progression"
             label="Select Initial Level"
@@ -22,13 +28,20 @@
             :options="['English', 'Spanish', 'French', 'German', 'Italian']"
             label="Select Language"
             filled
-            />
+          />
           <q-btn class="q-mt-md" label="Start Test" color="primary" @click="startTest" />
         </div>
 
         <div v-else-if="step > 0 && step <= 5">
-          <q-input v-model="userAnswers[currentQuestionIndex]" :label="currentQuestions[currentQuestionIndex]?.question" filled type="textarea" />
-          <q-btn class="q-mt-md" label="Next Question" color="primary" @click="nextQuestion" />
+          <q-input 
+            v-if="testScenario !== 'Spoken'" 
+            v-model="userAnswers[currentQuestionIndex]" 
+            :label="currentQuestions[currentQuestionIndex]?.question" 
+            filled 
+            type="textarea" 
+          />
+          <q-btn v-if="testScenario === 'Spoken' || testScenario === 'Both'" class="q-mt-md q-mr-sm" label="Repeat" color="secondary" @click="repeatAudio" />
+          <q-btn class="q-mt-md" label="Next Question" color="primary" @click="nextQuestion" />          
         </div>
 
         <div v-else-if="step === 6">
@@ -42,6 +55,8 @@
 </template>
 
 <script setup>
+import useGraphqlQuery from "@/composables/use-graphql-query";
+
 const openAI = useOpenAI();
 const { loading } = useQuasar();
 
@@ -57,11 +72,56 @@ const previousQuestions = ref([]);
 const language = ref('English');
 const evaluations = ref([]);
 const currentQuestionIndex = ref(0);
+const testScenario = ref('Spoken');
+
+const languageToLocale = {
+  English: "en",
+  Spanish: "es",
+  French: "fr",
+  German: "de",
+  Italian: "it",
+};
+
+let lastAudio = null
+
+const playAudio = async (text, locale, repeat) => {
+  try {
+    if (!repeat || !lastAudio) {
+      const graphqlQuery = useGraphqlQuery("");
+      const base64Audio = await graphqlQuery.query("convertTextToSpeech", { text, locale });
+      if (base64Audio) {
+        lastAudio = new Blob([Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))], { type: "audio/mp3" });
+      } else {
+        console.error("Error generating audio: No audio data returned");
+        return;
+      }
+    }
+
+    const audioUrl = URL.createObjectURL(lastAudio);
+    const audio = new Audio(audioUrl);
+    audio.play();
+  } catch (error) {
+    console.error("Error generating audio:", error);
+  }
+};
+
+const repeatAudio = async () => {
+  const questionText = currentQuestions.value[currentQuestionIndex.value]?.question || "No question available";
+  const locale = languageToLocale[language.value] || "en";
+  await playAudio(questionText, locale, true);
+};
 
 const startTest = async () => {
   step.value = 1;
   currentLevel.value = initialLevel.value;
-  generateQuestions();
+  console.log('Selected Test Scenario:', testScenario.value); // Debugging log
+  await generateQuestions();
+
+  if (testScenario.value === "Spoken" || testScenario.value === "Both") {
+    const questionText = currentQuestions.value[currentQuestionIndex.value]?.question || "No question available";
+    const locale = languageToLocale[language.value] || "en"; // Convert language to locale
+    await playAudio(questionText, locale);
+  }
 }
 
 const generateQuestions = async () => {
@@ -87,11 +147,18 @@ const nextQuestion = async () => {
   const questionIdx = previousQuestions.value.length - currentQuestions.value.length + currentQuestionIndex.value;
   previousQuestions.value[questionIdx].userAnswer = userAnswers.value[currentQuestionIndex.value];
 
+  let enableAudio = testScenario.value === "Spoken" || testScenario.value === "Both";
   if (currentQuestionIndex.value < currentQuestions.value.length - 1) {
     currentQuestionIndex.value++;
-  } else {
+  } else {    
+    enableAudio = await submitAnswers() && enableAudio;
     currentQuestionIndex.value = 0;
-    await submitAnswers();
+  }
+
+  if (enableAudio) {
+    const questionText = currentQuestions.value[currentQuestionIndex.value]?.question || "No question available";
+    const locale = languageToLocale[language.value] || "en"; // Convert language to locale
+    await playAudio(questionText, locale);
   }
 };
 
@@ -128,8 +195,10 @@ const submitAnswers = async () => {
   if (step.value < 5) {
     step.value++;
     await generateQuestions();
+    return true;
   } else {
     finalEvaluation();
+    return false;
   }
 }
 

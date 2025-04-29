@@ -1,6 +1,10 @@
 import type { ClientSchema } from "@aws-amplify/backend";
-import { a, defineData } from "@aws-amplify/backend";
+import { a, defineData, defineFunction } from "@aws-amplify/backend";
 import { deepgramAPIKeyHandler } from "../functions/deepgram-api-key/resource";
+
+export const convertTextToSpeech = defineFunction({
+  entry: "./convertTextToSpeech.ts",
+});
 
 const schema = a.schema({
   OpenAIUsage: a.customType({
@@ -204,7 +208,7 @@ const schema = a.schema({
       allow.authenticated().to(["read"]),
     ]),
 
-    DeepGramAPIKey: a
+    deepGramAPIKey: a
     .query()
     .arguments({ })
     // return type of the query
@@ -212,6 +216,16 @@ const schema = a.schema({
     // only allow signed-in users to call this API
     .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function(deepgramAPIKeyHandler)),
+
+    convertTextToSpeech: a
+    .query()
+    .arguments({
+      text: a.string().required(),
+      locale: a.string(),
+    })
+    .returns(a.string())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(convertTextToSpeech)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

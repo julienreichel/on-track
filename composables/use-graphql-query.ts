@@ -31,6 +31,7 @@ export default function (
     selectionSet,
   };
   const provider = useNuxtApp().$Amplify.GraphQL.client.models[model];
+  const queries = useNuxtApp().$Amplify.GraphQL.client.queries;
 
   /**
    * Call the GraphQL API
@@ -151,6 +152,26 @@ export default function (
     };
   };
 
+  /**
+   * Perform a generic GraphQL query
+   *
+   * @param {string} queryName - The name of the query to execute.
+   * @param {GraphQLModel | GraphQLParams} input - The input parameters for the query.
+   * @returns {Promise<GraphQLModel>} - A promise that resolves to the query result.
+   */
+  const query = async (
+    queryName: string,
+    input: GraphQLModel | GraphQLParams,
+    options: GraphQLOptions = {}
+  ): Promise<GraphQLModel> => {
+    options = {
+      ...defaultOptions,
+      ...options,
+    };
+    const { data, } = await queries[queryName](input, options);
+    return data;
+  };
+
   return {
     call,
     create,
@@ -159,6 +180,7 @@ export default function (
     delete: del,
     list,
     pick,
-    debounce
+    debounce,
+    query, // Add the new query function to the returned object
   };
 }

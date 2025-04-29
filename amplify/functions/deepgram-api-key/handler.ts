@@ -2,7 +2,7 @@ import type { Schema } from '../../data/resource'
 import { env } from "$amplify/env/deepgram-api-key";
 import { createClient } from "@deepgram/sdk";
 
-export const handler: Schema["DeepGramAPIKey"]["functionHandler"] = async () => {
+export const handler: Schema["deepGramAPIKey"]["functionHandler"] = async () => {
   
   const client = createClient(env.DEEPGRAM_API_KEY);
 
@@ -19,7 +19,7 @@ export const handler: Schema["DeepGramAPIKey"]["functionHandler"] = async () => 
   const getTempApiKey = async (projectId: string) => {
     const { result, error } = await client.manage.createProjectKey(projectId, {
       comment: "short lived",
-      scopes: ["usage:write"],
+      scopes: ["usage:read", "usage:write"],
       time_to_live_in_seconds: 60,
     });
   
@@ -32,6 +32,7 @@ export const handler: Schema["DeepGramAPIKey"]["functionHandler"] = async () => 
 
   const projectId = await getProjectId();
   const response = await getTempApiKey(projectId);
+  console.log("response", response);
 
   return response.key;
 };

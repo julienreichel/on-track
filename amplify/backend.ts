@@ -1,6 +1,6 @@
 import { defineBackend } from "@aws-amplify/backend";
 import { auth } from './auth/resource';
-import { data } from './data/resource';
+import { data, convertTextToSpeech} from './data/resource';
 
 import { Stack } from "aws-cdk-lib";
 import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
@@ -14,8 +14,16 @@ import { dynamoDBOpenAITrigger } from "./functions/dynamodb-open-ai-trigger/reso
 const backend = defineBackend({
   auth,
   data,
-  dynamoDBOpenAITrigger
+  dynamoDBOpenAITrigger,
+  convertTextToSpeech,
 });
+
+backend.convertTextToSpeech.resources.lambda.addToRolePolicy(
+  new PolicyStatement({
+    actions: ["polly:StartSpeechSynthesisTask", "polly:SynthesizeSpeech"],
+    resources: ["*"],
+  })
+ );
 
 const OpenAIRequestTable = backend.data.resources.tables["OpenAIRequest"];
 const policy = new Policy(
