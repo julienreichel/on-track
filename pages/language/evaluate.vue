@@ -8,7 +8,7 @@
       <q-separator />
 
       <q-card-section>
-        <q-linear-progress :value="step / 6" color="primary" class="q-mb-md" />
+        <q-linear-progress :value="(step + currentQuestionIndex / currentQuestions.length) / 6" color="primary" class="q-mb-md" />
 
         <div v-if="step === 0">
           <q-select
@@ -27,11 +27,8 @@
         </div>
 
         <div v-else-if="step > 0 && step <= 5">
-          <div class="text-subtitle1">Step {{ step }}: Answer the Questions</div>
-          <div v-for="(question, index) in currentQuestions" :key="index" class="q-mt-md">
-            <q-input v-model="userAnswers[index]" :label="question.question" filled type="textarea"/>
-          </div>
-          <q-btn class="q-mt-md" label="Submit Answers" color="primary" @click="submitAnswers" />
+          <q-input v-model="userAnswers[currentQuestionIndex]" :label="currentQuestions[currentQuestionIndex]?.question" filled type="textarea" />
+          <q-btn class="q-mt-md" label="Next Question" color="primary" @click="nextQuestion" />
         </div>
 
         <div v-else-if="step === 6">
@@ -53,12 +50,13 @@ const initialLevel = ref('A2');
 const currentLevel = ref('A2');
 const step = ref(0);
 const userAnswers = ref(['', '', '']);
-const currentQuestions = ref([]);
+const currentQuestions = ref([ { question: 'Generating...'}]);
 const result = ref(null);
 
 const previousQuestions = ref([]);
 const language = ref('English');
 const evaluations = ref([]);
+const currentQuestionIndex = ref(0);
 
 const startTest = async () => {
   step.value = 1;
@@ -84,6 +82,18 @@ const generateQuestions = async () => {
   currentQuestions.value = response.questions;
   userAnswers.value = ['', '', ''];
 }
+
+const nextQuestion = async () => {
+  const questionIdx = previousQuestions.value.length - currentQuestions.value.length + currentQuestionIndex.value;
+  previousQuestions.value[questionIdx].userAnswer = userAnswers.value[currentQuestionIndex.value];
+
+  if (currentQuestionIndex.value < currentQuestions.value.length - 1) {
+    currentQuestionIndex.value++;
+  } else {
+    currentQuestionIndex.value = 0;
+    await submitAnswers();
+  }
+};
 
 const submitAnswers = async () => {
   const questionIdx = previousQuestions.value.length - 3;
