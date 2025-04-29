@@ -40,7 +40,21 @@
             filled 
             type="textarea" 
           />
-          <q-btn v-if="testScenario === 'Spoken' || testScenario === 'Both'" class="q-mt-md q-mr-sm" label="Repeat" color="secondary" @click="repeatAudio" />
+          <q-btn 
+            v-if="testScenario === 'Spoken' || testScenario === 'Both'" 
+            class="q-mt-md q-mr-sm" 
+            label="Repeat" 
+            color="secondary" 
+            @click="repeatAudio" 
+          />
+          <q-btn 
+            v-if="testScenario === 'Spoken' || testScenario === 'Both'" 
+            class="q-mt-md q-mr-sm" 
+            :label="isRecording ? 'Stop Record' : (isPreparing ? 'Preparing...' : 'Start Record')" 
+            :disable="isPreparing" 
+            color="secondary" 
+            @click="toggleMicrophone" 
+          />
           <q-btn class="q-mt-md" label="Next Question" color="primary" @click="nextQuestion" />          
         </div>
 
@@ -55,10 +69,11 @@
 </template>
 
 <script setup>
-import useGraphqlQuery from "@/composables/use-graphql-query";
+import { createClient } from "@deepgram/sdk";
 
 const openAI = useOpenAI();
 const { loading } = useQuasar();
+
 
 const progression = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const initialLevel = ref('A2');
@@ -72,7 +87,21 @@ const previousQuestions = ref([]);
 const language = ref('English');
 const evaluations = ref([]);
 const currentQuestionIndex = ref(0);
-const testScenario = ref('Spoken');
+const testScenario = ref('Both');
+const isRecording = ref(false);
+
+const isPreparingCount = ref(0);
+const isPreparing = computed(() => isPreparingCount.value > 0);
+
+const incrementPreparing = () => {
+  isPreparingCount.value++;
+};
+
+const decrementPreparing = () => {
+  if (isPreparingCount.value > 0) {
+    isPreparingCount.value--;
+  }
+};
 
 const languageToLocale = {
   English: "en",
@@ -82,7 +111,9 @@ const languageToLocale = {
   Italian: "it",
 };
 
-let lastAudio = null
+let lastAudio = null;
+let microphone = null;
+let socket = null;
 
 const playAudio = async (text, locale, repeat) => {
   try {
@@ -99,6 +130,7 @@ const playAudio = async (text, locale, repeat) => {
 
     const audioUrl = URL.createObjectURL(lastAudio);
     const audio = new Audio(audioUrl);
+
     audio.play();
   } catch (error) {
     console.error("Error generating audio:", error);
@@ -111,6 +143,80 @@ const repeatAudio = async () => {
   await playAudio(questionText, locale, true);
 };
 
+const toggleMicrophone = async () => {
+  if (!isRecording.value) {
+    incrementPreparing();
+    if (!socket) {
+      await initializeDeepgramSocket();
+    }
+    microphone = await getMicrophone();
+    await openMicrophone(microphone);
+    isRecording.value = true;
+    decrementPreparing();
+  } else {
+    incrementPreparing();
+    await closeMicrophone(microphone);
+    microphone = null;
+    isRecording.value = false;
+    decrementPreparing();
+  }
+};
+
+const initializeDeepgramSocket = async () => {
+  if (socket) {
+    console.log("Socket already initialized");
+    return;
+  }
+  incrementPreparing();
+
+  const locale = languageToLocale[language.value] || "en"; // Convert language to locale
+  const graphqlQuery = useGraphqlQuery("");
+  const apiKey = await graphqlQuery.query("deepGramAPIKey");
+  const deepgramClient = createClient(apiKey);
+  socket = deepgramClient.listen.live({ model: "nova-2", language: locale, smart_format: true });
+
+  socket.on("open", () => {
+    console.log("Connected to Deepgram WebSocket");
+    decrementPreparing();
+  });
+  socket.on("Results", (data) => {
+    const transcript = data.channel.alternatives[0]?.transcript || "";
+    if (transcript) {
+      userAnswers.value[currentQuestionIndex.value] += transcript.trim() + " ";
+    }
+  });
+  socket.on("error", (e) => {
+    console.error("Deepgram Error:", e);
+    decrementPreparing();
+  });
+  socket.on("close", async () => {
+    console.log("Deepgram WebSocket closed");
+    socket = null;
+    decrementPreparing();
+
+    // Stop recording automatically if the WebSocket is closed
+    if (isRecording.value) {
+      await closeMicrophone(microphone);
+      microphone = null;
+      isRecording.value = false;
+    }
+  });
+};
+
+const getMicrophone = async () => {
+  const userMedia = await navigator.mediaDevices.getUserMedia({ audio: true });
+  return new MediaRecorder(userMedia);
+};
+
+const openMicrophone = async (microphone) => {
+  microphone.start(500);
+  microphone.ondataavailable = (e) => socket?.send(e.data);
+};
+
+const closeMicrophone = async (microphone) => {
+  microphone.stop();
+};
+
 const startTest = async () => {
   step.value = 1;
   currentLevel.value = initialLevel.value;
@@ -121,6 +227,7 @@ const startTest = async () => {
     const questionText = currentQuestions.value[currentQuestionIndex.value]?.question || "No question available";
     const locale = languageToLocale[language.value] || "en"; // Convert language to locale
     await playAudio(questionText, locale);
+    await initializeDeepgramSocket(); // Open socket when the question is shown
   }
 }
 
@@ -144,15 +251,34 @@ const generateQuestions = async () => {
 }
 
 const nextQuestion = async () => {
+  if (microphone) {
+    await closeMicrophone(microphone);
+    microphone = null;
+    isRecording.value = false;
+  }
+  if (socket) {
+    incrementPreparing();
+    socket.requestClose(); // Close the socket when moving to the next question
+    socket = null;
+  }
+
   const questionIdx = previousQuestions.value.length - currentQuestions.value.length + currentQuestionIndex.value;
   previousQuestions.value[questionIdx].userAnswer = userAnswers.value[currentQuestionIndex.value];
 
   let enableAudio = testScenario.value === "Spoken" || testScenario.value === "Both";
   if (currentQuestionIndex.value < currentQuestions.value.length - 1) {
     currentQuestionIndex.value++;
-  } else {    
-    enableAudio = await submitAnswers() && enableAudio;
+  } else {        
+    await submitAnswers();
     currentQuestionIndex.value = 0;
+
+    if (step.value < 5) {
+      step.value++;
+      await generateQuestions();
+    } else {
+      finalEvaluation();
+      enableAudio = false;
+    }
   }
 
   if (enableAudio) {
@@ -190,15 +316,6 @@ const submitAnswers = async () => {
     currentLevel.value = progression[Math.max(0, progression.indexOf(currentLevel.value) - 1)];
   } else if (positiveCount >= 2) {
     currentLevel.value = progression[Math.min(5, progression.indexOf(currentLevel.value) + 1)];
-  }
-
-  if (step.value < 5) {
-    step.value++;
-    await generateQuestions();
-    return true;
-  } else {
-    finalEvaluation();
-    return false;
   }
 }
 
