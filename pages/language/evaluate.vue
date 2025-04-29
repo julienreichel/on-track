@@ -2,37 +2,45 @@
   <q-page class="q-pa-md">
     <q-card>
       <q-card-section>
-        <div class="text-h6">Language Level Full Evaluation</div>
+        <div class="text-h6">Language Level Evaluation</div>
       </q-card-section>
 
       <q-separator />
 
       <q-card-section>
-        <q-linear-progress :value="(step + currentQuestionIndex / currentQuestions.length) / 6" color="primary" class="q-mb-md" />
+        <q-linear-progress :value="(step + currentQuestionIndex / currentQuestions.length) / (totalSteps + 1)" color="primary" class="q-mb-md" />
 
         <div v-if="step === 0">
           <q-select
             v-model="testScenario"
             :options="['Spoken', 'Written', 'Both']"
-            label="Select Test Scenario"
+            label="Test Scenario"
             filled
           />
           <q-select
             v-model="initialLevel"
             :options="progression"
-            label="Select Initial Level"
+            label="Initial Level"
             filled
           />
           <q-select
             v-model="language"
             :options="['English', 'Spanish', 'French', 'German', 'Italian']"
-            label="Select Language"
+            label="Language"
+            filled
+          />
+          <q-select
+            v-model="selectedStepOption"
+            :options="stepOptions"
+            label="Test Length"
+            emit-value
+            map-options
             filled
           />
           <q-btn class="q-mt-md" label="Start Test" color="primary" @click="startTest" />
         </div>
 
-        <div v-else-if="step > 0 && step <= 5">
+        <div v-else-if="step > 0 && step <= totalSteps">
           <q-input 
             v-if="testScenario !== 'Spoken'" 
             v-model="userAnswers[currentQuestionIndex]" 
@@ -58,10 +66,33 @@
           <q-btn class="q-mt-md" label="Next Question" color="primary" @click="nextQuestion" />          
         </div>
 
-        <div v-else-if="step === 6">
-          <div class="text-subtitle1">Final Evaluation</div>
+        <div v-else-if="step === (totalSteps + 1)">
           <div>Estimated Level: {{ result.final_level }}</div>
-          <pre>{{ result.details }}</pre>
+          <q-list>
+            <q-item v-for="(evaluation, index) in evaluations" :key="index" v-ripple clickable>
+              <q-item-section>
+                <q-expansion-item :label="`${evaluation.question}`" :caption="`${evaluation.level} -> ${evaluation.quality}`" group="answers">
+                  <div class="q-mt-sm">
+                    <div><strong>Reason:</strong></div>
+                    <div>{{ evaluation.reason }}</div>
+                  </div>
+                  <div class="q-mt-sm">
+                    <div><strong>Your Answer:</strong></div>
+                    <div>{{ evaluation.user_answer }}</div>
+                  </div>
+                  <div class="q-mt-sm">
+                    <div><strong>Sample Answer:</strong></div>
+                    <div>{{ evaluation.answers.average }}</div>
+                  </div>
+                  <div class="q-mt-sm">
+                    <div><strong>Advanced Answer:</strong></div>
+                    <div>{{ evaluation.answers.advanced }}</div>
+                  </div>
+                  
+                </q-expansion-item>
+              </q-item-section>
+            </q-item>
+          </q-list>
         </div>
       </q-card-section>
     </q-card>
@@ -73,7 +104,6 @@ import { createClient } from "@deepgram/sdk";
 
 const openAI = useOpenAI();
 const { loading } = useQuasar();
-
 
 const progression = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const initialLevel = ref('A2');
@@ -89,6 +119,14 @@ const evaluations = ref([]);
 const currentQuestionIndex = ref(0);
 const testScenario = ref('Both');
 const isRecording = ref(false);
+
+const stepOptions = [
+  { label: 'Short', value: 3 },
+  { label: 'Regular', value: 5 },
+  { label: 'Long', value: 7 }
+];
+const selectedStepOption = ref(5); // Default to Regular
+const totalSteps = computed(() => selectedStepOption.value);
 
 const isPreparingCount = ref(0);
 const isPreparing = computed(() => isPreparingCount.value > 0);
@@ -221,6 +259,7 @@ const startTest = async () => {
   step.value = 1;
   currentLevel.value = initialLevel.value;
   console.log('Selected Test Scenario:', testScenario.value); // Debugging log
+  console.log('Selected Test Length:', totalSteps.value); // Debugging log
   await generateQuestions();
 
   if (testScenario.value === "Spoken" || testScenario.value === "Both") {
@@ -229,7 +268,7 @@ const startTest = async () => {
     await playAudio(questionText, locale);
     await initializeDeepgramSocket(); // Open socket when the question is shown
   }
-}
+};
 
 const generateQuestions = async () => {
   loading.show();
@@ -245,10 +284,34 @@ const generateQuestions = async () => {
   }
   console.log('Response:', response);
   currentLevel.value = response.level;
+
+  while (response.questions.length < 3) {
+    console.error('Error: Less than 3 questions returned');
+    loading.show();
+    const response2 = await openAI.queryLanguageQuiz(
+      currentLevel.value,
+      previousQuestions.value,
+      language.value,
+    );
+    loading.hide();
+    if (!response2) {
+      console.error('Error fetching questions');
+      return;
+    }
+    response.questions.push(...response2.questions);
+    return;
+  }
+
+  // AI sometimes returns more than 3 questions
+  if (response.questions.length > 3) {
+    response.questions = response.questions.slice(0, 3);
+    return;
+  }
+  
   previousQuestions.value.push(...response.questions);
   currentQuestions.value = response.questions;
   userAnswers.value = ['', '', ''];
-}
+};
 
 const nextQuestion = async () => {
   if (microphone) {
@@ -272,7 +335,7 @@ const nextQuestion = async () => {
     await submitAnswers();
     currentQuestionIndex.value = 0;
 
-    if (step.value < 5) {
+    if (step.value < totalSteps.value) {
       step.value++;
       await generateQuestions();
     } else {
@@ -319,7 +382,7 @@ const submitAnswers = async () => {
   } else if (positiveCount >= 2) {
     currentLevel.value = progression[Math.min(5, progression.indexOf(currentLevel.value) + 1)];
   }
-}
+};
 
 function finalEvaluation() {
   const scores = { fail: 0, basic: 1, average: 2, good: 3, advanced: 4 };
@@ -334,16 +397,9 @@ function finalEvaluation() {
 
   // accelertor:
   // any level 'average' of more at a level is also counted for in the lower levels
-  // any fail level is counted for in the upper levels
   evaluations.value.forEach(e => {
     levelStats[e.level].totalScore += scores[e.quality] || 0;
     levelStats[e.level].count += 1;
-    if (e.quality === 'fail') {
-      for (let i = progression.indexOf(e.level) + 1; i < progression.length; i++) {
-        levelStats[progression[i]].totalScore += scores[e.quality];
-        levelStats[progression[i]].count += 1;
-      }
-    }
     if (e.quality === 'average' || e.quality === 'good' || e.quality === 'advanced') {
       for (let i = progression.indexOf(e.level) - 1; i >= 0; i--) {
         levelStats[progression[i]].totalScore += scores[e.quality];
@@ -351,7 +407,6 @@ function finalEvaluation() {
       }
     }
   });
-
 
   let bestLevel = null;
 
@@ -374,7 +429,7 @@ function finalEvaluation() {
     }
   };
 
-  step.value = 6;
+  step.value = totalSteps.value + 1;
 }
 </script>
 
