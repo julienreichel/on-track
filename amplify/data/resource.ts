@@ -1,5 +1,6 @@
 import type { ClientSchema } from "@aws-amplify/backend";
 import { a, defineData } from "@aws-amplify/backend";
+import { deepgramAPIKeyHandler } from "../functions/deepgram-api-key/resource";
 
 const schema = a.schema({
   OpenAIUsage: a.customType({
@@ -202,6 +203,15 @@ const schema = a.schema({
       allow.owner(),
       allow.authenticated().to(["read"]),
     ]),
+
+    DeepGramAPIKey: a
+    .query()
+    .arguments({ })
+    // return type of the query
+    .returns(a.string())
+    // only allow signed-in users to call this API
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(deepgramAPIKeyHandler)),
 });
 
 export type Schema = ClientSchema<typeof schema>;
