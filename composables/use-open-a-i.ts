@@ -273,7 +273,7 @@ export default function () {
     const request: OpenAIRequest = {
       system: languagePrompt.generateSystem(language, level || "A1"),
       prompt: languagePrompt.generatePrompt(previousQuestions),
-      token: 1000,
+      token: 2000,
       format: "json",
     };
     const response = await query(request);

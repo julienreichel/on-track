@@ -44,25 +44,6 @@ Vocabulary: Specialized and technical vocabulary (e.g., legal, scientific); subt
 
 const getLevelDescription = (level: string): string => levelDescriptions[level] || "";
 
-const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
-
-const getAdjacentLevels = (level: string): string => {
-  const currentIndex = levels.indexOf(level);
-  const descriptions = [];
-
-  if (currentIndex > 0) {
-    descriptions.push(`### lower: ${levels[currentIndex - 1]}${levelDescriptions[levels[currentIndex - 1]]}`);
-  }
-
-  descriptions.push(`### ${level}${levelDescriptions[level]}`);
-
-  if (currentIndex < levels.length - 1) {
-    descriptions.push(`### higher: ${levels[currentIndex + 1]}${levelDescriptions[levels[currentIndex + 1]]}`);
-  }
-
-  return descriptions.join("\n");
-};
-
 const generateSystem = (language: string, level: string): string => `
 Generate 3 questions for ${level} of the CEFR (A1–C2) in ${language}.
 
@@ -94,6 +75,8 @@ Return the result in a JSON format with the following structure:
 
 Ensure that questions and answers match the expected grammar, vocabulary, and skills for the specified ${level} level.
 Ensure questions and answers are in ${language}.
+
+Base the new question on the previous questions and answers provided to create a cohesive set of questions and avoid repetition.
 `;
 
 const generatePrompt = (questions: LanguageLevelQuestion[]): string => {
@@ -102,7 +85,7 @@ const generatePrompt = (questions: LanguageLevelQuestion[]): string => {
 ### Question 
 ${q.question}
 
-### User's answer: 
+### Answer: 
 ${q.userAnswer}
 
 `).join('\n');
@@ -118,11 +101,11 @@ For each of the provided questions, you are given:
 - Level of the question
 - Sample responses for the expected level
 
-The level descriptions are as follows:
-${getAdjacentLevels(level)}
+${level} is described as follows: ${getLevelDescription(level)}
 
 Your tasks are to evaluation of each answer:
  - Compare the user's answer with the sample responses.
+ - Generate, using the user response as a base, what would be the expected answer for level "average" and "advanced".
  - Assess the quality of the user's answer using only one of these labels: "fail", "basic", "average", "good", or "advanced".
  - If the user did not answer or if the answer is irrelevant, mark it as "fail".
  - Provide a short reason explaining the rating choice.
@@ -135,6 +118,10 @@ Return the result in the following strict JSON format:
       "level": "Question level",
       "question": "Question text",
       "user_answer": "User's answer",
+      "answers": {
+        "average": "An answer matching the expected level",
+        "advanced": "Advanced (higher-level) sample answer"
+      }
       "quality": "fail | basic | average | good | advanced"
       "reason": "Why was the answer rated this way",
     },

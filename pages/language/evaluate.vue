@@ -297,12 +297,14 @@ const submitAnswers = async () => {
   loading.show();
   const response = await openAI.queryLanguageEval(
     currentLevel.value,
-    previousQuestions.value,
+    previousQuestions.value.slice(-3),
     language.value,
   );
   loading.hide();
   console.log('Evaluation Response:', response);
-  evaluations.value = response.evaluations || [];
+  if (response?.evaluations){
+    evaluations.value.push(...response.evaluations);
+  }
 
   const lastEvaluations = evaluations.value.slice(-3);
   const failCount = lastEvaluations.filter(e => e.quality === 'fail').length; 
