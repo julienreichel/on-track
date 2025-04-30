@@ -51,7 +51,8 @@
           <q-btn 
             v-if="testScenario === 'Spoken' || testScenario === 'Both'" 
             class="q-mt-md q-mr-sm" 
-            label="Repeat" 
+            :label="repeatButtonLabel"
+            :disable="isAudioPlaying" 
             color="secondary" 
             @click="repeatAudio" 
           />
@@ -120,6 +121,8 @@ const currentQuestionIndex = ref(0);
 const testScenario = ref('Both');
 const isRecording = ref(false);
 
+const repeatButtonLabel = ref('Play');
+
 const stepOptions = [
   { label: 'Short', value: 3 },
   { label: 'Regular', value: 5 },
@@ -153,6 +156,7 @@ let lastAudio = null;
 let microphone = null;
 let socket = null;
 
+const isAudioPlaying = ref(false); 
 const playAudio = async (text, locale, repeat) => {
   try {
     if (!repeat || !lastAudio) {
@@ -168,10 +172,16 @@ const playAudio = async (text, locale, repeat) => {
 
     const audioUrl = URL.createObjectURL(lastAudio);
     const audio = new Audio(audioUrl);
+    isAudioPlaying.value = true; // Set playing state to true
+    audio.onended = () => {
+      isAudioPlaying.value = false; // Reset playing state when audio ends
+    };
 
-    audio.play();
+    await audio.play();
+    repeatButtonLabel.value = "Repeat";
   } catch (error) {
     console.error("Error generating audio:", error);
+    isAudioPlaying.value = false;
   }
 };
 
@@ -324,6 +334,7 @@ const generateQuestions = async () => {
   
   previousQuestions.value.push(...response.questions);
   currentQuestions.value = response.questions;
+  console.log('Questions:', currentQuestions.value);
   userAnswers.value = ['', '', ''];
 };
 
@@ -338,6 +349,7 @@ const nextQuestion = async () => {
     socket.requestClose(); // Close the socket when moving to the next question
     socket = null;
   }
+  repeatButtonLabel.value = "Play";
 
   const questionIdx = previousQuestions.value.length - currentQuestions.value.length + currentQuestionIndex.value;
   previousQuestions.value[questionIdx].userAnswer = userAnswers.value[currentQuestionIndex.value];
