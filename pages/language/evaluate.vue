@@ -187,14 +187,16 @@ const toggleMicrophone = async () => {
     if (!socket) {
       await initializeDeepgramSocket();
     }
-    microphone = await getMicrophone();
+    if (!microphone) {
+      microphone = await getMicrophone();
+    }
     await openMicrophone(microphone);
     isRecording.value = true;
     decrementPreparing();
   } else {
     incrementPreparing();
     await closeMicrophone(microphone);
-    microphone = null;
+    releaseMicrophone();
     isRecording.value = false;
     decrementPreparing();
   }
@@ -235,15 +237,27 @@ const initializeDeepgramSocket = async () => {
     // Stop recording automatically if the WebSocket is closed
     if (isRecording.value) {
       await closeMicrophone(microphone);
-      microphone = null;
+      releaseMicrophone();
       isRecording.value = false;
     }
   });
 };
 
 const getMicrophone = async () => {
-  const userMedia = await navigator.mediaDevices.getUserMedia({ audio: true });
-  return new MediaRecorder(userMedia);
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return new MediaRecorder(stream);
+  } catch (error) {
+    console.error("Error accessing microphone:", error);
+    throw error;
+  }
+};
+
+const releaseMicrophone = async () => {
+  if (microphone) {
+    microphone.stream.getTracks().forEach(track => track.stop());
+    microphone = null;
+  }
 };
 
 const openMicrophone = async (microphone) => {
@@ -316,7 +330,7 @@ const generateQuestions = async () => {
 const nextQuestion = async () => {
   if (microphone) {
     await closeMicrophone(microphone);
-    microphone = null;
+    releaseMicrophone();
     isRecording.value = false;
   }
   if (socket) {
