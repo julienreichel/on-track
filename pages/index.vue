@@ -165,7 +165,7 @@
           <p v-else>Select a card bellow to start learning.</p>
         </notification-text>
         <action-card
-          v-if="!relatedConcepts.length"
+          v-if="!relatedConcepts.length && !relatedCompetencies.length"
           title="Let's get started!"
           label="Subjects"
           to="/subjects"
@@ -184,6 +184,9 @@
         <div class="q-pa-sm">
           <concept-cards :concepts="relatedConcepts" />
         </div>
+        <div v-if="!relatedConcepts.length" class="q-pa-sm">
+          <competency-cards :competencies="relatedCompetencies" />
+        </div>
       </q-tab-panel>
     </q-tab-panels>
   </div>
@@ -197,6 +200,8 @@ const { fetchUserAttributes } = useNuxtApp().$Amplify.Auth;
 const conceptsToRevisit = ref([]);
 const conceptsInProgress = ref([]);
 const relatedConcepts = ref([]);
+const relatedCompetencies = ref([]);
+
 const emptyState = ref(false);
 
 // Reference to hold history data
@@ -259,18 +264,20 @@ const quizFinished = () => {
 const sortRevisitedConcepts = () => {
   conceptsToRevisit.value = conceptsToRevisit.value.filter((concept) => {
     const { actionTimestamps, answeredQuestions } = concept.action;
-    const nbReviews = actionTimestamps.filter(
-      ({ actionType }) => actionType === "review",
-    ).length;
-    const lastReview = actionTimestamps.sort(
+    const reviews = actionTimestamps.filter(
+      ({ actionType }) => actionType === "review" || actionType === "quiz",
+    );
+    const nbReviews = reviews.length;
+    const lastReview = reviews.sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
     )[0];
 
     const validQuestions = answeredQuestions.filter((q) => q.isValid).length;
     // we increase the time between reviews up to 5 days
     const nextReviewIn =
-      Math.min(10, (nbReviews + 1) * (nbReviews + 1)) * 12 * 60 * 60 * 1000;
+      Math.min(10, nbReviews * nbReviews) * 12 * 60 * 60 * 1000;
     return (
+      lastReview &&
       validQuestions < 20 &&
       new Date() - new Date(lastReview.createdAt) > nextReviewIn
     );
@@ -332,41 +339,55 @@ const updateHistoryFromAction = ({ createdAt, actionType }) => {
 };
 
 const checkToReview = (action) => {
-  const nbReviews = action.actionTimestamps?.filter(
-    ({ actionType }) => actionType === "review",
-  ).length;
-  return nbReviews < 3;
+  const { answeredQuestions, inProgress} = action;
+  const validQuestions = answeredQuestions?.filter((q) => q.isValid).length || 0;
+  return !inProgress && answeredQuestions?.length || validQuestions < 20;
 };
 
-const fetchCompetencyConcepts = async (userId, username) => {
+const fetchCompetencyConcepts = async (userId, username, activeCompetencies) => {
   const concepts = [];
   try {
     // Fetch competency actions for the user
-    const actions = await competencyActionService.list({
+    let actions = await competencyActionService.list({
       userId,
       username,
     });
+    actions = actions.filter((a) => a.actionTimestamps?.length || activeCompetencies.has(a.competencyId));
 
     // Collect all action timestamps
     const allActionTimestamps = [];
 
+    const fetchedCompetencies = new Set();
+    
     // Fetch all compentency in parallel
     const competenciesPromises = actions.map((action) =>
       compentencyService.get(action.competencyId),
     );
+    actions.forEach((action) => fetchedCompetencies.add(action.competencyId));
     const competencies = await Promise.all(competenciesPromises);
 
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       const competency = competencies[i];
       conceptService.sort(competency.concepts);
-      if (action.actionTimestamps?.length) {
-        competency.concepts.forEach((concept) => concepts.push(concept));
-      }
+
+      competency.concepts.forEach((concept) => concepts.push(concept));
+      
       // Collect all actionTimestamps
-      if (action.actionTimestamps && action.actionTimestamps.length) {
+      if(action.actionTimestamps){
         allActionTimestamps.push(...action.actionTimestamps);
       }
+      
+      competency.followUps?.forEach(({competency}) => {
+        if (fetchedCompetencies.has(competency.id)) return;
+        relatedCompetencies.value.push(competency);        
+        fetchedCompetencies.add(competency.id);
+      });
+      competency.prerequisites?.forEach(({prerequisite}) => {
+        if (fetchedCompetencies.has(prerequisite.id)) return;
+        relatedCompetencies.value.push(prerequisite);   
+        fetchedCompetencies.add(prerequisite.id);     
+      });
     }
 
     // Update history based on actionTimestamps
@@ -408,7 +429,14 @@ const fetchConceptActions = async (userId, username) => {
     const fetchedConcepts = new Set();
     const relatedConcept = {};
 
-    const competencyConcepts = await fetchCompetencyConcepts(userId, username);
+    const activeCompetencies = new Set();
+    actions.forEach((action) => {
+      if (action.actionTimestamps?.find((a) => a.actionType === "started")) {
+        activeCompetencies.add(action.competencyId);
+      }
+    });
+
+    const competencyConcepts = await fetchCompetencyConcepts(userId, username, activeCompetencies);
 
     // Reset categorized concepts
     conceptsInProgress.value = [];
@@ -448,7 +476,10 @@ const fetchConceptActions = async (userId, username) => {
       // Collect followUp concepts
       if (concept.followUps?.length) {
         for (const followUp of concept.followUps) {
-          relatedConcept[followUp.concept.id] = followUp.concept;
+          const cc = followUp.concept || competencyConcepts.find((c) => c.id === followUp.conceptId);
+          if (followUp.conceptId && cc) {
+            relatedConcept[followUp.conceptId] = cc;
+          }          
         }
       }
     }
@@ -464,6 +495,11 @@ const fetchConceptActions = async (userId, username) => {
     relatedConcepts.value = Object.values(relatedConcept).filter(
       (concept) => !fetchedConcepts.has(concept.id),
     );
+
+    if (!relatedConcepts.value.length) {
+      // find the related competencies
+
+    }
 
     emptyState.value = !concepts.length;
     sortRevisitedConcepts();

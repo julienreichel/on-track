@@ -29,6 +29,7 @@ export default function () {
 
     "concepts.*",
     "concepts.prerequisites.*",
+    "concepts.followUps.*",
 
     "prerequisites.id",
     "prerequisites.prerequisite.*",
