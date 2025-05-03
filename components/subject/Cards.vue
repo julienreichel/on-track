@@ -21,7 +21,7 @@
         <q-card
           flat
           bordered
-          class="cursor-pointer"
+          class="cursor-pointer full-height"
           @click="$router.push(`/subject/${subject.id}`)"
         >
           <q-card-section>

@@ -7,7 +7,7 @@
     <q-card
       flat
       bordered
-      class="cursor-pointer"
+      class="cursor-pointer full-height"
       :class="{
         'primary-card': primaryCardId === competency.id,
       }"
