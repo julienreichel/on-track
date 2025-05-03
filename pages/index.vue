@@ -32,14 +32,14 @@
         >
           <p class="q-pt-md">Let's review some concepts!</p>
           <p>
-            Let’s boost your memory! Review each concept a few times to fully
+            Let's boost your memory! Review each concept a few times to fully
             charge your mastery battery
             <q-icon class="primary" name="battery_full" />
             <q-icon class="primary" name="battery_full" />
             <q-icon class="primary" name="battery_4_bar" />
             <q-icon class="primary" name="battery_0_bar" />
-            <q-icon class="primary" name="battery_0_bar" />. Once it’s full,
-            you’re all set.
+            <q-icon class="primary" name="battery_0_bar" />. Once it's full,
+            you're all set.
           </p>
           <p>Want to revisit the theory? Just click the concept card.</p>
         </notification-text>
@@ -51,7 +51,7 @@
         >
           <div class="text-subtitle2">
             <p>
-              Once you’ve started learning, we’ll remind you to review key
+              Once you've started learning, we'll remind you to review key
               concepts at the perfect time — so they really stick.
             </p>
             <p>
@@ -111,25 +111,25 @@
           v-if="!emptyState && conceptsInProgress.length === 1"
           :show="hasHistory <= 5"
         >
-          <p class="q-pt-md">Here are the concept you’re working on.</p>
-          <p>Let’s pick up from where you left off.</p>
+          <p class="q-pt-md">Here are the concept you're working on.</p>
+          <p>Let's pick up from where you left off.</p>
         </notification-text>
         <notification-text
           v-if="!emptyState && conceptsInProgress.length > 1"
           :show="hasHistory <= 5"
         >
-          <p class="q-pt-md">Here are the concepts you’re working on.</p>
-          <p>Let’s pick up from where you left off.</p>
+          <p class="q-pt-md">Here are the concepts you're working on.</p>
+          <p>Let's pick up from where you left off.</p>
         </notification-text>
         <action-card
           v-if="emptyState"
-          title="You haven’t started your journey yet!"
+          title="You haven't started your journey yet!"
           label="Subjects"
           to="/subjects"
         >
           <div class="text-subtitle2">
             <p>
-              When you come back, this is where you’ll find the next step in
+              When you come back, this is where you'll find the next step in
               your learning path.
             </p>
             <p>
@@ -145,7 +145,7 @@
           @click="activeTab = 'explore'"
         >
           <div class="text-subtitle2">
-            You’ve completed all active learning paths for now. 
+            You've completed all active learning paths for now. 
           </div>
           <div>You can explore a new concept to begin learning.</div>
         </action-card>
@@ -161,12 +161,12 @@
           :show="hasHistory <= 7"
         >
           <p class="q-pt-md">Let's start a new concept!</p>
-          <p v-if="!conceptsInProgress.length && !conceptsToRevisit.length">You’ve completed your reviews and ongoing concepts. Here’s something new to explore!</p>
+          <p v-if="!conceptsInProgress.length && !conceptsToRevisit.length">You've completed your reviews and ongoing concepts. Here's something new to explore!</p>
           <p v-else>Select a card bellow to start learning.</p>
         </notification-text>
         <action-card
           v-if="!relatedConcepts.length"
-          title="Let’s get started!"
+          title="Let's get started!"
           label="Subjects"
           to="/subjects"
         >
