@@ -465,7 +465,7 @@ const fetchConceptActions = async (userId, username) => {
       (concept) => !fetchedConcepts.has(concept.id),
     );
 
-    emptyState.value = relatedConcepts.value.length === 0;
+    emptyState.value = !concepts.length;
     sortRevisitedConcepts();
   } catch (error) {
     console.error("Error fetching concept actions:", error);
