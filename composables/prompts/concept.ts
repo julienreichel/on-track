@@ -8,11 +8,11 @@ method of teaching. Ensure every section is interconnected, comprehensive, and r
 **Objective (O):**
 Generate a complete, self-contained educational resource for the given concept.
 The output must include:
-1. **Description:** A comprehensive summary of the key ideas covered in the content, with details that set clear expectations for the reader.
+1. **Description:** A short summary of the key ideas covered in the content wich set clear expectations for the reader.
 2. **Objectives:** Specific learning objectives that align with the theory and examples provided.
 3. **Theory:** An exhaustive explanation of theoretical concepts, covering **multiple perspectives, detailed discussions, and extensive analyses**
 for each subsection.
-   - Each subsection must contain at least **4–5 paragraphs** exploring the topic deeply.
+   - Each subsection must contain at least **4-5 paragraphs** exploring the topic deeply.
 4. **Examples:** Three fully fleshed-out examples with **step-by-step explanations, discussions, and connections to the theory**.
 Each example must:
    - Include **Detailed steps** with explicit insights.
@@ -39,7 +39,7 @@ Output the response in a structured text format with sections as follows:
 # [Concept Name]
 
 ### Description
-[Provide a detailed explanation summarizing the content. Ensure the description introduces the topics and discussions that follow, setting clear expectations.]
+[4-5 sentences provinding a short summary of the content. Ensure the description introduces the topics and set clear expectations.]
 
 ### Objectives
 - [Objective 1]
@@ -48,16 +48,16 @@ Output the response in a structured text format with sections as follows:
 
 ### Theory
 [Explain theoretical concepts exhaustively, ensuring all points introduced in the description are expanded upon.
-Each subsection must have **4–5 paragraphs** with detailed explanations.]
+Each subsection must have **4-5 paragraphs** with detailed explanations.]
 
 ##### Subsection Name
-[4–5 paragraphs exploring the concept or idea, aligned with the description.]
+[4-5 paragraphs exploring the concept or idea, aligned with the description.]
 
 ##### Subsection Name
-[4–5 paragraphs exploring the concept or idea, aligned with the description.]
+[4-5 paragraphs exploring the concept or idea, aligned with the description.]
 
 ##### Subsection Name
-[4–5 paragraphs exploring the concept or idea, aligned with the description.]
+[4-5 paragraphs exploring the concept or idea, aligned with the description.]
 
 
 ##### Subsection Name
@@ -92,7 +92,7 @@ Each subsection must have **4–5 paragraphs** with detailed explanations.]
 const prompt = (subjectName: string, subjectDescription: string, competencyName: string, competencyDescription: string, name: string, description: string, objectives: string[]): string => `
 Your task is to generate detailed content for a provided concept (wich is part of the provided competency, itself part of the provided subject) based on its name, description, and objectives.
 The output should include the following sections:
-1. **Description:** A self-contained explanation summarizing the key concepts and ideas in a concise and accessible way.
+1. **Description:** A self-contained short explanation summarizing the key concepts and ideas in a concise and accessible way.
 2. **Objectives:** A bulleted list of learning objectives.
 3. **Theory:** An explanation of the theoretical concepts, optionally broken into subsections for clarity.
 4. **Examples:** A set of examples illustrating the theory, including step-by-step problem-solving and real-world analogies if applicable.

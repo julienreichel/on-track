@@ -39,6 +39,13 @@
         </q-item-section>
         <q-item-section>Subjects</q-item-section>
       </q-item>
+      <!-- Create New Subject Section -->
+      <q-item v-if="teacherMode" clickable to="/add">
+        <q-item-section avatar>
+          <q-icon name="create" />
+        </q-item-section>
+        <q-item-section>Add Subject</q-item-section>
+      </q-item>
       <q-item clickable to="/kanban">
         <q-item-section avatar>
           <q-icon name="table_chart" />
@@ -55,13 +62,7 @@
         <q-item-section>Evaluate level</q-item-section>
       </q-item>
 
-      <!-- Create New Lecture Section -->
-      <q-item v-if="teacherMode" clickable to="/add">
-        <q-item-section avatar>
-          <q-icon name="create" />
-        </q-item-section>
-        <q-item-section>Add Subject</q-item-section>
-      </q-item>
+      
     </q-drawer>
 
     <q-drawer v-model="rightDrawerOpen" side="right" bordered>

@@ -4,6 +4,7 @@
 export type ConceptModel = GraphQLModel & {
   id: string;
   name: string;
+  level: string
   description: string;
   locale: Locale;
   objectives: string[];

@@ -100,7 +100,7 @@
       <p v-if="quizStatus !== 'final-quiz'">The quiz has 20 quick questions and takes under 10 minutes — a great way to start smart.</p>
       <p v-else>Take this short 20-question quiz (under 10 minutes) to check your understanding and lock in your mastery.</p>
       <p v-if="quizStatus !== 'final-quiz'">
-        Prefer to dive right in? You can also pick any concept below to start learning. You can always come back to the quiz later.
+        Prefer to dive right in? You can also pick any concept below to start learning.
       </p>
     </action-card>
 

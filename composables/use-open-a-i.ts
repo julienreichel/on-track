@@ -21,6 +21,7 @@ export type FlashCardResponse = {
 export type ConceptResponse = {
   name: string;
   description: string;
+  level: string;
   learning_objectives: string[];
   theory?: string;
   examples?: string;
@@ -33,6 +34,7 @@ export type CompetencyResponse = {
   description: string;
   learning_objectives: string[];
   prerequisites: string[];
+  concepts: ConceptResponse[];
 };
 
 // Define the structure of the Subject Response
@@ -115,6 +117,21 @@ export default function () {
     };
     return query(request);
   };
+
+  const querySubjectV2 = async (
+    subjectDescription: string,
+    length: number,
+    locale: Locale = "en"
+  ): Promise<SubjectResponse> => {
+    const request: OpenAIRequest = {
+      system: subjectPrompt.systemV2(localeMap[locale]),
+      prompt: subjectPrompt.promptV2(subjectDescription, length),
+      token: 4000,
+      format: "json",
+    };
+    return query(request);
+  };
+  
 
   const queryCompetency = async (
     subjectName: string,
@@ -296,5 +313,5 @@ export default function () {
     return response;
   };
 
-  return { query, querySubject, queryCompetency, queryConcept, queryQuiz, queryLanguageQuiz, queryLanguageEval };
+  return { query, querySubject, querySubjectV2, queryCompetency, queryConcept, queryQuiz, queryLanguageQuiz, queryLanguageEval };
 }

@@ -1,7 +1,11 @@
 <template>
   <div class="q-gutter-sm q-pa-sm">
     <p class="text-h3 q-pt-md">Add subject</p>
-    <q-input v-model="prompt" rows="6" type="textarea" />
+
+    <!-- Subject description -->
+    <q-input v-model="prompt" rows="6" type="textarea" :disable="!!subject" label="Subject Description" />
+
+    <!-- Language and expected length -->
     <div class="row q-col-gutter-md q-pa-sm">
       <q-select
         v-model="locale"
@@ -9,100 +13,93 @@
         emit-value
         map-options
         :options="locales"
+        :disable="!!subject"
         label="Language"
-        class="col"
+        class="col-6"
       />
 
-      <q-toggle
-        v-model="enableCompetencies"
-        label="Create Competencies"
-        class="col"
-      />
-
-      <q-toggle
-        v-model="enableConcepts"
-        :disable="!enableCompetencies"
-        label="Create Concepts"
-        class="col"
+      <q-select
+        v-model="length"
+        outlined
+        emit-value
+        map-options
+        :options="lengths"
+        :disable="!!subject"
+        label="Expected Length"
+        class="col-6"
       />
     </div>
 
-    <q-btn v-if="!nbRequest" label="Create" @click="sendRequest" />
+    <!-- Generate button -->
+    <q-btn v-if="!subject" label="Generate Structure" @click="sendRequest" />
     <q-linear-progress v-if="nbRequest" size="xl" color="primary" :value="nbRequestDone / nbRequest" />
 
-    <div>
-      <div v-for="subject in subjects" :key="subject.id">
-        <p class="text-h4 q-pt-md">Competencies</p>
-        <competency-cards :competencies="subject.competencies" />
+    <!-- Show structure -->
+    <div v-if="subject">
+      <p class="text-h4">{{subject.name}}</p>
+      <p class="">{{subject.description}}</p>
+      <q-list padding>
+        <q-expansion-item
+          v-for="(comp, index) in subject.competencies"
+          :key="index"
+          :label="comp.name"
+          :caption="comp.description"
+          expand-separator
+        >
+          <q-list padding class="q-ml-md">
+            <q-item v-for="concept in comp.concepts" :key="concept.name">
+              <q-item-section>
+                <q-item-label>{{ concept.name }}</q-item-label>
+                <q-item-label caption>{{ concept.description }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-expansion-item>
+      </q-list>
+
+      <div>
+        <q-btn label="Generate Content" color="primary" class="q-mr-md" @click="generateConcepts" />
+        <q-btn label="Delete and Restart" color="secondary" @click="regenerate" />
       </div>
     </div>
   </div>
 </template>
 
-<script setup lang="js">
+<script setup lang="ts">
 const subjectService = useSubject();
-const competencyService = useCompetency();
 const conceptService = useConcept();
 const { loading } = useQuasar();
 
 const prompt = ref("");
-const subjects = ref([]);
-const locale = ref("en");
+const locale = ref<Locale>("en");
+const length = ref(1);
+
+const subject = ref<SubjectModel | null>(null);
+const nbRequest = ref(0);
+const nbRequestDone = ref(0);
+
 const locales = [
   { label: "English", value: "en" },
   { label: "French", value: "fr" },
 ];
 
-const enableCompetencies = ref(false);
-const enableConcepts = ref(false);
-
-const nbRequestDone = ref(0);
-const nbRequest = ref(0);
+const lengths = [
+  { label: "Very short (10-30 min)", value: 0 },
+  { label: "Short (~1 hour)", value: 1 },
+  { label: "Medium (2-3 hours)", value: 2 },
+  { label: "Long (4-5 hours)", value: 3 },
+  { label: "Very long (~6 hours)", value: 4 },
+];
 
 const sendRequest = async () => {
   loading.show();
-  nbRequest.value = 1 + (enableCompetencies.value ? 6 : 0) + (enableConcepts.value ? 6 * 6 * (1 + 4)  : 0);
+  nbRequest.value = 1;
   nbRequestDone.value = 0;
+
   try {
     nbRequestDone.value += 0.5;
-    const subject = await subjectService.createWithAI(prompt.value, locale.value);
+    subject.value = await subjectService.createWithAIV2(prompt.value, length.value, locale.value);
     nbRequestDone.value += 0.5;
-
-    if (subject) {
-      subjects.value = [subject];
-
-      if (enableCompetencies.value) {
-        const nbCompetencies = subject.competencies.length;
-        nbRequest.value = 1 + (enableCompetencies.value ? nbCompetencies : 0) + (enableConcepts.value ? nbCompetencies * 6 * (1 + 4)  : 0);
-        await Promise.all(
-          subject.competencies.map(async (c) => {
-            if (!c.concepts?.length) {
-              await competencyService.createWithAI(c);
-            }
-            nbRequestDone.value++;
-            if (enableConcepts.value) {
-              const nbConcepts = c.concepts.length;
-              nbRequest.value = nbRequest.value - 6 * (1 + 4) + nbConcepts * (1 + 4);
-              await Promise.all(
-                c.concepts.map(async (cc) => {
-                  if (!cc.theory) {
-                    await conceptService.createWithAI(cc, locale.value);
-                    nbRequestDone.value++;
-                    await Promise.all(
-                      [1, 2, 3, 4].map(async (l) => {
-                        await conceptService.addQuizWithAI(cc, l);
-                        nbRequestDone.value++;
-                      })
-                    );
-                  }
-                })
-              );
-            }
-          })
-        );
-        nbRequestDone.value = nbRequest.value;
-      }
-    }
   } catch (error) {
     console.error("Error creating subject:", error);
   } finally {
@@ -110,8 +107,44 @@ const sendRequest = async () => {
     nbRequest.value = 0;
   }
 };
+
+const generateConcepts = async () => {
+  if (!subject.value) return;
+
+  loading.show();
+  nbRequest.value = subject.value.competencies.reduce((sum: number, c: CompetencyModel) => sum + (c.concepts?.length || 0) * 5, 0);
+  nbRequestDone.value = 0;
+
+  try {
+    await Promise.all(
+      subject.value.competencies.flatMap((comp: CompetencyModel) =>
+        comp.concepts.map(async (concept) => {
+          if (!concept.theory) {
+            await conceptService.createWithAI(concept);
+            nbRequestDone.value++;
+            await Promise.all(
+              [1, 2, 3, 4].map(async (l) => {
+                await conceptService.addQuizWithAI(concept, l);
+                nbRequestDone.value++;
+              })
+            );
+          }
+        })
+      )
+    );
+  } catch (error) {
+    console.error("Error generating concepts:", error);
+  } finally {
+    loading.hide();
+    nbRequest.value = 0;
+  }
+};
+
+const regenerate = async () => {
+  if (subject.value) {
+    await subjectService.delete(subject.value);
+  }  
+  subject.value = null;
+};
 </script>
 
-<style scoped>
-
-</style>
