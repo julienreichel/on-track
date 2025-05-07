@@ -1,5 +1,5 @@
 <template>
-  <reporting-data :competency-id="$route.params.id" :user-id="userId" :username="username" />
+  <reporting-data v-if="userId && username" :competency-id="$route.params.id" :user-id="userId" :username="username" />
 </template>
 
 <script setup>

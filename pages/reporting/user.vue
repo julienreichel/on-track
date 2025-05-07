@@ -1,5 +1,5 @@
 <template>
-  <reporting-data :user-id="userId" :username="username" />
+  <reporting-data v-if="userId && username" :user-id="userId" :username="username" />
 </template>
 
 <script setup>
