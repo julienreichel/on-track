@@ -1,33 +1,29 @@
 <template>
   <div>
-    <div v-if="dailyActions.length" class="text-h3 text-center q-mt-md">
+    <div v-if="dailyActions.length" class="text-h3 text-center">
       Timeline
     </div>
-    <q-timeline class="q-pa-sm">
-      <q-timeline-entry
+    <div
         v-for="(day, index) in dailyActions"
         :key="index"
         :subtitle="day.date"
-        class="q-mb-md"
+        class="row"
       >
-      <template #subtitle >
-        <div class="row">
-        <div class="col-1">{{ day.date }}</div>
-        <q-linear-progress
-          :value="day.percentage"
-          color="primary"
-          track-color="grey-3"
-          class="q-mt-sm col"
-        />
-      </div>
-      </template>
-      <div>
+        <div class="col-2">{{ day.date }}</div>
+        <div class="col-3">
           <span v-if="day.quizCount">{{ day.quizCount }} Quizzes</span> 
           <span v-if="day.quizCount && day.reviewCount"> | </span>
           <span v-if="day.reviewCount">{{ day.reviewCount }} Reviews</span> 
-      </div>
-      </q-timeline-entry>
-    </q-timeline>
+        </div>
+        
+        <q-linear-progress
+          :value="day.percentage"
+          size="lg"
+          color="primary"
+          track-color="grey-3"
+          class="col"
+        />
+        </div>
   </div>
 </template>
 

@@ -2,7 +2,10 @@
   <div v-if="conceptActions && conceptActions.length">
     <StatisticsCard :concept-actions="conceptActions" />
     <LevelStatisticsCard :concept-actions="conceptActions" />
-    <ActionTimeline :concept-actions="conceptActions" />
+    <div class="row q-pa-md q-col-gutter-md">
+      <ActionTimeline class="col" :concept-actions="conceptActions" />
+      <ActionSummary class="col" :concept-actions="conceptActions" />
+    </div>
   </div>
 
   <div v-else>
