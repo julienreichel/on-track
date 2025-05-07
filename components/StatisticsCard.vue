@@ -60,11 +60,11 @@ const averageRunsForMultiple = computed(() => {
 });
 
 const averageDurationSingleRun = computed(() => {
-  return conceptActionService.computeAverageDuration(props.conceptActions, maxConceptDuration);
+  return conceptActionService.computeMedianDuration(props.conceptActions, maxConceptDuration).median;
 });
 
 const averageDurationMultipleRuns = computed(() => {
-  return conceptActionService.computeAverageDuration(props.conceptActions, maxConceptDuration, false);
+  return conceptActionService.computeMedianDuration(props.conceptActions, maxConceptDuration, false).median;
 });
 
 const statistics = computed(() => [

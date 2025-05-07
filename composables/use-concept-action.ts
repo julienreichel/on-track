@@ -206,8 +206,11 @@ export default function () {
     let text = "";
     if (hours > 0) text += `${hours}h `;
     if (minutes > 0) text += `${minutes}min `;
+    if (text.length > 0 && hours > 0) {
+      return text.trim();
+    }
     if (seconds > 0) text += `${seconds}s`;
-    return text.length > 0 ? text : "N/A";
+    return text.length > 0 ? text.trim() : "N/A";
   };
 
   const calculateDuration = (startAction, finishAction) => {
@@ -215,14 +218,14 @@ export default function () {
     return finishAction.createdAt - startAction.createdAt;
   };
 
-  const filterActionsByDuration = (actions, maxDuration, isLessThan = true) => {
+  const filterActionsByDuration = (actions: ConceptActionModel[], maxDuration: number, isLessThan = true) => {
     return actions.filter((action) => {
       const duration = calculateDuration(action.startAction, action.finishAction);
       return duration !== 0 && (isLessThan ? duration < maxDuration : duration >= maxDuration);
     });
   };
 
-  const computeAverageDuration = (actions, maxDuration, isLessThan = true) => {
+  const computeAverageDuration = (actions: ConceptActionModel[], maxDuration: number, isLessThan = true) => {
     const filteredActions = filterActionsByDuration(actions, maxDuration, isLessThan);
     const durations = filteredActions.map((action) =>
       calculateDuration(action.startAction, action.finishAction)
@@ -231,14 +234,27 @@ export default function () {
     return toHumanDuration(avg);
   };
 
-  const computeAverageRuns = (actions, maxDuration) => {
+  const computeMedianDuration = (actions: ConceptActionModel[], maxDuration: number, isLessThan = true) => {
+    const filteredActions = filterActionsByDuration(actions, maxDuration, isLessThan);
+    const durations = filteredActions.map((action) =>
+      calculateDuration(action.startAction, action.finishAction)
+    );
+    const [p15, median, p85] = calculatePercentiles(durations, [15, 50, 85]);
+    return {
+      median: toHumanDuration(median),
+      p15: toHumanDuration(p15),
+      p85: toHumanDuration(p85),
+    };
+  };
+
+  const computeAverageRuns = (actions: ConceptActionModel[], maxDuration: number) => {
     const multipleRunActions = filterActionsByDuration(actions, maxDuration, false);
     const totalRuns = multipleRunActions.reduce((sum, action) => {
       if (!action.startAction || !action.finishAction) return 0;
       const pageActions = action.actionTimestamps.filter(
         (a) =>
           a.actionType === "page" &&
-          a.createdAt > action.startAction.createdAt &&
+          a.createdAt > action.startAction?.createdAt &&
           a.createdAt < action.finishAction?.createdAt
       );
       return sum + (pageActions.length ? pageActions.length + 1 : 2);
@@ -257,8 +273,8 @@ export default function () {
     });
   };
 
-  const computeLevelStatistics = (actions, maxAllowedQuizTime) => {
-    const levels = {};
+  const computeLevelStatistics = (actions: ConceptActionModel[], maxAllowedQuizTime: number) => {
+    const levels: Record<string, { success: number; total: number; times: number[] }> = {};
     actions.forEach((action) => {
       action.answeredQuestions.forEach((q, index, questions) => {
         if (!levels[q.level]) levels[q.level] = { success: 0, total: 0, times: [] };
@@ -273,17 +289,20 @@ export default function () {
       });
     });
 
-    return Object.keys(levels).map((level) => {
-      const { times, success, total } = levels[level];
-      const [p15, median, p85] = calculatePercentiles(times, [15, 50, 85]);
-      return {
-        level,
-        successPercentage: total ? ((success / total) * 100).toFixed(0) : "0",
-        medianTime: median ? toHumanDuration(median) : "N/A",
-        p15Time: p15 ? toHumanDuration(p15) : "N/A",
-        p85Time: p85 ? toHumanDuration(p85) : "N/A",
-      };
-    });
+    const levelOrder = ["novice", "beginner", "intermediate", "advanced", "expert"];
+    return Object.keys(levels)
+      .sort((a, b) => levelOrder.indexOf(a) - levelOrder.indexOf(b))
+      .map((level) => {
+        const { times, success, total } = levels[level];
+        const [p15, median, p85] = calculatePercentiles(times, [15, 50, 85]);
+        return {
+          level,
+          successPercentage: total ? ((success / total) * 100).toFixed(0) : "0",
+          medianTime: median ? toHumanDuration(median) : "N/A",
+          p15Time: p15 ? toHumanDuration(p15) : "N/A",
+          p85Time: p85 ? toHumanDuration(p85) : "N/A",
+        };
+      });
   };
 
   return {
@@ -299,6 +318,7 @@ export default function () {
     calculateDuration,
     filterActionsByDuration,
     computeAverageDuration,
+    computeMedianDuration,
     computeAverageRuns,
     computeLevelStatistics,
   };
