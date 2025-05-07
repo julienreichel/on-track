@@ -2,6 +2,7 @@
   <div v-if="conceptActions && conceptActions.length">
     <StatisticsCard :concept-actions="conceptActions" />
     <LevelStatisticsCard :concept-actions="conceptActions" />
+    <ActionTimeline :concept-actions="conceptActions" />
   </div>
   <div v-else>
     <q-card>
