@@ -20,25 +20,7 @@
         </q-card>
       </div>
     </div>
-    <div v-if="levelStatistics.length" class="text-h3 text-center q-mt-md">
-      Level Statistics
-    </div>
-    <div class="row q-pa-sm q-col-gutter-md">
-      <div
-        v-for="(level, index) in levelStatistics"
-        :key="index"
-        class="col-12 col-sm-6 col-md-3"
-      >
-        <q-card class="full-height">
-          <q-card-section class="text-center">
-            <p class="text-h6 text-uppercase text-bold">{{ levelLabels[level.level] }}</p>
-            <p class="text-h4">{{ level.successPercentage }}%</p>
-            <p class="text-h5">{{ level.medianTime }}</p>
-            <p class="text-h6">[{{ level.p15Time }} - {{ level.p85Time }}]</p>
-          </q-card-section>
-        </q-card>
-      </div>
-    </div>
+    <LevelStatisticsCard :concept-actions="[conceptAction]" />
     <div v-if="testReviews.length" class="text-h3 text-center q-mt-md">
       Test Reviews
     </div>
@@ -211,10 +193,6 @@ const testReviews = computed(() => {
   return durations;
 });
 
-const levelStatistics = computed(() => {
-  return conceptActionService.computeLevelStatistics([conceptAction.value], maxQuizDuration);
-});
-
 const statistics = computed(() => [
   { label: "Started", value: startedAt.value },
   { label: "Finished", value: isFinished.value ? "Yes" : "No", status: true, showProgressOnly: true },
@@ -231,11 +209,4 @@ const testType = {
   loaded: "(Dropped)",
 };
 
-const levelLabels = {
-  novice: "Novice",
-  beginner: "Beginner",
-  intermediate: "Intermediate",
-  advanced: "Advanced",
-  expert: "Expert",
-};
 </script>
