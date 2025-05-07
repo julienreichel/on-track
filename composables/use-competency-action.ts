@@ -18,7 +18,8 @@ export default function () {
     'actionTimestamps.*'
   ]);
 
-  const list = (params: GraphQLParams = {}, options: GraphQLOptions = {}) => {
+  const list = (input: GraphQLParams = {}, options: GraphQLOptions = {}) => {
+    const params = {...input};
     if (params.userId && params.username) {
       params.owner = `${params.userId}::${params.username}`;
     }

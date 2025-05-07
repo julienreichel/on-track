@@ -14,7 +14,7 @@ onMounted(async () => {
     userId.value = user.userId;
     username.value = user.username;    
   } catch (error) {
-    console.error("Failed to fetch concept action:", error);
+    console.error("Failed to fetch user:", error);
   }
 });
 
