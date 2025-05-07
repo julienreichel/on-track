@@ -1,34 +1,7 @@
 <template>
-  <div v-if="conceptActions && conceptActions.length">
-    <StatisticsCard :concept-actions="conceptActions" />
-    <LevelStatisticsCard :concept-actions="conceptActions" />
-    <div class="row q-pa-md q-col-gutter-md">
-      <ActionTimeline class="col" :concept-actions="conceptActions" />
-      <ActionSummary class="col" :concept-actions="conceptActions" />
-    </div>
-  </div>
-
-  <div v-else>
-    <q-card>
-      <q-card-section>
-        <p class="text-body1 text-center">Loading concept data...</p>
-      </q-card-section>
-    </q-card>
-  </div>
+  <reporting-data :subject-id="$route.params.id" />
 </template>
 
 <script setup>
-const route = useRoute();
-const conceptActionService = useConceptAction();
-const conceptActions = ref(null);
 
-onMounted(async () => {
-  try {
-    const subjectId = route.params.id;
-    const actions = await conceptActionService.listFormated({ subjectId });
-    conceptActions.value = actions;
-  } catch (error) {
-    console.error("Failed to fetch concept action:", error);
-  }
-});
 </script>

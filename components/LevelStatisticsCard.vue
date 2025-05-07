@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="computedLevelStatistics.length" class="text-h3 text-center q-mt-md">
-      Level Statistics
+      {{ title }}
     </div>
     <div class="row q-pa-sm q-col-gutter-md">
       <div
@@ -23,6 +23,7 @@
 </template>
 
 <script setup>
+
 const conceptActionService = useConceptAction();
 
 const props = defineProps({
@@ -30,9 +31,13 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  title: {
+    type: String,
+    default: "Level Statistics",
+  },
 });
 
-const maxAllowedQuizTime = 2 * 60 * 1000; // 2 minutes
+const maxAllowedQuizTime = 5 * 60 * 1000; // 5 minutes
 
 const levelLabels = {
   novice: "Novice",
