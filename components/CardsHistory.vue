@@ -17,7 +17,13 @@
               color="green"
               size="md"
               class="q-mt-sm"
-            />
+            >
+              <q-tooltip anchor="bottom middle" self="top middle">
+                <div v-for="action in day.actions" :key="action.id" class="row items-center q-pa-sm">
+                  <span>{{ action.concept?.name || action.competency?.name }}</span>                             
+                </div>
+              </q-tooltip>
+            </q-icon>
             <q-icon
               v-else
               name="radio_button_unchecked"
@@ -33,13 +39,13 @@
 </template>
 
 <script setup lang="js">
-import { defineProps } from 'vue'
+
 
 defineProps({
-history: {
+  history: {
     type: Array,
     default: () => []
-}
+  }
 })
 </script>
 

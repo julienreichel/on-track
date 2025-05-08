@@ -237,6 +237,7 @@ const generateLastDays = () => {
       shortDate: formatDate(day),
       weekday: getWeekday(day),
       hasAction: false,
+      actions: [],
     });
   }
   return days;
@@ -253,9 +254,13 @@ const quizFinished = () => {
         message:
           "Congratulation, a quiz a day, keeps the learning curve at bay!",
       });
-    }
-    historyDay.hasAction = true;
-    hasHistory.value = hasHistory.value + 3;
+      hasHistory.value = hasHistory.value + 1;
+      historyDay.hasAction = true;
+    }    
+    historyDay.actions.push({
+      actionType: "review",
+      conceptId: conceptsToRevisit.value[0],
+    });
   }
 
   sortRevisitedConcepts();
@@ -322,20 +327,30 @@ const sortRevisitedConcepts = () => {
 
 };
 
-const updateHistoryFromAction = ({ createdAt, actionType }) => {
+const updateHistoryFromAction = ({ createdAt, actionType, concept, competency }) => {
   if (!createdAt) return;
   if (
     actionType !== "quiz" &&
+    actionType !== "review" &&
     actionType !== "pre-quiz" &&
     actionType !== "final-quiz"
-  )
+  ){
     return;
+  }
   const actionDate = new Date(createdAt).toISOString().split("T")[0];
   const historyDay = history.value.find((day) => day.date === actionDate);
-  if (historyDay && !historyDay.hasAction) {
+  if (!historyDay) {
+    return;
+  }
+  if (!historyDay.hasAction) {
     historyDay.hasAction = true;
     hasHistory.value = hasHistory.value + 1;
   }
+  historyDay.actions.push({
+    actionType,
+    concept,
+    competency
+  });
 };
 
 const checkToReview = (action) => {
@@ -375,7 +390,10 @@ const fetchCompetencyConcepts = async (userId, username, activeCompetencies) => 
       
       // Collect all actionTimestamps
       if(action.actionTimestamps){
-        allActionTimestamps.push(...action.actionTimestamps);
+        allActionTimestamps.push(...action.actionTimestamps.map((a) => ({
+          ...a,
+          competency
+        })));
       }
       
       competency.followUps?.forEach(({competency}) => {
@@ -470,7 +488,10 @@ const fetchConceptActions = async (userId, username) => {
 
       // Collect all actionTimestamps
       if (action.actionTimestamps && action.actionTimestamps.length) {
-        allActionTimestamps.push(...action.actionTimestamps);
+        allActionTimestamps.push(...action.actionTimestamps.map((a) => ({
+          ...a,
+          concept
+        })));
       }
 
       // Collect followUp concepts
