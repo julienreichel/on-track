@@ -133,7 +133,7 @@ const onGoingCompentecy = computed(() => subject.value.competencies.find(
     const started = c.action?.actionTimestamps?.some(
       (a) => a.actionType === "pre-quiz"
     )
-    const conceptStarted = c.concepts?.find((cc) => cc.action.actionTimestamps?.some(
+    const conceptStarted = c.concepts?.find((cc) => cc.action?.actionTimestamps?.some(
         (a) => a.actionType === "started"
       ));
 

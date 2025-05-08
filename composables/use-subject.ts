@@ -21,6 +21,8 @@ export default function () {
 
     "competencies.*",
     'competencies.prerequisites.*',
+    "competencies.concepts.id",
+    "competencies.concepts.name",
   ], [
     "id",
     "name",

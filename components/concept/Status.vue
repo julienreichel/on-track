@@ -124,7 +124,7 @@ watch(
   finished,
   (finished) => {
     if (finished) {
-      emit("finished", progressPercent);
+      emit("finished", progressPercent.value);
     }
   },
   { immediate: true }
