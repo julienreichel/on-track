@@ -23,6 +23,9 @@ export type ConceptResponse = {
   description: string;
   level: string;
   learning_objectives: string[];
+  minimum_viable_action?: string;
+  reflection_prompt?: string;
+  core_facts?: string[];
   theory?: string;
   examples?: string;
   prerequisites: string[];

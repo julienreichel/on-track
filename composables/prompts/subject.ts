@@ -104,10 +104,13 @@ Apply the following instructional design principles:
    - It should align with **one learning objective**.
    - Use observable, actionable, and measurable objectives.
    - Each concept must include:
-     - A Bloom's level
+     - A difficulty   level
      - A short, beginner-friendly description
      - Prerequisites (if any)
      - 3 measurable learning objectives
+     - A **minimum viable action** learners can perform after the concept
+     - 3-5 **core facts or skills** that should be remembered 
+     - A **reflection prompt** to help learners synthesize what they've just learned.
 
 4. **Pedagogical Sequence & Flow:**
    - Ensure the learning path follows a logical order that supports knowledge retention and autonomy.
@@ -154,7 +157,13 @@ Return a JSON object with the following structure:
             ...
           ],
           "prerequisites": ["Other Concept Name", ...],
-          "level": "beginner" | "intermediate" | "advanced"
+          "level": "beginner" | "intermediate" | "advanced",
+          "minimum_viable_action": "A minimum viable action learners can perform after the concept",
+          "reflection_prompt": "A reflection prompt to help learners synthesize what they've just learned",
+          "core_facts": [
+            "A core fact or skill that should be remembered",
+            ...
+          ]
         }
       ]
     }
@@ -192,6 +201,9 @@ Your task is to generate a full On-Track learning structure for the subject desc
    - 3 learning objectives aligned with Bloom's taxonomy
    - A list of **prerequisite concepts**, if any
    - A difficulty level: beginner, intermediate, or advanced
+   - A **minimum viable action** learners can perform after the concept
+   - 3-5 **core facts or skills** that should be remembered 
+   - A **reflection prompt** to help learners synthesize what they've just learned.
 
 Be clear, personal, and supportive. Use a friendly, Feynman-inspired tone — break things down simply, 
 and guide the learner like you would a curious friend.
