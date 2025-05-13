@@ -21,13 +21,15 @@ export type FlashCardResponse = {
 export type ConceptResponse = {
   name: string;
   description: string;
-  level: string;
+  level?: string;
   learning_objectives: string[];
-  minimum_viable_action?: string;
-  reflection_prompt?: string;
-  core_facts?: string[];
+  mva?: string;
+  reflect?: string;
+  facts: string[];
   theory?: string;
   examples?: string;
+  guide?: string;
+  resources?: string;
   prerequisites: string[];
   flashcards: FlashCardResponse[];
 };
@@ -63,6 +65,8 @@ export type QuizResponse = {
   level: string;
   explanations: string;
 };
+
+export type SectionNames = "description" | "objectives" | "theory" | "examples" | "guide" | "mva" | "resources" | "reflect" | "facts" | "flashcards" | null
 
 export default function () {
   const { create, get } = useGraphqlQuery("OpenAIRequest");
@@ -169,11 +173,14 @@ export default function () {
     name: string,
     description: string,
     objectives: string[],
+    mva: string,
+    reflect: string,
+    facts: string[],
     locale: Locale = "en"
   ): Promise<ConceptResponse> => {
     const request: OpenAIRequest = {
       system: conceptPrompt.system(localeMap[locale]),
-      prompt: conceptPrompt.prompt(subjectName, subjectDescription, competencyName, competencyDescription, name, description, objectives),
+      prompt: conceptPrompt.prompt(subjectName, subjectDescription, competencyName, competencyDescription, name, description, objectives, mva, reflect, facts),
       token: 4000,
     };
     const response = await query(request);
@@ -186,17 +193,17 @@ export default function () {
         learning_objectives: [],
         theory: "",
         examples: "",
+        mva: "",
+        reflect: "",
+        facts: [],
+        guide: "",
+        resources: "",
         prerequisites: [],
         flashcards: [],
       };
 
-      let currentSection:
-        | "description"
-        | "objectives"
-        | "theory"
-        | "examples"
-        | "flashcards"
-        | null = null;
+      let currentSection: SectionNames = null;
+
       let currentFlashcard: {
         question: string;
         answer: string;
@@ -207,15 +214,14 @@ export default function () {
         if (line.startsWith("# ")) {
           response.name = line.replace("# ", "").trim();
         } else if (line.startsWith("### ")) {
-          currentSection = line.replace("### ", "").trim().toLowerCase() as
-            | "description"
-            | "objectives"
-            | "theory"
-            | "examples"
-            | "flashcards";
+          currentSection = line.replace("### ", "").trim().toLowerCase() as SectionNames;
         } else if (currentSection === "objectives") {
           if (line.startsWith("- ")) {
             response.learning_objectives.push(line.replace("- ", "").trim());
+          }
+        } else if (currentSection === "facts") {
+          if (line.startsWith("- ")) {
+            response.facts.push(line.replace("- ", "").trim());
           }
         } else if (currentSection === "flashcards") {
           if (line.startsWith("- **Question:**") || line.startsWith("- **Question :**")) {
@@ -233,7 +239,9 @@ export default function () {
               currentFlashcard.notes = line.replace("**Notes:**", "").replace("**Notes :**", "").trim();
             }
           }
-        } else if (currentSection === "theory" || currentSection === "examples" || currentSection === "description") {
+        } else if (currentSection === "theory" || currentSection === "examples" || currentSection === "description"
+            || currentSection === "guide" || currentSection === "resources" || currentSection === "reflect" || currentSection === "mva"
+        ) {
           response[currentSection] += `${line.trim()}\n`;
         }
       });

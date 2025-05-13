@@ -8,8 +8,13 @@ export type ConceptModel = GraphQLModel & {
   description: string;
   locale: Locale;
   objectives: string[];
+  mva: string;
+  reflect: string;
+  facts: string[];
   theory: string;
   examples: string;
+  guide: string;
+  resources: string;
   questions: QuestionModel[];
   flashCards: FlashCardModel[];
   prerequisites: ConceptPrerequisiteModel[];
@@ -32,8 +37,16 @@ export default function () {
     'name',
     'description',
     'objectives',
+    'mva',
+    'reflect',
+    'facts',
+
     'theory',
     'examples',
+    'guide',
+    'resources',
+    'reflect',
+
     "locale",
 
     'questions.*',
@@ -98,6 +111,9 @@ export default function () {
       concept.name,
       concept.description,
       concept.objectives,
+      concept.mva,
+      concept.reflect,
+      concept.facts,
       concept.locale
     );
     console.log("queryConcept", response);
@@ -110,6 +126,21 @@ export default function () {
     }
     if (response.examples){
       concept.examples = response.examples
+    }
+    if (response.guide){
+      concept.guide = response.guide
+    }
+    if (response.resources){
+      concept.resources = response.resources
+    }
+    if (response.reflect){
+      concept.reflect = response.reflect
+    }
+    if (response.mva){
+      concept.mva = response.mva
+    }
+    if (response.facts){
+      concept.facts = response.facts
     }
     await update(concept);
 

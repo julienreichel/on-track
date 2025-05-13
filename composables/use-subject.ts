@@ -151,9 +151,9 @@ export default function () {
             const conceptModel = (await concept.create({
               name: c.name,
               level: c.level,
-              minimumViableAction: c.minimum_viable_action,
-              reflectionPrompt: c.reflection_prompt,
-              coreFacts: c.core_facts,
+              mva: c.mva,
+              reflect: c.reflect,
+              facts: c.facts,
               description: c.description,
               locale,
               objectives: c.learning_objectives,

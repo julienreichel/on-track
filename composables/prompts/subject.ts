@@ -158,9 +158,9 @@ Return a JSON object with the following structure:
           ],
           "prerequisites": ["Other Concept Name", ...],
           "level": "beginner" | "intermediate" | "advanced",
-          "minimum_viable_action": "A minimum viable action learners can perform after the concept",
-          "reflection_prompt": "A reflection prompt to help learners synthesize what they've just learned",
-          "core_facts": [
+          "mva": "A minimum viable action learners can perform after the concept",
+          "reflect": "A reflection prompt to help learners synthesize what they've just learned",
+          "facts": [
             "A core fact or skill that should be remembered",
             ...
           ]

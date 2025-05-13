@@ -12,12 +12,17 @@ The output must include:
 2. **Objectives:** Specific learning objectives that align with the theory and examples provided.
 3. **Theory:** An exhaustive explanation of theoretical concepts, covering **multiple perspectives, detailed discussions, and extensive analyses**
 for each subsection.
-   - Each subsection must contain at least **4-5 paragraphs** exploring the topic deeply.
-4. **Examples:** Three fully fleshed-out examples with **step-by-step explanations, discussions, and connections to the theory**.
+   - Each subsection must contain at least **3-5 paragraphs** exploring the topic deeply.
+4. **Step-by-Step Guide:** A procedural guide that shows how to apply the concept in practice. Use checklists or numbered steps.
+5. **Examples:** Three fully fleshed-out examples with **step-by-step explanations, discussions, and connections to the theory**.
 Each example must:
-   - Include **Detailed steps** with explicit insights.
-   - Provide a clear **discussion of its relevance and implications**.
-5. **Flashcards:** A set of flashcards that recap the material, providing clear questions, answers, and optional notes for further context or memory aids.
+   - Include a realistic scenario, a task or problem, and a detailed step-by-step resolution.
+   - Reflect on how the example connects to theory and why it matters.
+6. **Minimum Viable Action (MVA):** A simple, actionable task learners can complete (~10 minutes) to apply what they've learned.
+   - Include what the learner should produce and clear success criteria.
+7. **Reflect & Connect:** A reflection prompt to help learners synthesize what they've learned and how it applies to them.
+8. **Core Facts:** 3-5 essential ideas or facts for spaced repetition and memory anchoring.
+9. **Flashcards:** A set of flashcards that recap the material, providing clear questions, answers, and optional notes for further context or memory aids.
 
 **Style (S):**
 Richard Feynman: Simplicity, clarity, passion and enthusiasm, using storytelling with focus on fundamentals, keeping humor and wit.",
@@ -39,7 +44,7 @@ Output the response in a structured text format with sections as follows:
 # [Concept Name]
 
 ### Description
-[4-5 sentences provinding a short summary of the content. Ensure the description introduces the topics and set clear expectations.]
+[3-5 sentences provinding a short summary of the content. Ensure the description introduces the topics and set clear expectations.]
 
 ### Objectives
 - [Objective 1]
@@ -48,26 +53,24 @@ Output the response in a structured text format with sections as follows:
 
 ### Theory
 [Explain theoretical concepts exhaustively, ensuring all points introduced in the description are expanded upon.
-Each subsection must have **4-5 paragraphs** with detailed explanations.]
+Each subsection must have **3-5 paragraphs** with detailed explanations.]
 
 ##### Subsection Name
-[4-5 paragraphs exploring the concept or idea, aligned with the description.]
+[3-5 paragraphs exploring the concept or idea, aligned with the description.]
 
 ##### Subsection Name
-[4-5 paragraphs exploring the concept or idea, aligned with the description.]
+[3-5 paragraphs exploring the concept or idea, aligned with the description.]
 
 ##### Subsection Name
-[4-5 paragraphs exploring the concept or idea, aligned with the description.]
+[3-5 paragraphs exploring the concept or idea, aligned with the description.]
 
-
-##### Subsection Name
-[Details of a specific concept or idea, aligned with the description.]
+### Guide
+[Provide a procedural guide that shows how to apply the concept in practice. Use checklists or numbered steps.]
 
 ### Examples
 [Provide three detailed examples that demonstrate the theory in action. Each example must include:
-1. Clear step-by-step explanations.
-2. A discussion of the relevance or impact of the example.
-3. Connections to the theory, ensuring practical understanding.]
+   1. Include a realistic scenario, a task or problem, and a detailed step-by-step resolution.
+   2. Reflect on how the example connects to theory and why it matters.]
 
 ##### Example Name
 [Details of a specific example.]
@@ -77,6 +80,17 @@ Each subsection must have **4-5 paragraphs** with detailed explanations.]
 
 ##### Example Name
 [Details of a specific example.]
+
+### MVA 
+[Provide a simple, actionable task learners can complete (~10 minutes) to apply what they've learned.]
+
+### Reflect
+[Provide a reflection prompt to help learners synthesize what they've learned and how it applies to them.]
+
+### Facts
+- [Core fact 1]
+- [Core fact 2]
+...
 
 ### Flashcards
 - **Question:** [Key question related to the concept.]
@@ -86,20 +100,40 @@ Each subsection must have **4-5 paragraphs** with detailed explanations.]
 - **Question:** [Key question related to the concept.]
   **Answer:** [Clear and concise answer to the question.]
   **Notes:** [Optional context or tips for better understanding.]
-
+...
 `;
 
-const prompt = (subjectName: string, subjectDescription: string, competencyName: string, competencyDescription: string, name: string, description: string, objectives: string[]): string => `
+const prompt = (
+  subjectName: string,
+  subjectDescription: string,
+  competencyName: string,
+  competencyDescription: string,
+  name: string,
+  description: string,
+  objectives: string[],
+  minimumViableAction: string,
+  reflectionPrompt: string,
+  coreFacts: string[]
+): string => `
 Your task is to generate detailed content for a provided concept (wich is part of the provided competency, itself part of the provided subject) based on its name, description, and objectives.
+
 The output should include the following sections:
-1. **Description:** A self-contained short explanation summarizing the key concepts and ideas in a concise and accessible way.
-2. **Objectives:** A bulleted list of learning objectives.
-3. **Theory:** An explanation of the theoretical concepts, optionally broken into subsections for clarity.
-4. **Examples:** A set of examples illustrating the theory, including step-by-step problem-solving and real-world analogies if applicable.
-5. **Flashcards:** A list of flashcards to reinforce the learning. Each flashcard should have:
-   - A **Question** related to a key aspect of the concept.
-   - An **Answer** that is clear, concise, and accurate.
-   - Optional **Notes** for more context or tips for remembering the answer.
+1. **Description:** A short summary of the key ideas covered in the content wich set clear expectations for the reader.
+2. **Objectives:** Specific learning objectives that align with the theory and examples provided.
+3. **Theory:** An exhaustive explanation of theoretical concepts, covering **multiple perspectives, detailed discussions, and extensive analyses**
+for each subsection.
+   - Each subsection must contain at least **3-5 paragraphs** exploring the topic deeply.
+   - Sections should focus on “what it is”, “why it matters”, and “how to apply it”.
+4. **Guide:** A procedural guide that shows how to apply the concept in practice. Use checklists or numbered steps.
+5. **Examples:** Three fully fleshed-out examples with **step-by-step explanations, discussions, and connections to the theory**.
+Each example must:
+   - Include a realistic scenario, a task or problem, and a detailed step-by-step resolution.
+   - Reflect on how the example connects to theory and why it matters.
+6. **MVA:** A simple, actionable task learners can complete (~10 minutes) to apply what they've learned.
+   - Include what the learner should produce and clear success criteria.
+7. **Reflect** A reflection prompt to help learners synthesize what they've learned and how it applies to them.
+8. **Facts:** 3-5 essential ideas or facts for spaced repetition and memory anchoring.
+9. **Flashcards:** A set of flashcards that recap the material, providing clear questions, answers, and optional notes for further context or memory aids.
 
 
 ** Subject name **
@@ -121,7 +155,16 @@ ${name}
 ${description}
 
 ** Learning Objectives **
-${objectives.map((obj) => `- ${obj}`).join('\n')}
+${objectives?.map((obj) => `- ${obj}`).join("\n")}
+
+** Minimum Viable Action **
+${minimumViableAction}
+
+** Reflection Prompt **
+${reflectionPrompt}
+
+** Core Facts **
+${coreFacts?.map((fact) => `- ${fact}`).join('\n')}
 `;
 
 export default { system, prompt };
