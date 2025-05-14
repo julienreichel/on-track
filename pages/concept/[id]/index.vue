@@ -56,7 +56,7 @@
     </action-card>
 
     <!-- Button to toggle notes visibility -->
-    <q-page-sticky v-if="$q.screen.gt.sm" position="top-right" style="z-index:1000" :offset="[6, 12]">      
+    <q-page-sticky v-if="$q.screen.gt.sm && !showIntro" position="top-right" style="z-index:1000" :offset="[6, 12]">      
       <q-btn
         dense
         round
@@ -214,7 +214,7 @@
           <editable-text
             :value="conceptAction?.notes"
             :enable-editing="true"
-            place-holder="*Notes...*"
+            :place-holder="notePlaceholder"
             type="textarea"
             class="q-pa-sm"
             use-rich-text
@@ -250,7 +250,7 @@ const showIntro = ref(true);
 
 const splitterModel = ref(100); // Adjust the percentage for the q-stepper width
 const hiddendSplitter = ref(70); // Start with splitter hidden
-
+const notePlaceholder = ref("*Notes...*");
 const toggleNotes = () => {
   if (hiddendSplitter.value) {
     splitterModel.value = Math.min(80, hiddendSplitter.value);
@@ -270,7 +270,11 @@ onMounted(async () => {
   try {
     const conceptId = route.params.id;
     concept.value = await conceptService.get(conceptId);
-    
+
+    if (concept.value.facts?.length) {
+      notePlaceholder.value = "*Examples:*\n\n*" + concept.value.facts.join("*\n\n*") + "*";
+    }
+  
     const { userId, username } = await getCurrentUser();
 
     if(!concept.value.followUps.length){
