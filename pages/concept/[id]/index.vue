@@ -45,154 +45,184 @@
       label="Start learning"
       @activated="showIntro = false"
     >
-    <p>You’ll go through:</p>
-    <ul>
-      <li><q-icon name="article" class="text-primary"/> Theory – Understand the core ideas</li>
-      <li><q-icon name="ballot" class="text-primary"/> Examples – See it in action</li>
-      <li><q-icon name="check_box" class="text-primary"/> Flashcards – Practice key points</li>
-      <li><q-icon name="help_center" class="text-primary"/> Quiz – Test your knowledge</li>
-    </ul>
-    <p>You can explore them in any order, but complete them all to finish the concept!</p>
+      <p>You’ll go through:</p>
+      <ul>
+        <li><q-icon name="article" class="text-primary"/> Theory – Understand the core ideas</li>
+        <li><q-icon name="ballot" class="text-primary"/> Examples – See it in action</li>
+        <li><q-icon name="check_box" class="text-primary"/> Flashcards – Practice key points</li>
+        <li><q-icon name="help_center" class="text-primary"/> Quiz – Test your knowledge</li>
+      </ul>
+      <p>You can explore them in any order, but complete them all to finish the concept!</p>
     </action-card>
 
-    <!-- STEPPER -->
-    <q-stepper 
+    <!-- Button to toggle notes visibility -->
+    <q-page-sticky v-if="$q.screen.gt.sm" position="top-right" style="z-index:1000" :offset="[6, 12]">      
+      <q-btn
+        dense
+        round
+        :icon="hiddendSplitter ? 'notes' : 'playlist_remove'"
+        class="toggle-notes-btn"
+        @click="toggleNotes"
+      />
+  </q-page-sticky>
+
+    <!-- Splitter for q-stepper and notes -->
+    <q-splitter
       v-if="!showIntro"
-      v-model="activeTab" 
-      flat 
-      header-nav
-      active-icon="school" 
-      :contracted="$q.screen.lt.md"
-      class="concept-runner"
-      >
-      <!-- 2. THEORY -->
-      <q-step
-        v-if="teacherMode || concept.theory"
-        name="theory"
-        title="Theory"
-        icon="article"
-        :done="hasDoneTheory"
-      >
-        <div>
-          <div v-if="!teacherMode && concept.theory">
-            <concept-runner
-              :markdown-content="concept.theory"
-              @finished="markAsRead('theory')"
-            />
-          </div>
-          <editable-text
-            v-if="teacherMode && concept.theory"
-            :value="concept.theory"
-            :enable-editing="teacherMode"
-            type="textarea"
-            class="q-pa-sm"
-            use-rich-text
-            @update="(text) => updateConcept('theory', text)"
-          />
-          <q-btn v-else-if="teacherMode" @click="generateConceptData()">
-            Generate
-          </q-btn>
-        </div>
-      </q-step>
+      v-model="splitterModel"
+      :limits="[50, 100]"
+      :horizontal="$q.screen.lt.md || !!hiddendSplitter"
+      class="notes-splitter"
+    >
+      <template #before>
+        <q-stepper 
+          v-model="activeTab" 
+          flat 
+          header-nav
+          active-icon="school" 
+          :contracted="$q.screen.lt.md"
+          class="concept-runner"
+        >
+          <q-step
+            v-if="teacherMode || concept.theory"
+            name="theory"
+            title="Theory"
+            icon="article"
+            :done="hasDoneTheory"
+          >
+            <div>
+              <div v-if="!teacherMode && concept.theory">
+                <concept-runner
+                  :markdown-content="concept.theory"
+                  @finished="markAsRead('theory')"
+                />
+              </div>
+              <editable-text
+                v-if="teacherMode && concept.theory"
+                :value="concept.theory"
+                :enable-editing="teacherMode"
+                type="textarea"
+                class="q-pa-sm"
+                use-rich-text
+                @update="(text) => updateConcept('theory', text)"
+              />
+              <q-btn v-else-if="teacherMode" @click="generateConceptData()">
+                Generate
+              </q-btn>
+            </div>
+          </q-step>
 
-      <!-- 3. EXAMPLES -->
-      <q-step
-        v-if="concept.examples"
-        name="examples"
-        title="Examples"
-        icon="ballot"
-        :done="hasDoneExamples"
-      >
-        <div>
-          <div v-if="!teacherMode && concept.examples">
-            <concept-runner
-              :markdown-content="concept.examples"
-              @finished="markAsRead('examples')"
-            />
-          </div>
-          <editable-text
-            v-if="teacherMode && concept.examples"
-            :value="concept.examples"
-            :enable-editing="teacherMode"
-            type="textarea"
-            class="q-pa-sm"
-            use-rich-text
-            @update="(text) => updateConcept('examples', text)"
-          />
-        </div>
-      </q-step>
+          <q-step
+            v-if="concept.examples"
+            name="examples"
+            title="Examples"
+            icon="ballot"
+            :done="hasDoneExamples"
+          >
+            <div>
+              <div v-if="!teacherMode && concept.examples">
+                <concept-runner
+                  :markdown-content="concept.examples"
+                  @finished="markAsRead('examples')"
+                />
+              </div>
+              <editable-text
+                v-if="teacherMode && concept.examples"
+                :value="concept.examples"
+                :enable-editing="teacherMode"
+                type="textarea"
+                class="q-pa-sm"
+                use-rich-text
+                @update="(text) => updateConcept('examples', text)"
+              />
+            </div>
+          </q-step>
 
-      <!-- 4. FLASHCARDS -->
-      <q-step
-        v-if="concept.flashCards?.length"
-        name="flashcards"
-        title="Flashcards"
-        icon="check_box"
-        :done="hasDoneFlashcards"
-      >
-        <flashcard-list
-          v-if="teacherMode"
-          v-model="concept.flashCards"
-          :concept="concept"
-        />
-        <div v-else>
-          <flashcard-runner
-            :flash-cards="concept.flashCards"
-            @updated="updateFlashCard"
-            @finished="activeTab = 'quiz'"
-          />
-        </div>
-      </q-step>
-
-      <!-- 5. QUIZ -->
-      <q-step
-        v-if="teacherMode || concept.questions?.length"
-        name="quiz"
-        title="Quiz"
-        icon="help_center"
-        :done="hasDoneQuiz"
-      >
-        <div >
-          <div v-if="concept.questions?.length">
-            <question-list
+          <q-step
+            v-if="concept.flashCards?.length"
+            name="flashcards"
+            title="Flashcards"
+            icon="check_box"
+            :done="hasDoneFlashcards"
+          >
+            <flashcard-list
               v-if="teacherMode"
-              v-model="concept.questions"
+              v-model="concept.flashCards"
               :concept="concept"
             />
-            <quiz-runner
-              v-else
-              :questions="concept.questions"
-              :past-questions="conceptAction?.answeredQuestions"
-              :max="quizSize"
-              adaptative
-              :initial-level="quizLevel"
-              @finished="updateQuestionsFinished"
-              @results="updateQuestionsResults"
-              @progress="updateQuestionsProgress"
-            />
-            <div v-if="teacherMode" class="q-pa-sm q-gutter-sm">
-              <q-btn @click="generateQuizData()">Generate all</q-btn>
-              <q-btn @click="generateQuizData(1)">Generate novice</q-btn>
-              <q-btn @click="generateQuizData(2)">Generate beginner</q-btn>
-              <q-btn @click="generateQuizData(3)">Generate intermediate</q-btn>
-              <q-btn @click="generateQuizData(4)">Generate advanced</q-btn>
+            <div v-else>
+              <flashcard-runner
+                :flash-cards="concept.flashCards"
+                @updated="updateFlashCard"
+                @finished="activeTab = 'quiz'"
+              />
             </div>
-          </div>
-        </div>
-      </q-step>
+          </q-step>
 
-      <!-- 7. NEXT STEPS -->
-      <q-step
-        name="nextSteps"
-        title="Next steps"
-        icon="exit_to_app"
-      >
-        <div class="q-pa-sm">
-          <concept-cards v-if="nextConcepts.length" :concepts="nextConcepts" />
-          <competency-cards v-else :competencies="otherCompetencies" />
+          <q-step
+            v-if="teacherMode || concept.questions?.length"
+            name="quiz"
+            title="Quiz"
+            icon="help_center"
+            :done="hasDoneQuiz"
+          >
+            <div >
+              <div v-if="concept.questions?.length">
+                <question-list
+                  v-if="teacherMode"
+                  v-model="concept.questions"
+                  :concept="concept"
+                />
+                <quiz-runner
+                  v-else
+                  :questions="concept.questions"
+                  :past-questions="conceptAction?.answeredQuestions"
+                  :max="quizSize"
+                  adaptative
+                  :initial-level="quizLevel"
+                  @finished="updateQuestionsFinished"
+                  @results="updateQuestionsResults"
+                  @progress="updateQuestionsProgress"
+                />
+                <div v-if="teacherMode" class="q-pa-sm q-gutter-sm">
+                  <q-btn @click="generateQuizData()">Generate all</q-btn>
+                  <q-btn @click="generateQuizData(1)">Generate novice</q-btn>
+                  <q-btn @click="generateQuizData(2)">Generate beginner</q-btn>
+                  <q-btn @click="generateQuizData(3)">Generate intermediate</q-btn>
+                  <q-btn @click="generateQuizData(4)">Generate advanced</q-btn>
+                </div>
+              </div>
+            </div>
+          </q-step>
+
+          <q-step
+            name="nextSteps"
+            title="Next steps"
+            icon="exit_to_app"
+          >
+            <div class="q-pa-sm">
+              <concept-cards v-if="nextConcepts.length" :concepts="nextConcepts" />
+              <competency-cards v-else :competencies="otherCompetencies" />
+            </div>
+          </q-step>
+        </q-stepper>
+      </template>
+
+      <template #after>
+        <div v-if="!hiddendSplitter" class="notes-panel q-pa-xs">
+          <div class="text-caption">Click to add or edit notes</div>
+          <editable-text
+            :value="conceptAction?.notes"
+            :enable-editing="true"
+            place-holder="*Notes...*"
+            type="textarea"
+            class="q-pa-sm"
+            use-rich-text
+            @update="updateNotes"
+          />
         </div>
-      </q-step>
-    </q-stepper>
+      </template>
+    </q-splitter>
   </div>
 
   <div v-else>
@@ -205,11 +235,11 @@ const route = useRoute();
 const conceptService = useConcept();
 const conceptActionService = useConceptAction();
 const competencyService = useCompetency();
-const { loading } = useQuasar();
+const { loading, notify } = useQuasar();
 
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
-const activeTab = ref("objectives");
+const activeTab = ref("theory");
 const concept = ref(null);
 const conceptAction = ref(null);
 const otherUndoneConcepts = ref([]);
@@ -217,6 +247,24 @@ const otherCompetencies = ref([]);
 const teacherMode = inject("teacherMode");
 
 const showIntro = ref(true);
+
+const splitterModel = ref(100); // Adjust the percentage for the q-stepper width
+const hiddendSplitter = ref(70); // Start with splitter hidden
+
+const toggleNotes = () => {
+  if (hiddendSplitter.value) {
+    splitterModel.value = Math.min(80, hiddendSplitter.value);
+    hiddendSplitter.value = false;
+  } else {
+    hiddendSplitter.value = splitterModel.value; // Hide the notes panel
+    splitterModel.value = 100; // Hide the notes panel
+  }
+};
+watch(splitterModel, (newValue) => {
+  if (newValue >= 90) {
+    hiddendSplitter.value = splitterModel.value; // Hide the notes panel
+  } 
+});
 
 onMounted(async () => {
   try {
@@ -226,7 +274,6 @@ onMounted(async () => {
     const { userId, username } = await getCurrentUser();
 
     if(!concept.value.followUps.length){
-      // let's check if there are some other concept in the competency that have not been done yet
       const competency = await competencyService.get(concept.value.competency.id);
       await Promise.all(
         competency.concepts.filter((c) => c.id !== conceptId).map(async (c) => {
@@ -244,11 +291,9 @@ onMounted(async () => {
         })
       );
       if (!otherUndoneConcepts.value.length) {
-        // nothing left to be done in this competency, so lets propose followups
         otherCompetencies.value = competency.followUps.map((f) => f.competency);
       }
     }
-    // Check or create ConceptAction
     if (!teacherMode.value) {
       const actions = await conceptActionService.list({
         conceptId,
@@ -281,7 +326,7 @@ onMounted(async () => {
           ],
         });
       }
-      
+      conceptAction.value.notes ??= "";
     } else {
       showIntro.value = false;
     }
@@ -368,6 +413,14 @@ const markAsRead = async (field) => {
   if (!conceptAction.value[field]) {
     conceptAction.value[field] = true;
     save = true;
+  }
+
+  if (hiddendSplitter.value && !conceptAction.value.notes) {
+    // Notify the user to take notes and open the notes panel
+    notify({
+      message: "Great job! Now is a good time to take a few notes.",
+    });
+    toggleNotes();
   }
 
   if (save) {
@@ -464,6 +517,12 @@ const updateConcept = async (field, value) => {
   concept.value[field] = value;
   await conceptService.update(concept.value);
 };
+
+const updateNotes = async (text) => {
+  if (!conceptAction.value) return;
+  conceptAction.value.notes = text;
+  await conceptActionService.update(conceptAction.value);
+};
 </script>
 
 <style>
@@ -471,4 +530,5 @@ const updateConcept = async (field, value) => {
   padding: 0px;
   padding-top: 8px;
 }
+
 </style>

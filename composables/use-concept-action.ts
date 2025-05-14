@@ -50,7 +50,8 @@ export default function () {
     'examples',
     'usedFlashCards.*',
     'answeredQuestions.*',
-    'actionTimestamps.*'
+    'actionTimestamps.*',
+    'notes'
   ]);
 
   const list = (input: GraphQLParams = {}, options: GraphQLOptions = {}) => {

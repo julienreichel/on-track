@@ -177,6 +177,8 @@ const schema = a.schema({
       usedFlashCards: a.ref("FlashCardAction").array(),
       answeredQuestions: a.ref("QuestionAction").array(),
       actionTimestamps: a.ref("ActionTimestamp").array(),
+
+      notes: a.string(),
     })
     .secondaryIndexes((index) => [
       index("owner").name("byOwner").sortKeys(["createdAt"]),

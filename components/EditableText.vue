@@ -1,11 +1,11 @@
 <template>
   <div>
     <div v-if="!isEditing && !useRichText" @click="enableEditing">
-      {{ editedValue }}
+      {{ editedValue || placeHolder }}
     </div>
     <rich-text-renderer
       v-else-if="!isEditing && useRichText"
-      :markdown-content="editedValue"
+      :markdown-content="editedValue || placeHolder"
       @click="enableEditing"
     />
     <div v-else style="max-width: 800px">
@@ -33,6 +33,10 @@ const props = defineProps({
   value: {
     type: String,
     required: true,
+  },
+  placeHolder: {
+    type: String,
+    default: "Click to edit",
   },
   enableEditing: {
     type: Boolean,
@@ -78,6 +82,3 @@ const applyEdit = () => {
 };
 </script>
 
-<style scoped>
-/* Add your styles here */
-</style>
