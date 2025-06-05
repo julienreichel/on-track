@@ -1,6 +1,3 @@
-
-
-
 export type ConceptModel = GraphQLModel & {
   id: string;
   name: string;
@@ -21,6 +18,7 @@ export type ConceptModel = GraphQLModel & {
   followUps: ConceptPrerequisiteModel[];
   competencyId: string;
   competency: CompetencyModel;
+  posts?: PostModel[];
 };
 
 
@@ -29,6 +27,7 @@ export default function () {
   const question = useQuestion();
   const flashCard = useFlashCard();
   const prerequisite = useConceptPrerequisite();
+  const post = usePost(); // <-- add this line
   const { queryConcept, queryQuiz } = useOpenAI();
 
   const calls = useGraphqlQuery('Concept', [
@@ -58,7 +57,9 @@ export default function () {
     "followUps.concept.*",
 
     'competency.*',
-    'competency.subject.*'
+    'competency.subject.*',
+    'posts.*',
+
   ]);
 
   /**
@@ -84,13 +85,18 @@ export default function () {
       model.prerequisites.map((link) => prerequisite.delete(link))
     );
     await Promise.all(
-      model.followUps.map(async (link) => prerequisite.delete(link))
+      model.followUps.map((link) => prerequisite.delete(link))
     );
     await Promise.all(
-      model.questions.map(async (q) => question.delete(q))
+      model.questions.map((q) => question.delete(q))
     );
     await Promise.all(
-      model.flashCards.map(async (fc) => flashCard.delete(fc))
+      model.flashCards.map((fc) => flashCard.delete(fc))
+    );
+
+    // Delete all posts related to this concept
+    await Promise.all(
+      model.posts?.map((p) => post.delete(p))
     );
 
     return calls.delete(model, options) as Promise<ConceptModel>;

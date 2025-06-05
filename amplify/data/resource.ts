@@ -80,6 +80,7 @@ const schema = a.schema({
       competency: a.belongsTo("Competency", "competencyId"),
 
       conceptActions: a.hasMany("ConceptAction", "conceptId"),
+      posts: a.hasMany("Post", "conceptId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
@@ -107,6 +108,7 @@ const schema = a.schema({
 
       competencyActions: a.hasMany("CompetencyAction", "competencyId"),
       conceptActions: a.hasMany("ConceptAction", "competencyId"),
+      posts: a.hasMany("Post", "competencyId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
@@ -129,6 +131,7 @@ const schema = a.schema({
 
       competencyActions: a.hasMany("CompetencyAction", "subjectId"),
       conceptActions: a.hasMany("ConceptAction", "subjectId"),
+      posts: a.hasMany("Post", "subjectId"),
     })
     .authorization((allow) => [allow.authenticated()]),
 
@@ -223,6 +226,45 @@ const schema = a.schema({
     // only allow signed-in users to call this API
     .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function(deepgramAPIKeyHandler)),
+
+    // --- Post model ---
+    Post: a
+      .model({
+        id: a.id().required(),
+        owner: a.string(),
+
+        conceptId: a.id().required(),
+        concept: a.belongsTo("Concept", "conceptId"),
+        competencyId: a.id().required(),
+        competency: a.belongsTo("Competency", "competencyId"),
+        subjectId: a.id().required(),
+        subject: a.belongsTo("Subject", "subjectId"),
+
+        content: a.string(),
+        responseToId: a.id(),
+        responseTo: a.belongsTo("Post", "responseToId"),
+        createdAt: a.datetime(),
+        responses: a.hasMany("Post", "responseToId"),
+        likes: a.hasMany("Like", "postId"),
+      })
+      .authorization((allow) => [      
+        allow.owner(),
+        allow.authenticated().to(["read"])
+      ]),
+
+    Like: a
+      .model({
+        id: a.id().required(),
+        owner: a.string(),
+        postId: a.id().required(),
+        post: a.belongsTo("Post", "postId"),
+        createdAt: a.datetime(),
+        type: a.string(),
+      })
+      .authorization((allow) => [      
+        allow.owner(),
+        allow.authenticated().to(["read"])
+      ]),
 
     convertTextToSpeech: a
     .query()

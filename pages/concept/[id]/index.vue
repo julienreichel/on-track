@@ -1,32 +1,10 @@
 <template>
   <div v-if="concept" class="q-px-none q-py-sm q-gutter-sm">
-    <q-breadcrumbs class="q-px-sm q-pt-sm text-primary">
-      <q-breadcrumbs-el label="Subjects" to="/subjects" class="gt-sm" />
-      <q-breadcrumbs-el
-        :label="concept.competency?.subject?.name"
-        :to="`/subject/${concept.competency?.subject?.id}`"
-        class="gt-sm"
-      />
-      <q-breadcrumbs-el
-        :label="concept.competency?.name"
-        :to="`/competency/${concept.competency?.id}`"
-      />
-    </q-breadcrumbs>
-
-    <editable-text
-      :value="concept.name"
-      :enable-editing="teacherMode"
-      class="text-h3 q-px-sm"
-      @update="(text) => updateConcept('name', text)"
-    />
-    <editable-text
-      v-if="showIntro || teacherMode"
-      :value="concept.description"
-      :enable-editing="teacherMode"
-      type="textarea"
-      class="q-px-md"
-      use-rich-text
-      @update="(text) => updateConcept('description', text)"
+    <concept-header
+      :concept="concept"
+      :teacher-mode="teacherMode"
+      :show-intro="showIntro"
+      @update-concept="updateConcept"
     />
 
     <concept-status
@@ -66,7 +44,6 @@
       </p>
     </action-card>
 
-    <!-- Button to toggle notes visibility -->
     <q-page-sticky
       v-if="$q.screen.gt.sm && !showIntro"
       position="top-right"
@@ -76,166 +53,50 @@
       <q-btn
         dense
         round
-        :icon="hiddendSplitter ? 'notes' : 'playlist_remove'"
+        :icon="notesVisible ? 'playlist_remove' : 'notes'"
         class="toggle-notes-btn"
         @click="toggleNotes"
       />
+      <q-btn
+        dense
+        round
+        :icon="chatVisible ? 'chat_bubble' : 'chat_bubble_outline'"
+        class="toggle-chat-btn q-ml-xs"
+        @click="toggleChat"
+      />
     </q-page-sticky>
 
-    <!-- Splitter for q-stepper and notes -->
     <q-splitter
       v-if="!showIntro"
       v-model="splitterModel"
       :limits="[50, 100]"
-      :horizontal="$q.screen.lt.md || !!hiddendSplitter"
+      :horizontal="$q.screen.lt.md || !panelVisible"
       class="notes-splitter"
     >
       <template #before>
-        <q-stepper
-          v-model="activeTab"
-          flat
-          header-nav
-          active-icon="school"
-          :contracted="$q.screen.lt.md"
-          class="concept-runner"
-        >
-          <q-step
-            v-if="teacherMode || concept.theory"
-            name="theory"
-            title="Theory"
-            icon="article"
-            :done="hasDoneTheory"
-          >
-            <div>
-              <div v-if="!teacherMode && concept.theory">
-                <concept-runner
-                  :markdown-content="concept.theory"
-                  @finished="markAsRead('theory')"
-                />
-              </div>
-              <editable-text
-                v-if="teacherMode && concept.theory"
-                :value="concept.theory"
-                :enable-editing="teacherMode"
-                type="textarea"
-                class="q-pa-sm"
-                use-rich-text
-                @update="(text) => updateConcept('theory', text)"
-              />
-              <q-btn v-else-if="teacherMode" @click="generateConceptData()">
-                Generate
-              </q-btn>
-            </div>
-          </q-step>
-
-          <q-step
-            v-if="concept.examples"
-            name="examples"
-            title="Examples"
-            icon="ballot"
-            :done="hasDoneExamples"
-          >
-            <div>
-              <div v-if="!teacherMode && concept.examples">
-                <concept-runner
-                  :markdown-content="concept.examples"
-                  @finished="markAsRead('examples')"
-                />
-              </div>
-              <editable-text
-                v-if="teacherMode && concept.examples"
-                :value="concept.examples"
-                :enable-editing="teacherMode"
-                type="textarea"
-                class="q-pa-sm"
-                use-rich-text
-                @update="(text) => updateConcept('examples', text)"
-              />
-            </div>
-          </q-step>
-
-          <q-step
-            v-if="concept.flashCards?.length"
-            name="flashcards"
-            title="Flashcards"
-            icon="check_box"
-            :done="hasDoneFlashcards"
-          >
-            <flashcard-list
-              v-if="teacherMode"
-              v-model="concept.flashCards"
-              :concept="concept"
-            />
-            <div v-else>
-              <flashcard-runner
-                :flash-cards="concept.flashCards"
-                @updated="updateFlashCard"
-                @finished="activeTab = 'quiz'"
-              />
-            </div>
-          </q-step>
-
-          <q-step
-            v-if="teacherMode || concept.questions?.length"
-            name="quiz"
-            title="Quiz"
-            icon="help_center"
-            :done="hasDoneQuiz"
-          >
-            <div>
-              <div v-if="concept.questions?.length">
-                <question-list
-                  v-if="teacherMode"
-                  v-model="concept.questions"
-                  :concept="concept"
-                />
-                <quiz-runner
-                  v-else
-                  :questions="concept.questions"
-                  :past-questions="conceptAction?.answeredQuestions"
-                  :max="quizSize"
-                  adaptative
-                  :initial-level="quizLevel"
-                  @finished="updateQuestionsFinished"
-                  @results="updateQuestionsResults"
-                  @progress="updateQuestionsProgress"
-                />
-                <div v-if="teacherMode" class="q-pa-sm q-gutter-sm">
-                  <q-btn @click="generateQuizData()">Generate all</q-btn>
-                  <q-btn @click="generateQuizData(1)">Generate novice</q-btn>
-                  <q-btn @click="generateQuizData(2)">Generate beginner</q-btn>
-                  <q-btn @click="generateQuizData(3)"
-                    >Generate intermediate</q-btn
-                  >
-                  <q-btn @click="generateQuizData(4)">Generate advanced</q-btn>
-                </div>
-              </div>
-            </div>
-          </q-step>
-
-          <q-step name="nextSteps" title="Next steps" icon="exit_to_app">
-            <div class="q-pa-sm">
-              <concept-cards
-                v-if="nextConcepts.length"
-                :concepts="nextConcepts"
-              />
-              <competency-cards v-else :competencies="otherCompetencies" />
-            </div>
-          </q-step>
-        </q-stepper>
+        <concept-stepper
+          :concept="concept"
+          :concept-action="conceptAction"
+          :teacher-mode="teacherMode"
+          :other-undone-concepts="otherUndoneConcepts"
+          :other-competencies="otherCompetencies"
+          @read="updateRead"
+        />
       </template>
 
       <template #after>
-        <div v-if="!hiddendSplitter" class="notes-panel q-pa-xs">
-          <div class="text-caption">Click to add or edit notes</div>
-          <editable-text
-            :value="conceptAction?.notes"
-            :enable-editing="true"
-            :place-holder="notePlaceholder"
-            type="textarea"
-            class="q-pa-sm"
-            use-rich-text
+        <div v-if="panelVisible" class="notes-panel q-pa-xs col column" style="height: 100%;">
+          <concept-notes
+            v-if="notesVisible"
+            :notes="conceptAction?.notes"
+            :placeholder="notePlaceholder"
             @update="updateNotes"
+          />
+          <concept-chat
+            v-if="chatVisible"
+            v-model="newPost"
+            :posts="concept.posts"
+            @submit="submitPost"
           />
         </div>
       </template>
@@ -252,34 +113,44 @@ const route = useRoute();
 const conceptService = useConcept();
 const conceptActionService = useConceptAction();
 const competencyService = useCompetency();
-const { loading, notify } = useQuasar();
-
+const { notify } = useQuasar();
 const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
-const activeTab = ref("theory");
 const concept = ref(null);
 const conceptAction = ref(null);
 const otherUndoneConcepts = ref([]);
 const otherCompetencies = ref([]);
 const teacherMode = inject("teacherMode");
-
 const showIntro = ref(true);
 
-const splitterModel = ref(100); // Adjust the percentage for the q-stepper width
-const hiddendSplitter = ref(70); // Start with splitter hidden
+const splitterModel = ref(100);
+const notesVisible = ref(false);
+const chatVisible = ref(false);
 const notePlaceholder = ref("*Notes...*");
+const newPost = ref("");
+
+// Panel is visible if either notes or chat is enabled
+const panelVisible = computed(() => notesVisible.value || chatVisible.value);
+
 const toggleNotes = () => {
-  if (hiddendSplitter.value) {
-    splitterModel.value = Math.min(80, hiddendSplitter.value);
-    hiddendSplitter.value = false;
-  } else {
-    hiddendSplitter.value = splitterModel.value; // Hide the notes panel
-    splitterModel.value = 100; // Hide the notes panel
-  }
+  notesVisible.value = !notesVisible.value;
+  // If both are off, close the panel
+  if (!notesVisible.value && !chatVisible.value) splitterModel.value = 100;
+  else splitterModel.value = 80;
 };
+
+const toggleChat = () => {
+  chatVisible.value = !chatVisible.value;
+  // If both are off, close the panel
+  if (!notesVisible.value && !chatVisible.value) splitterModel.value = 100;
+  else splitterModel.value = 80;
+};
+
 watch(splitterModel, (newValue) => {
-  if (newValue >= 90) {
-    hiddendSplitter.value = splitterModel.value; // Hide the notes panel
+  // Optionally, auto-hide both if splitter is maximized
+  if (newValue >= 99) {
+    notesVisible.value = false;
+    chatVisible.value = false;
   }
 });
 
@@ -356,31 +227,12 @@ onMounted(async () => {
     } else {
       showIntro.value = false;
     }
-    activeTab.value = nextTab.value;
   } catch (error) {
     console.error("Failed to fetch concept or user action:", error);
   }
 });
 
-let loadedTime = null;
-watch(activeTab, (newTab) => {
-  if (newTab === "quiz") {
-    loadedTime = new Date();
-  }
-});
 
-const nextTab = computed(() => {
-  if (conceptAction.value?.inProgress) {
-    if (!hasDoneTheory.value) {
-      return "theory";
-    } else if (!hasDoneExamples.value) {
-      return "examples";
-    } else if (!hasDoneFlashcards.value) {
-      return "flashcards";
-    }
-  }
-  return "quiz";
-});
 const hasDoneTheory = computed(() => conceptAction.value?.theory);
 const hasDoneExamples = computed(() => conceptAction.value?.examples);
 const hasDoneFlashcards = computed(
@@ -399,132 +251,27 @@ const hasDoneSomething = computed(
     hasDoneQuiz.value,
 );
 
-const nextConcepts = computed(() => {
-  const nextConcepts = [];
-  if (concept.value?.followUps) {
-    concept.value.followUps.forEach((f) => nextConcepts.push(f.concept));
-  }
-  if (!nextConcepts.length) {
-    otherUndoneConcepts.value.forEach((c) => nextConcepts.push(c));
-  }
-  return nextConcepts;
-});
-
-const generateConceptData = async () => {
-  loading.show();
-
-  await conceptService.createWithAI(concept.value);
-
-  loading.hide();
-};
-
-const generateQuizData = async (level) => {
-  loading.show();
-  if (level) {
-    await conceptService.addQuizWithAI(concept.value, level);
-  } else {
-    await Promise.all(
-      [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(concept.value, l)),
-    );
-  }
-  loading.hide();
-};
-
-const updateStarted = () => {
-  if (teacherMode.value || !conceptAction.value) {
-    return false;
-  }
-  return conceptActionService.updateStarted(conceptAction.value);
-};
-
-const markAsRead = async (field) => {
-  if (teacherMode.value || !conceptAction.value) {
-    return;
-  }
-
-  let save = updateStarted();
-  if (!conceptAction.value[field]) {
-    conceptAction.value[field] = true;
-    save = true;
-  }
-
-  if (hiddendSplitter.value && !conceptAction.value.notes) {
+const updateRead = async () => {
+  console.log("Updating read status");
+  if (!chatVisible.value && !conceptAction.value.notes) {
     // Notify the user to take notes and open the notes panel
     notify({
       message: "Great job! Now is a good time to take a few notes.",
     });
     toggleNotes();
   }
-
-  if (save) {
-    await conceptActionService.update(conceptAction.value);
-  }
-
-  activeTab.value = nextTab.value;
 };
 
-const updateFlashCard = async ({ flashCardId, status }) => {
-  if (teacherMode.value || !conceptAction.value) {
-    return;
-  }
-  updateStarted();
+const updateConcept = async (field, value) => {
+  concept.value[field] = value;
+  await conceptService.update(concept.value);
+};
 
-  if (!conceptAction.value.usedFlashCards) {
-    conceptAction.value.usedFlashCards = [];
-  }
-  let flashCard = conceptAction.value.usedFlashCards.find(
-    (f) => f.flashCardId === flashCardId,
-  );
-  if (flashCard && flashCard.status === status) {
-    return;
-  }
-  let triggerOpenQuiz = false;
-  if (!flashCard) {
-    flashCard = { flashCardId };
-    conceptAction.value.usedFlashCards.push(flashCard);
-    if (
-      conceptAction.value.usedFlashCards.length ===
-      concept.value.flashCards.length
-    ) {
-      triggerOpenQuiz = true;
-    }
-  }
-  flashCard.isOk = status;
+// Only keep the following for notes/chat input
+const updateNotes = async (text) => {
+  if (!conceptAction.value) return;
+  conceptAction.value.notes = text;
   await conceptActionService.update(conceptAction.value);
-
-  if (triggerOpenQuiz) {
-    activeTab.value = nextTab.value;
-  }
-};
-
-const updateQuestionsFinished = () => {
-  if (conceptAction.value?.inProgress) {
-    return;
-  }
-  activeTab.value = "nextSteps";
-};
-
-const updateQuestionsProgress = async (questions) => {
-  if (teacherMode.value || !conceptAction.value) {
-    return;
-  }
-  if (loadedTime) {
-    conceptAction.value.actionTimestamps.push({
-      actionType: "loaded",
-      createdAt: loadedTime.toISOString(),
-    });
-    loadedTime = null;
-  }
-  return conceptActionService.updateQuestionsProgress(
-    questions,
-    conceptAction.value,
-  );
-};
-const updateQuestionsResults = async () => {
-  if (teacherMode.value || !conceptAction.value) {
-    return;
-  }
-  return conceptActionService.updateQuestionsResults(conceptAction.value);
 };
 
 const conceptDone = async () => {
@@ -543,20 +290,22 @@ const conceptDone = async () => {
 
   await conceptActionService.update(conceptAction.value);
 };
-const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
-const quizLevel = computed(() =>
-  conceptAction.value?.inProgress ? "beginner" : "intermediate",
-);
 
-const updateConcept = async (field, value) => {
-  concept.value[field] = value;
-  await conceptService.update(concept.value);
-};
-
-const updateNotes = async (text) => {
-  if (!conceptAction.value) return;
-  conceptAction.value.notes = text;
-  await conceptActionService.update(conceptAction.value);
+const postService = usePost();
+const submitPost = async () => {
+  if (!newPost.value.trim() || !concept.value?.id) return;
+  const post = await postService.create({
+    content: newPost.value.trim(),
+    conceptId: concept.value.id,
+    competencyId: concept.value.competency.id,
+    subjectId: concept.value.competency.subject.id,
+    createdAt: new Date().toISOString(),
+  });
+  if (!concept.value.posts) {
+    concept.value.posts = [];
+  }
+  concept.value.posts.push(post);
+  newPost.value = "";
 };
 </script>
 
