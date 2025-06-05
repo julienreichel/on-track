@@ -1,11 +1,7 @@
 <template>
   <div v-if="concept" class="q-px-none q-py-sm q-gutter-sm">
     <q-breadcrumbs class="q-px-sm q-pt-sm text-primary">
-      <q-breadcrumbs-el
-        label="Subjects"
-        to="/subjects"
-        class="gt-sm"
-      />
+      <q-breadcrumbs-el label="Subjects" to="/subjects" class="gt-sm" />
       <q-breadcrumbs-el
         :label="concept.competency?.subject?.name"
         :to="`/subject/${concept.competency?.subject?.id}`"
@@ -47,16 +43,36 @@
     >
       <p>You’ll go through:</p>
       <ul>
-        <li><q-icon name="article" class="text-primary"/> Theory – Understand the core ideas</li>
-        <li><q-icon name="ballot" class="text-primary"/> Examples – See it in action</li>
-        <li><q-icon name="check_box" class="text-primary"/> Flashcards – Practice key points</li>
-        <li><q-icon name="help_center" class="text-primary"/> Quiz – Test your knowledge</li>
+        <li>
+          <q-icon name="article" class="text-primary" /> Theory – Understand the
+          core ideas
+        </li>
+        <li>
+          <q-icon name="ballot" class="text-primary" /> Examples – See it in
+          action
+        </li>
+        <li>
+          <q-icon name="check_box" class="text-primary" /> Flashcards – Practice
+          key points
+        </li>
+        <li>
+          <q-icon name="help_center" class="text-primary" /> Quiz – Test your
+          knowledge
+        </li>
       </ul>
-      <p>You can explore them in any order, but complete them all to finish the concept!</p>
+      <p>
+        You can explore them in any order, but complete them all to finish the
+        concept!
+      </p>
     </action-card>
 
     <!-- Button to toggle notes visibility -->
-    <q-page-sticky v-if="$q.screen.gt.sm && !showIntro" position="top-right" style="z-index:1000" :offset="[6, 12]">      
+    <q-page-sticky
+      v-if="$q.screen.gt.sm && !showIntro"
+      position="top-right"
+      style="z-index: 1000"
+      :offset="[6, 12]"
+    >
       <q-btn
         dense
         round
@@ -64,7 +80,7 @@
         class="toggle-notes-btn"
         @click="toggleNotes"
       />
-  </q-page-sticky>
+    </q-page-sticky>
 
     <!-- Splitter for q-stepper and notes -->
     <q-splitter
@@ -75,11 +91,11 @@
       class="notes-splitter"
     >
       <template #before>
-        <q-stepper 
-          v-model="activeTab" 
-          flat 
+        <q-stepper
+          v-model="activeTab"
+          flat
           header-nav
-          active-icon="school" 
+          active-icon="school"
           :contracted="$q.screen.lt.md"
           class="concept-runner"
         >
@@ -166,7 +182,7 @@
             icon="help_center"
             :done="hasDoneQuiz"
           >
-            <div >
+            <div>
               <div v-if="concept.questions?.length">
                 <question-list
                   v-if="teacherMode"
@@ -188,20 +204,21 @@
                   <q-btn @click="generateQuizData()">Generate all</q-btn>
                   <q-btn @click="generateQuizData(1)">Generate novice</q-btn>
                   <q-btn @click="generateQuizData(2)">Generate beginner</q-btn>
-                  <q-btn @click="generateQuizData(3)">Generate intermediate</q-btn>
+                  <q-btn @click="generateQuizData(3)"
+                    >Generate intermediate</q-btn
+                  >
                   <q-btn @click="generateQuizData(4)">Generate advanced</q-btn>
                 </div>
               </div>
             </div>
           </q-step>
 
-          <q-step
-            name="nextSteps"
-            title="Next steps"
-            icon="exit_to_app"
-          >
+          <q-step name="nextSteps" title="Next steps" icon="exit_to_app">
             <div class="q-pa-sm">
-              <concept-cards v-if="nextConcepts.length" :concepts="nextConcepts" />
+              <concept-cards
+                v-if="nextConcepts.length"
+                :concepts="nextConcepts"
+              />
               <competency-cards v-else :competencies="otherCompetencies" />
             </div>
           </q-step>
@@ -263,7 +280,7 @@ const toggleNotes = () => {
 watch(splitterModel, (newValue) => {
   if (newValue >= 90) {
     hiddendSplitter.value = splitterModel.value; // Hide the notes panel
-  } 
+  }
 });
 
 onMounted(async () => {
@@ -272,27 +289,32 @@ onMounted(async () => {
     concept.value = await conceptService.get(conceptId);
 
     if (concept.value.facts?.length) {
-      notePlaceholder.value = "*Examples:*\n\n*" + concept.value.facts.join("*\n\n*") + "*";
+      notePlaceholder.value =
+        "*Examples:*\n\n*" + concept.value.facts.join("*\n\n*") + "*";
     }
-  
+
     const { userId, username } = await getCurrentUser();
 
-    if(!concept.value.followUps.length){
-      const competency = await competencyService.get(concept.value.competency.id);
+    if (!concept.value.followUps.length) {
+      const competency = await competencyService.get(
+        concept.value.competency.id,
+      );
       await Promise.all(
-        competency.concepts.filter((c) => c.id !== conceptId).map(async (c) => {
-          const actions = await conceptActionService.list({
-            conceptId: c.id,
-            userId,
-            username,
-          });
-          const started = actions[0]?.actionTimestamps?.some(
-            (a) => a.actionType === "started"
-          );
-          if (!started) {
-            otherUndoneConcepts.value.push(c);
-          }
-        })
+        competency.concepts
+          .filter((c) => c.id !== conceptId)
+          .map(async (c) => {
+            const actions = await conceptActionService.list({
+              conceptId: c.id,
+              userId,
+              username,
+            });
+            const started = actions[0]?.actionTimestamps?.some(
+              (a) => a.actionType === "started",
+            );
+            if (!started) {
+              otherUndoneConcepts.value.push(c);
+            }
+          }),
       );
       if (!otherUndoneConcepts.value.length) {
         otherCompetencies.value = competency.followUps.map((f) => f.competency);
@@ -342,7 +364,7 @@ onMounted(async () => {
 
 let loadedTime = null;
 watch(activeTab, (newTab) => {
-  if (newTab === "quiz" ) {
+  if (newTab === "quiz") {
     loadedTime = new Date();
   }
 });
@@ -355,19 +377,27 @@ const nextTab = computed(() => {
       return "examples";
     } else if (!hasDoneFlashcards.value) {
       return "flashcards";
-    } 
+    }
   }
   return "quiz";
-})
+});
 const hasDoneTheory = computed(() => conceptAction.value?.theory);
 const hasDoneExamples = computed(() => conceptAction.value?.examples);
 const hasDoneFlashcards = computed(
   () =>
     conceptAction.value?.usedFlashCards?.length ===
-    concept.value.flashCards?.length
+    concept.value.flashCards?.length,
 );
-const hasDoneQuiz = computed(() => conceptAction.value && !conceptAction.value.inProgress);
-const hasDoneSomething = computed(() => hasDoneTheory.value || hasDoneExamples.value || hasDoneFlashcards.value || hasDoneQuiz.value);
+const hasDoneQuiz = computed(
+  () => conceptAction.value && !conceptAction.value.inProgress,
+);
+const hasDoneSomething = computed(
+  () =>
+    hasDoneTheory.value ||
+    hasDoneExamples.value ||
+    hasDoneFlashcards.value ||
+    hasDoneQuiz.value,
+);
 
 const nextConcepts = computed(() => {
   const nextConcepts = [];
@@ -379,7 +409,6 @@ const nextConcepts = computed(() => {
   }
   return nextConcepts;
 });
-
 
 const generateConceptData = async () => {
   loading.show();
@@ -395,7 +424,7 @@ const generateQuizData = async (level) => {
     await conceptService.addQuizWithAI(concept.value, level);
   } else {
     await Promise.all(
-      [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(concept.value, l))
+      [1, 2, 3, 4].map((l) => conceptService.addQuizWithAI(concept.value, l)),
     );
   }
   loading.hide();
@@ -444,7 +473,7 @@ const updateFlashCard = async ({ flashCardId, status }) => {
     conceptAction.value.usedFlashCards = [];
   }
   let flashCard = conceptAction.value.usedFlashCards.find(
-    (f) => f.flashCardId === flashCardId
+    (f) => f.flashCardId === flashCardId,
   );
   if (flashCard && flashCard.status === status) {
     return;
@@ -479,7 +508,7 @@ const updateQuestionsProgress = async (questions) => {
   if (teacherMode.value || !conceptAction.value) {
     return;
   }
-  if (loadedTime){
+  if (loadedTime) {
     conceptAction.value.actionTimestamps.push({
       actionType: "loaded",
       createdAt: loadedTime.toISOString(),
@@ -488,7 +517,7 @@ const updateQuestionsProgress = async (questions) => {
   }
   return conceptActionService.updateQuestionsProgress(
     questions,
-    conceptAction.value
+    conceptAction.value,
   );
 };
 const updateQuestionsResults = async () => {
@@ -515,7 +544,9 @@ const conceptDone = async () => {
   await conceptActionService.update(conceptAction.value);
 };
 const quizSize = computed(() => (conceptAction.value?.inProgress ? 10 : 5));
-const quizLevel = computed(() => conceptAction.value?.inProgress ? "beginner" : "intermediate");
+const quizLevel = computed(() =>
+  conceptAction.value?.inProgress ? "beginner" : "intermediate",
+);
 
 const updateConcept = async (field, value) => {
   concept.value[field] = value;
@@ -534,5 +565,4 @@ const updateNotes = async (text) => {
   padding: 0px;
   padding-top: 8px;
 }
-
 </style>
