@@ -6,9 +6,12 @@
         v-for="post in sortedPosts"
         :key="post.id"
         :text="[post.content]"
-        :sent="post.owner === userId"
+        :sent="post.owner === userId && !post.isAIGenerated"
         class="q-mb-xs"
       />
+      <div v-if="loading" class="row justify-center q-mt-sm">
+        <q-spinner-dots color="primary" size="2em" />
+      </div>
     </div>
     <div class="q-mt-sm">
       <q-input
@@ -33,6 +36,7 @@ const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
 
 const props = defineProps({
   posts: {type: Array, default: () => []},
+  loading: { type: Boolean, default: false }
 });
 const emit = defineEmits(['submit']);
 const model = defineModel({ type: String, default: '' });
@@ -45,10 +49,7 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error fetching user:', error);
   }
-  console.log('User ID:', userId.value);
 });
-console.log('Chat component mounted with posts:', props.posts);
-
 const sortedPosts = computed(() => {
   return [...props.posts].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 });

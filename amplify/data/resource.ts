@@ -232,6 +232,7 @@ const schema = a.schema({
       .model({
         id: a.id().required(),
         owner: a.string(),
+        isAIGenerated: a.boolean().default(false),
 
         conceptId: a.id().required(),
         concept: a.belongsTo("Concept", "conceptId"),

@@ -96,6 +96,7 @@
             v-if="chatVisible"
             v-model="newPost"
             :posts="concept.posts"
+            :loading="aiLoading"
             @submit="submitPost"
           />
         </div>
@@ -291,21 +292,51 @@ const conceptDone = async () => {
   await conceptActionService.update(conceptAction.value);
 };
 
+const openAI = useOpenAI();
+const aiLoading = ref(false);
+
 const postService = usePost();
+
 const submitPost = async () => {
   if (!newPost.value.trim() || !concept.value?.id) return;
-  const post = await postService.create({
-    content: newPost.value.trim(),
+  const userPost = await postService.create({
+    content: newPost.value,
     conceptId: concept.value.id,
-    competencyId: concept.value.competency.id,
-    subjectId: concept.value.competency.subject.id,
+    competencyId: concept.value.competency?.id,
+    subjectId: concept.value.competency?.subject?.id,
     createdAt: new Date().toISOString(),
   });
   if (!concept.value.posts) {
     concept.value.posts = [];
   }
-  concept.value.posts.push(post);
+  concept.value.posts.push(userPost);
   newPost.value = "";
+
+  aiLoading.value = true;
+
+  try {
+    const aiResponse = await openAI.answerConceptChat({
+      question: userPost.content,
+      theory: concept.value.theory || "",
+      objectives: concept.value.objectives || [],
+      locale: concept.value.locale || "en"
+    });
+
+    const postAnswer = await postService.create({
+      content: String(aiResponse).trim(),
+      conceptId: concept.value.id,
+      competencyId: concept.value.competency?.id,
+      subjectId: concept.value.competency?.subject?.id,
+      createdAt: new Date().toISOString(),
+      isAIGenerated: true,
+      responseToId: userPost.id,
+    });
+    concept.value.posts.push(postAnswer);
+  } catch (e) {
+    console.error("AI response error:", e);
+  } finally {
+    aiLoading.value = false;
+  }
 };
 </script>
 

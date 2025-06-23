@@ -324,5 +324,51 @@ export default function () {
     return response;
   };
 
-  return { query, querySubject, querySubjectV2, queryCompetency, queryConcept, queryQuiz, queryLanguageQuiz, queryLanguageEval };
+  // Add a function for answering a chat question about a concept
+  const answerConceptChat = async ({
+    question,
+    theory,
+    objectives,
+    locale = "en"
+  }: {
+    question: string,
+    theory: string,
+    objectives: string[],
+    locale?: Locale
+  }): Promise<string> => {
+    const system = `
+You are a helpful tutor. 
+Answer student questions about the theory below. Give ONLY answer realted to the given theory.
+If the question is not related to the theory, say "Please ask question related to the concept" or "I cannot answer that question".
+Answer in one short sentence.
+<Theory> 
+${theory}
+<Objectives>
+- ${objectives.join("\n- ")}
+<Locale>
+- ${locale}
+`.trim();
+
+    const prompt = question;
+
+    const request: OpenAIRequest = {
+      system,
+      prompt,
+      token: 120,
+      format: "text",
+    };
+    return await query(request);
+  };
+
+  return {
+    query,
+    querySubject,
+    querySubjectV2,
+    queryCompetency,
+    queryConcept,
+    queryQuiz,
+    queryLanguageQuiz,
+    queryLanguageEval,
+    answerConceptChat,
+  };
 }

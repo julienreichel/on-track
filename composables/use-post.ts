@@ -1,6 +1,7 @@
 export type PostModel = GraphQLModel & {
   id: string;
   subjectId?: string;
+  isAIGenerated: boolean;
   owner: string;
   competencyId?: string;
   conceptId?: string;
@@ -24,6 +25,7 @@ export default function () {
   const calls = useGraphqlQuery('Post', [
     'id',
     'subjectId',
+    'isAIGenerated',
     'owner',
     'competencyId',
     'conceptId',
