@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="q-gutter-y-sm column full-height">
     <div class="text-caption q-mb-xs">Let's chat about this concept</div>
-    <div class="q-ma-sm">
+    <div ref="chatContainer" class="q-ma-sm concept-chat-messages col overflow-auto" >
       <q-chat-message
         v-for="post in sortedPosts"
         :key="post.id"
@@ -42,6 +42,8 @@ const emit = defineEmits(['submit']);
 const model = defineModel({ type: String, default: '' });
 
 const userId = ref(null);
+const chatContainer = ref(null);
+
 onMounted(async () => {
   try {
     const user = await getCurrentUser();
@@ -49,11 +51,38 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error fetching user:', error);
   }
+  scrollToBottom();
 });
+
 const sortedPosts = computed(() => {
   return [...props.posts].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 });
+
 function submit() {
   if (model.value.trim()) emit('submit');
 }
+
+function scrollToBottom() {
+  console.log('scrollToBottom called');
+  if (chatContainer.value) {
+    console.log('Scrolling to bottom', chatContainer.value.scrollHeight);
+    chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+  }
+}
+
+watch(
+  () => props.posts.length,
+  () => {
+    nextTick(() => {
+      scrollToBottom();
+    });
+  }
+);
 </script>
+
+<style scoped>
+.concept-chat-messages {
+  min-height: 120px;
+  max-height: 50vh;
+}
+</style>
