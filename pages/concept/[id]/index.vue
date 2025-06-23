@@ -315,8 +315,15 @@ const submitPost = async () => {
   aiLoading.value = true;
 
   try {
+    // Get last 4 messages as context (excluding the new userPost)
+    const contextMessages = (concept.value.posts || [])
+      .slice(-7, -1)
+      .map(p => `${!p.isAIGenerated ? "User" : "AI"}: ${p.content}`)
+      .join('\n');
+
     const aiResponse = await openAI.answerConceptChat({
       question: userPost.content,
+      context: contextMessages,
       theory: concept.value.theory || "",
       objectives: concept.value.objectives || [],
       locale: concept.value.locale || "en"

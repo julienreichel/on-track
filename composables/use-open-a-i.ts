@@ -327,19 +327,22 @@ export default function () {
   // Add a function for answering a chat question about a concept
   const answerConceptChat = async ({
     question,
+    context = "",
     theory,
     objectives,
     locale = "en"
   }: {
     question: string,
+    context?: string,
     theory: string,
     objectives: string[],
     locale?: Locale
   }): Promise<string> => {
     const system = `
 You are a helpful tutor. 
-Answer student questions about the theory below. Give ONLY answer realted to the given theory.
-If the question is not related to the theory, say "Please ask question related to the concept" or "I cannot answer that question".
+Answer student questions about the theory below. Give ONLY answers related to the given theory.
+If the question is not related to the theory, say "Please ask questions related to the concept" or "I cannot answer that question".
+Use the objectives as a guide for what is relevant.
 Answer in one short sentence.
 <Theory> 
 ${theory}
@@ -347,13 +350,14 @@ ${theory}
 - ${objectives.join("\n- ")}
 <Locale>
 - ${locale}
+<ChatContext>
+The following is the recent conversation between the user and the AI. Use it as context for your answer if relevant.
+${context}
 `.trim();
-
-    const prompt = question;
 
     const request: OpenAIRequest = {
       system,
-      prompt,
+      prompt: question,
       token: 120,
       format: "text",
     };
