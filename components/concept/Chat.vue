@@ -63,9 +63,7 @@ function submit() {
 }
 
 function scrollToBottom() {
-  console.log('scrollToBottom called');
   if (chatContainer.value) {
-    console.log('Scrolling to bottom', chatContainer.value.scrollHeight);
     chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
   }
 }
