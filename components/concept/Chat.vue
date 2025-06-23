@@ -47,7 +47,7 @@ const chatContainer = ref(null);
 onMounted(async () => {
   try {
     const user = await getCurrentUser();
-    userId.value = user.userId;
+    userId.value = user.username;
   } catch (error) {
     console.error('Error fetching user:', error);
   }
