@@ -83,7 +83,7 @@
             :max="5"
             adaptative
             initial-level="intermediate"
-            @finished="quizFinished"
+            @finished="handleQuizFinished"
             @results="
               conceptActionService.updateQuestionsResults(
                 conceptsToRevisit[0].action,
@@ -215,92 +215,82 @@ const conceptActionService = useConceptAction();
 const compentencyService = useCompetency();
 const competencyActionService = useCompetencyAction();
 
-// Utility function to format dates
-const formatDate = (date) => {
-  const options = { month: "short", day: "numeric" };
-  return date.toLocaleDateString(undefined, options);
-};
+// Utility: Format a date as 'Mon DD'
+function formatShortDate(date) {
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
-const getWeekday = (date) => {
+// Utility: Get weekday short name
+function getShortWeekday(date) {
   return date.toLocaleDateString(undefined, { weekday: "short" });
-};
+}
 
-// Function to generate the last 14 days
-const generateLastDays = () => {
+// Generate last N days for history
+function generateLastNDays(n = 14) {
   const days = [];
   const today = new Date();
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < n; i++) {
     const day = new Date();
     day.setDate(today.getDate() - i);
     days.unshift({
-      date: day.toISOString().split("T")[0], // YYYY-MM-DD
-      shortDate: formatDate(day),
-      weekday: getWeekday(day),
+      date: day.toISOString().split("T")[0],
+      shortDate: formatShortDate(day),
+      weekday: getShortWeekday(day),
       hasAction: false,
       actions: [],
     });
   }
   return days;
-};
+}
 
-const quizFinished = () => {
-  // mark today as having an action
-  const today = new Date().toISOString().split("T")[0];
-  const historyDay = history.value.find((day) => day.date === today);
-  if (historyDay) {
-    if (!historyDay.hasAction) {
-      // notify the user that they have completed a quiz today
-      notify({
-        message:
-          "Congratulation, a quiz a day, keeps the learning curve at bay!",
-      });
-      hasHistory.value = hasHistory.value + 1;
-      historyDay.hasAction = true;
-    }    
-    historyDay.actions.push({
-      actionType: "review",
-      conceptId: conceptsToRevisit.value[0],
-    });
+// Notify user with a message
+function notifyUser(message) {
+  notify({ message });
+}
+
+// Add action to history for a given date
+function addActionToHistory({ createdAt, actionType, concept, competency }) {
+  if (!createdAt) return;
+  if (!['quiz', 'review', 'pre-quiz', 'final-quiz'].includes(actionType)) return;
+  const actionDate = new Date(createdAt).toISOString().split("T")[0];
+  const historyDay = history.value.find((day) => day.date === actionDate);
+  if (!historyDay) return;
+  if (!historyDay.hasAction) {
+    historyDay.hasAction = true;
+    hasHistory.value++;
   }
+  historyDay.actions.push({ actionType, concept, competency });
+}
 
-  sortRevisitedConcepts();
-};
+// Check if a concept action needs review
+function needsReview(action) {
+  const validQuestions = action.answeredQuestions?.filter((q) => q.isValid).length || 0;
+  return !action.inProgress && (action.answeredQuestions?.length || validQuestions < 20);
+}
 
-const sortRevisitedConcepts = () => {
+// Sort concepts to revisit and set active tab
+function updateConceptsToRevisit() {
   conceptsToRevisit.value = conceptsToRevisit.value.filter((concept) => {
     const { actionTimestamps, answeredQuestions } = concept.action;
-    const reviews = actionTimestamps.filter(
-      ({ actionType }) => actionType === "review" || actionType === "quiz",
-    );
+    const reviews = actionTimestamps.filter(({ actionType }) => ['review', 'quiz'].includes(actionType));
     const nbReviews = reviews.length;
-    const lastReview = reviews.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-    )[0];
-
+    const lastReview = reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
     const validQuestions = answeredQuestions.filter((q) => q.isValid).length;
-    // we increase the time between reviews up to 5 days
-    const nextReviewIn =
-      Math.min(10, nbReviews * nbReviews) * 12 * 60 * 60 * 1000;
-    return (
-      lastReview &&
-      validQuestions < 20 &&
-      new Date() - new Date(lastReview.createdAt) > nextReviewIn
-    );
+    const nextReviewIn = Math.min(10, nbReviews * nbReviews) * 12 * 60 * 60 * 1000;
+    return lastReview && validQuestions < 20 && new Date() - new Date(lastReview.createdAt) > nextReviewIn;
   });
-
   conceptsToRevisit.value.sort((a, b) => {
     if (a.action.actionTimestamps.length === 0) return -1;
     if (b.action.actionTimestamps.length === 0) return 1;
-    const lastActionsA = a.action.actionTimestamps.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-    )[0];
-    const lastActionsB = b.action.actionTimestamps.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-    )[0];
-    return new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt);
+    const lastA = a.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    const lastB = b.action.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    return new Date(lastA.createdAt) - new Date(lastB.createdAt);
   });
+  setDefaultActiveTab();
+}
 
-  // Pick a default active tab
+// Set the default active tab based on available concepts
+function setDefaultActiveTab() {
   if (conceptsToRevisit.value.length) {
     activeTab.value = "review";
     conceptsToRevisit.value[0].action.actionTimestamps.push({
@@ -308,226 +298,126 @@ const sortRevisitedConcepts = () => {
       createdAt: new Date().toISOString(),
     });
   } else if (conceptsInProgress.value.length) {
-    if (activeTab.value === "review"){
-      notify({
-          message:
-            "Great job reviewing! Ready to continue your journey?",
-        });
-    }
+    if (activeTab.value === "review") notifyUser("Great job reviewing! Ready to continue your journey?");
     activeTab.value = "continue";
   } else {
-    if (activeTab.value === "review"){
-      notify({
-          message:
-            "Great job reviewing! Ready to start a new journey?",
-        });
-    }
+    if (activeTab.value === "review") notifyUser("Great job reviewing! Ready to start a new journey?");
     activeTab.value = "explore";
   }
+}
 
-};
-
-const updateHistoryFromAction = ({ createdAt, actionType, concept, competency }) => {
-  if (!createdAt) return;
-  if (
-    actionType !== "quiz" &&
-    actionType !== "review" &&
-    actionType !== "pre-quiz" &&
-    actionType !== "final-quiz"
-  ){
-    return;
-  }
-  const actionDate = new Date(createdAt).toISOString().split("T")[0];
-  const historyDay = history.value.find((day) => day.date === actionDate);
-  if (!historyDay) {
-    return;
-  }
-  if (!historyDay.hasAction) {
+// Mark quiz as finished and update history
+function handleQuizFinished() {
+  const today = new Date().toISOString().split("T")[0];
+  const historyDay = history.value.find((day) => day.date === today);
+  if (historyDay && !historyDay.hasAction) {
+    notifyUser("Congratulation, a quiz a day, keeps the learning curve at bay!");
+    hasHistory.value++;
     historyDay.hasAction = true;
-    hasHistory.value = hasHistory.value + 1;
   }
-  historyDay.actions.push({
-    actionType,
-    concept,
-    competency
-  });
-};
+  if (historyDay) {
+    historyDay.actions.push({ actionType: "review", conceptId: conceptsToRevisit.value[0] });
+  }
+  updateConceptsToRevisit();
+}
 
-const checkToReview = (action) => {
-  const { answeredQuestions, inProgress} = action;
-  const validQuestions = answeredQuestions?.filter((q) => q.isValid).length || 0;
-  return !inProgress && answeredQuestions?.length || validQuestions < 20;
-};
-
-const fetchCompetencyConcepts = async (userId, username, activeCompetencies) => {
+// Fetch all competency concepts for a user
+async function getCompetencyConcepts(userId, username, activeCompetencies) {
   const concepts = [];
   try {
-    // Fetch competency actions for the user
-    let actions = await competencyActionService.list({
-      userId,
-      username,
-    });
+    let actions = await competencyActionService.list({ userId, username });
     actions = actions.filter((a) => a.actionTimestamps?.length || activeCompetencies.has(a.competencyId));
-
-    // Collect all action timestamps
     const allActionTimestamps = [];
-
     const fetchedCompetencies = new Set();
-    
-    // Fetch all compentency in parallel
-    const competenciesPromises = actions.map((action) =>
-      compentencyService.get(action.competencyId),
-    );
+    const competencies = await Promise.all(actions.map((action) => compentencyService.get(action.competencyId)));
     actions.forEach((action) => fetchedCompetencies.add(action.competencyId));
-    const competencies = await Promise.all(competenciesPromises);
-
-    for (let i = 0; i < actions.length; i++) {
-      const action = actions[i];
-      const competency = competencies[i];
+    competencies.forEach((competency, i) => {
       conceptService.sort(competency.concepts);
-
       competency.concepts.forEach((concept) => concepts.push(concept));
-      
-      // Collect all actionTimestamps
-      if(action.actionTimestamps){
-        allActionTimestamps.push(...action.actionTimestamps.map((a) => ({
-          ...a,
-          competency
-        })));
+      if (actions[i].actionTimestamps) {
+        allActionTimestamps.push(...actions[i].actionTimestamps.map((a) => ({ ...a, competency })));
       }
-      
-      competency.followUps?.forEach(({competency}) => {
-        if (fetchedCompetencies.has(competency.id)) return;
-        relatedCompetencies.value.push(competency);        
-        fetchedCompetencies.add(competency.id);
+      competency.followUps?.forEach(({ competency }) => {
+        addUniqueCompetency(competency, fetchedCompetencies, relatedCompetencies);
       });
-      competency.prerequisites?.forEach(({prerequisite}) => {
-        if (fetchedCompetencies.has(prerequisite.id)) return;
-        relatedCompetencies.value.push(prerequisite);   
-        fetchedCompetencies.add(prerequisite.id);     
+      competency.prerequisites?.forEach(({ prerequisite }) => {
+        addUniqueCompetency(prerequisite, fetchedCompetencies, relatedCompetencies);
       });
-    }
-
-    // Update history based on actionTimestamps
-    allActionTimestamps.forEach(updateHistoryFromAction);
+    });
+    allActionTimestamps.forEach(addActionToHistory);
   } catch (error) {
     console.error("Error fetching competency actions:", error);
   }
   return concepts;
-};
-// Function to fetch and categorize actions
-const fetchConceptActions = async (userId, username) => {
+}
+
+// Helper to add unique competencies/prerequisites
+function addUniqueCompetency(item, set, list) {
+  if (!set.has(item.id)) {
+    list.value.push(item);
+    set.add(item.id);
+  }
+}
+
+// Fetch and categorize concept actions for a user
+async function fetchAndCategorizeConceptActions(userId, username) {
   try {
-    // Initialize history
-    history.value = generateLastDays();
-
-    // Fetch concept actions for the user
-    const actions = await conceptActionService.list({
-      userId,
-      username,
+    history.value = generateLastNDays();
+    const actions = await conceptActionService.list({ userId, username });
+    actions.sort((a, b) => {
+      if (!a.actionTimestamps?.length) return -1;
+      if (!b.actionTimestamps?.length) return 1;
+      const lastA = a.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      const lastB = b.actionTimestamps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      return new Date(lastA.createdAt) - new Date(lastB.createdAt);
     });
-
-    actions
-      .filter((a) => Boolean(a))
-      .sort((a, b) => {
-        if (!a.actionTimestamps?.length) return -1;
-        if (!b.actionTimestamps?.length) return 1;
-        const lastActionsA = a.actionTimestamps.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-        )[0];
-        const lastActionsB = b.actionTimestamps.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-        )[0];
-        return (
-          new Date(lastActionsA.createdAt) - new Date(lastActionsB.createdAt)
-        );
-      });
-
-    // Initialize sets for fetched concepts and related concepts
     const fetchedConcepts = new Set();
     const relatedConcept = {};
-
     const activeCompetencies = new Set();
     actions.forEach((action) => {
       if (action.actionTimestamps?.find((a) => a.actionType === "started")) {
         activeCompetencies.add(action.competencyId);
       }
     });
-
-    const competencyConcepts = await fetchCompetencyConcepts(userId, username, activeCompetencies);
-
-    // Reset categorized concepts
+    const competencyConcepts = await getCompetencyConcepts(userId, username, activeCompetencies);
     conceptsInProgress.value = [];
     conceptsToRevisit.value = [];
-
-    // Collect all action timestamps
     const allActionTimestamps = [];
-
-    // Fetch all concepts in parallel
     const conceptPromises = actions.map((action) => {
-      // Check if the concept is already fetched
       const cc = competencyConcepts.find((c) => c.id === action.conceptId);
-      if (cc && !checkToReview(action)) {
-        return cc;
-      }
+      if (cc && !needsReview(action)) return cc;
       return conceptService.get(action.conceptId);
     });
     const concepts = await Promise.all(conceptPromises);
-
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       const concept = concepts[i];
       if (!concept) continue;
       concept.action = action;
-      if (action.inProgress) {
-        conceptsInProgress.value.push(concept);
-      } else if (checkToReview(action)) {
-        conceptsToRevisit.value.push(concept);
-      }
+      if (action.inProgress) conceptsInProgress.value.push(concept);
+      else if (needsReview(action)) conceptsToRevisit.value.push(concept);
       fetchedConcepts.add(action.conceptId);
-
-      // Collect all actionTimestamps
       if (action.actionTimestamps && action.actionTimestamps.length) {
-        allActionTimestamps.push(...action.actionTimestamps.map((a) => ({
-          ...a,
-          concept
-        })));
+        allActionTimestamps.push(...action.actionTimestamps.map((a) => ({ ...a, concept })));
       }
-
-      // Collect followUp concepts
       if (concept.followUps?.length) {
         for (const followUp of concept.followUps) {
           const cc = followUp.concept || competencyConcepts.find((c) => c.id === followUp.conceptId);
-          if (followUp.conceptId && cc) {
-            relatedConcept[followUp.conceptId] = cc;
-          }          
+          if (followUp.conceptId && cc) relatedConcept[followUp.conceptId] = cc;
         }
       }
     }
-    // put the compentency concepts in the end of the list
     competencyConcepts.forEach((concept) => {
       relatedConcept[concept.id] = concept;
     });
-
-    // Update history based on actionTimestamps
-    allActionTimestamps.forEach(updateHistoryFromAction);
-
-    // Fetch related concepts, excluding already fetched concepts
-    relatedConcepts.value = Object.values(relatedConcept).filter(
-      (concept) => !fetchedConcepts.has(concept.id),
-    );
-
-    if (!relatedConcepts.value.length) {
-      // find the related competencies
-
-    }
-
+    allActionTimestamps.forEach(addActionToHistory);
+    relatedConcepts.value = Object.values(relatedConcept).filter((concept) => !fetchedConcepts.has(concept.id));
     emptyState.value = !concepts.length;
-    sortRevisitedConcepts();
+    updateConceptsToRevisit();
   } catch (error) {
     console.error("Error fetching concept actions:", error);
   }
-};
+}
 
 // Fetch data on component mount
 const userName = ref("");
@@ -535,7 +425,7 @@ onMounted(async () => {
   const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
   const currentUser = await getCurrentUser();
   const { userId, username } = currentUser;
-  fetchConceptActions(userId, username);
+  await fetchAndCategorizeConceptActions(userId, username);
   const userAttributes = await fetchUserAttributes();
   userName.value = userAttributes.name || "";
 });
