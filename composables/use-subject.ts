@@ -29,6 +29,10 @@ export default function () {
     "description"
   ]);
 
+  // Add missing service definitions for fetchUserSubjects
+  const competencyActionService = useCompetencyAction();
+  const conceptActionService = useConceptAction();
+
   /**
    * Delete a subject model
    *
@@ -214,12 +218,64 @@ export default function () {
     return newSubject;
   };
   
-  
+  /**
+   * Fetch the subjects the user is currently working on, sorted by most recent activity (max N, default 5)
+   */
+  const fetchUserSubjects = async (max: number = 5): Promise<SubjectModel[]> => {
+    // @ts-expect-error: NuxtApp type is unknown, but $Amplify.Auth is present in runtime
+    const { getCurrentUser } = useNuxtApp().$Amplify.Auth;
+    const currentUser = await getCurrentUser();
+    const { userId, username } = currentUser;
+    // Fetch all actions
+    const [competencyActions, conceptActions] = await Promise.all([
+      competencyActionService.list({ userId, username }),
+      conceptActionService.list({ userId, username })
+    ]);
+    // Extract unique subjectIds and last action date
+    const subjectIdToLastAction: Record<string, Date> = {};
+    const subjectIds = new Set<string>();
+    function extractActionWithSubject(a: Record<string, unknown>): { subjectId?: string, actionTimestamps?: { createdAt: string }[], createdAt?: string } {
+      return {
+        subjectId: typeof a.subjectId === 'string' ? a.subjectId : undefined,
+        actionTimestamps: Array.isArray(a.actionTimestamps) ? a.actionTimestamps as { createdAt: string }[] : undefined,
+        createdAt: typeof a.createdAt === 'string' ? a.createdAt : undefined
+      };
+    }
+    function processActionRaw(a: Record<string, unknown>) {
+      const { subjectId, actionTimestamps, createdAt } = extractActionWithSubject(a);
+      if (!subjectId) return;
+      subjectIds.add(subjectId);
+      let lastDate: Date | undefined = undefined;
+      if (Array.isArray(actionTimestamps) && actionTimestamps.length) {
+        const last = actionTimestamps[actionTimestamps.length-1];
+        if (last && last.createdAt) lastDate = new Date(last.createdAt);
+      } else if (createdAt) {
+        lastDate = new Date(createdAt);
+      }
+      if (lastDate) {
+        const prev = subjectIdToLastAction[subjectId];
+        if (!prev || lastDate > prev) subjectIdToLastAction[subjectId] = lastDate;
+      }
+    }
+    competencyActions.forEach(processActionRaw);
+    conceptActions.forEach(processActionRaw);
+    // Sort subjectIds by last action, take the top N, and fetch those subjects
+    const sortedSubjectIds = Array.from(subjectIds)
+      .sort((a, b) => {
+        const dateA = subjectIdToLastAction[a] || new Date(0);
+        const dateB = subjectIdToLastAction[b] || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      })
+      .slice(0, max);
+    const subjectPromises = sortedSubjectIds.map(id => calls.get(id));
+    return (await Promise.all(subjectPromises)).filter((s): s is SubjectModel => !!s);
+  };
 
   return {
     ...calls,
     delete: del,
     createWithAI,
-    createWithAIV2
+    createWithAIV2,
+    fetchUserSubjects
   };
 }

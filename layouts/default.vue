@@ -55,9 +55,9 @@
 
       <q-separator spaced />
       <q-item-label header>Your Subjects</q-item-label>
-      <q-list v-if="recentSubjects.length">
+      <q-list v-if="userSubjects.length">
         <q-item
-          v-for="subject in recentSubjects"
+          v-for="subject in userSubjects"
           :key="subject.id"
           clickable
           :to="`/subject/${subject.id}`"
@@ -133,7 +133,7 @@
 <script setup lang="ts">
 const { notify } = useQuasar();
 // @ts-expect-error: NuxtApp type is unknown, but $Amplify.Auth is present in runtime
-const { fetchUserAttributes, getCurrentUser, signOut } = useNuxtApp().$Amplify.Auth;
+const { fetchUserAttributes, signOut } = useNuxtApp().$Amplify.Auth;
 const router = useRouter();
 
 const leftDrawerOpen = ref(false);
@@ -143,64 +143,10 @@ const userName = ref("");
 const userEmail = ref("");
 
 const subjectService = useSubject();
-const competencyActionService = useCompetencyAction();
-const conceptActionService = useConceptAction();
+const userSubjects = ref([]);
 
-const userSubjects = ref([]); // All subjects user is currently doing
-const recentSubjects = computed(() => userSubjects.value.slice(0, 5));
-
-// Helper type for actions (loose, to allow GraphQLModel)
-type AnyAction = Record<string, unknown>;
-function extractActionWithSubject(a: AnyAction): { subjectId?: string, actionTimestamps?: { createdAt: string }[], createdAt?: string } {
-  return {
-    subjectId: typeof a.subjectId === 'string' ? a.subjectId : undefined,
-    actionTimestamps: Array.isArray(a.actionTimestamps) ? a.actionTimestamps as { createdAt: string }[] : undefined,
-    createdAt: typeof a.createdAt === 'string' ? a.createdAt : undefined
-  };
-}
-
-async function fetchUserSubjects() {
-  try {
-    const { userId, username } = await getCurrentUser();
-    // Fetch all actions
-    const [competencyActions, conceptActions] = await Promise.all([
-      competencyActionService.list({ userId, username }),
-      conceptActionService.list({ userId, username })
-    ]);
-    // Extract unique subjectIds and last action date
-    const subjectIdToLastAction: Record<string, Date> = {};
-    const subjectIds = new Set<string>();
-    function processActionRaw(a: AnyAction) {
-      const { subjectId, actionTimestamps, createdAt } = extractActionWithSubject(a);
-      if (!subjectId) return;
-      subjectIds.add(subjectId);
-      let lastDate: Date | undefined = undefined;
-      if (Array.isArray(actionTimestamps) && actionTimestamps.length) {
-        const last = actionTimestamps[actionTimestamps.length-1];
-        if (last && last.createdAt) lastDate = new Date(last.createdAt);
-      } else if (createdAt) {
-        lastDate = new Date(createdAt);
-      }
-      if (lastDate) {
-        const prev = subjectIdToLastAction[subjectId];
-        if (!prev || lastDate > prev) subjectIdToLastAction[subjectId] = lastDate;
-      }
-    }
-    competencyActions.forEach(processActionRaw);
-    conceptActions.forEach(processActionRaw);
-    // Instead of fetching all subjects, fetch only the last 5 by id (sorted by last action)
-    const sortedSubjectIds = Array.from(subjectIds)
-      .sort((a, b) => {
-        const dateA = subjectIdToLastAction[a] || new Date(0);
-        const dateB = subjectIdToLastAction[b] || new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      })
-      .slice(0, 5);
-    const subjectPromises = sortedSubjectIds.map(id => subjectService.get(id));
-    userSubjects.value = (await Promise.all(subjectPromises)).filter((s): s is { id: string } => !!s);
-  } catch (e) {
-    console.error('Failed to fetch user subjects', e);
-  }
+async function fetchAndSetUserSubjects() {
+  userSubjects.value = await subjectService.fetchUserSubjects(5);
 }
 
 onMounted(async () => {
@@ -214,7 +160,7 @@ onMounted(async () => {
   } catch (error) {
     console.error("Failed to fetch user attributes:", error);
   }
-  fetchUserSubjects();
+  await fetchAndSetUserSubjects();
 });
 
 provide('teacherMode', teacherMode)
