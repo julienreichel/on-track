@@ -56,22 +56,35 @@
       <q-separator spaced />
       <q-item-label header>Your Subjects</q-item-label>
       <q-list v-if="userSubjects.length">
-        <q-item
+        <q-expansion-item
           v-for="subject in userSubjects"
           :key="subject.id"
-          clickable
-          :to="`/subject/${subject.id}`"
+          :content-inset-level="0.2"
+          :label="subject.name"
+          expand-separator
+          dense
         >
-          <q-item-section avatar>
-            <q-icon name="school" />
-          </q-item-section>
-          <q-item-section>{{ subject.name }}</q-item-section>
-        </q-item>
+          <q-list v-if="subject.startedCompetencies && subject.startedCompetencies.length">
+            <q-item
+              v-for="comp in subject.startedCompetencies.filter(c => ['started', 'ready_for_final', 'mastered'].includes(c.state))"
+              :key="comp.id"
+              clickable
+              :to="`/competency/${comp.id}`"
+            >
+              <q-item-section>{{ comp.name }}</q-item-section>
+              <q-item-section side>
+                <q-badge
+                  v-if="typeof comp.revisionOrMasteredCount === 'number' && typeof comp.totalConcepts === 'number'"
+                  :label="`${comp.revisionOrMasteredCount}/${comp.totalConcepts}`"
+                  color="secondary"
+                  style="min-width: 32px; justify-content: center; font-size: 0.85em;"
+                />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-expansion-item>
         <q-item clickable to="/subjects/current">
-          <q-item-section avatar>
-            <q-icon name="list" />
-          </q-item-section>
-          <q-item-section>All</q-item-section>
+          <q-item-section>All Your Subjects</q-item-section>
         </q-item>
       </q-list>
 
