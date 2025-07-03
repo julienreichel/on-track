@@ -409,11 +409,106 @@ export default function () {
     return subjects;
   };
 
+  /**
+   * Get the next action to continue for the user (concept to review, latest started concept, or latest started competency)
+   * Returns: { type: 'concept'|'competency', id: string, subjectId: string, date?: Date }
+   */
+  function getNextActionToContinue(subjects: SubjectModel[]):
+    | { type: 'concept'; id: string; subjectId: string; date?: Date }
+    | { type: 'competency'; id: string; subjectId: string; date?: Date }
+    | null {
+    // 1. Find all concepts with a nextReview date in the past or today (not mastered)
+    const now = new Date();
+    const conceptsToReview: Array<{
+      concept: ConceptModel & { state?: string; action?: ConceptAction; nextReview?: Date };
+      subjectId: string;
+      nextReview: Date;
+    }> = [];
+    for (const subject of subjects) {
+      for (const comp of subject.startedCompetencies || []) {
+        for (const concept of comp.concepts || []) {
+          if (
+            concept.nextReview &&
+            concept.state !== 'mastered' &&
+            concept.nextReview <= now
+          ) {
+            conceptsToReview.push({
+              concept,
+              subjectId: subject.id,
+              nextReview: concept.nextReview,
+            });
+          }
+        }
+      }
+    }
+    if (conceptsToReview.length) {
+      // Oldest review first
+      conceptsToReview.sort((a, b) => a.nextReview.getTime() - b.nextReview.getTime());
+      const { concept, subjectId, nextReview } = conceptsToReview[0];
+      return { type: 'concept', id: concept.id, subjectId, date: nextReview };
+    }
+    // 2. If no concept to review, find latest started concept (by last action date)
+    const startedConcepts: Array<{
+      concept: ConceptModel & { state?: string; action?: ConceptAction; nextReview?: Date };
+      subjectId: string;
+      lastAction: Date;
+    }> = [];
+    for (const subject of subjects) {
+      for (const comp of subject.startedCompetencies || []) {
+        for (const concept of comp.concepts || []) {
+          if (concept.state === 'started' && concept.action && concept.action.actionTimestamps && concept.action.actionTimestamps.length) {
+            const last = concept.action.actionTimestamps[concept.action.actionTimestamps.length - 1];
+            if (last && last.createdAt) {
+              startedConcepts.push({
+                concept,
+                subjectId: subject.id,
+                lastAction: new Date(last.createdAt),
+              });
+            }
+          }
+        }
+      }
+    }
+    if (startedConcepts.length) {
+      startedConcepts.sort((a, b) => b.lastAction.getTime() - a.lastAction.getTime());
+      const { concept, subjectId, lastAction } = startedConcepts[0];
+      return { type: 'concept', id: concept.id, subjectId, date: lastAction };
+    }
+    // 3. If no concept started, find latest started competency (by last action date)
+    const startedCompetencies: Array<{
+      comp: CompetencyModel & { state?: string; action?: CompetencyAction; revisionOrMasteredCount?: number; totalConcepts?: number };
+      subjectId: string;
+      lastAction: Date;
+    }> = [];
+    for (const subject of subjects) {
+      for (const comp of subject.startedCompetencies || []) {
+        if (['started', 'ready_for_final'].includes(comp.state) && comp.action && comp.action.actionTimestamps && comp.action.actionTimestamps.length) {
+          const last = comp.action.actionTimestamps[comp.action.actionTimestamps.length - 1];
+          if (last && last.createdAt) {
+            startedCompetencies.push({
+              comp,
+              subjectId: subject.id,
+              lastAction: new Date(last.createdAt),
+            });
+          }
+        }
+      }
+    }
+    if (startedCompetencies.length) {
+      startedCompetencies.sort((a, b) => b.lastAction.getTime() - a.lastAction.getTime());
+      const { comp, subjectId, lastAction } = startedCompetencies[0];
+      return { type: 'competency', id: comp.id, subjectId, date: lastAction };
+    }
+    // Nothing to continue
+    return null;
+  }
+
   return {
     ...calls,
     delete: del,
     createWithAI,
     createWithAIV2,
-    fetchUserSubjects
+    fetchUserSubjects,
+    getNextActionToContinue
   };
 }

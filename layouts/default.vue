@@ -14,6 +14,16 @@
         <q-toolbar-title> On-track </q-toolbar-title>
         <q-space />
         <q-btn
+          v-if="showContinue"
+          aria-label="Continue"
+          class="q-mr-sm"
+          :disable="!userSubjects.length"
+          color="accent"
+          @click="handleContinue"
+        >
+          <span class="q-ml-xs">Continue</span>
+        </q-btn>
+        <q-btn
           dense
           flat
           round
@@ -206,6 +216,32 @@ const logout = async () => {
   }
   router.push("/login");
 };
+
+// Handle Continue button logic
+async function handleContinue() {
+  if (!userSubjects.value.length) {
+    notify({ message: 'No subjects to continue.' });
+    return;
+  }
+  // Always use the latest userSubjects
+  const subjects = userSubjects.value;
+  const next = subjectService.getNextActionToContinue(subjects);
+  if (!next) {
+    notify({ message: 'Nothing to continue! 🎉' });
+    return;
+  }
+  if (next.type === 'concept') {
+    router.push(`/concept/${next.id}?test=continue`);
+  } else if (next.type === 'competency') {
+    router.push(`/competency/${next.id}?test=continue`);
+  }
+}
+
+const showContinue = computed(() => {
+  if (!userSubjects.value.length) return false;
+  const next = subjectService.getNextActionToContinue(userSubjects.value);
+  return !!next;
+});
 </script>
 
 <style>
