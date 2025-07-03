@@ -218,6 +218,25 @@ export default function () {
     return newSubject;
   };
   
+  // Types for actions and startedCompetency
+  interface CompetencyAction {
+    competencyId: string;
+    state?: string;
+    type?: string;
+    [key: string]: unknown;
+  }
+  interface StartedCompetency extends CompetencyModel {
+    state: string;
+  }
+
+  // Extend ConceptAction type for state computation
+  interface ConceptAction {
+    conceptId: string;
+    answeredQuestions?: { isValid: boolean }[];
+    actionTimestamps?: { actionType: string }[];
+    [key: string]: unknown;
+  }
+
   /**
    * Fetch the subjects the user is currently working on, sorted by most recent activity (max N, default 5)
    */
@@ -268,7 +287,126 @@ export default function () {
       })
       .slice(0, max);
     const subjectPromises = sortedSubjectIds.map(id => calls.get(id));
-    return (await Promise.all(subjectPromises)).filter((s): s is SubjectModel => !!s);
+    const subjects = (await Promise.all(subjectPromises)).filter((s): s is SubjectModel => !!s);
+
+    // Map competencyId to the latest action for quick lookup
+    const competencyIdToAction: Record<string, CompetencyAction> = {};
+    for (const action of competencyActions as CompetencyAction[]) {
+      if (typeof action.competencyId === 'string') {
+        // Always keep the latest action (assuming actions are sorted oldest to newest)
+        competencyIdToAction[action.competencyId] = action;
+      }
+    }
+    // Map conceptId to the latest action for quick lookup
+    const conceptIdToAction: Record<string, ConceptAction> = {};
+    for (const action of conceptActions as ConceptAction[]) {
+      if (typeof action.conceptId === 'string') {
+        conceptIdToAction[action.conceptId] = action;
+      }
+    }
+
+    // Helper: determine state from action (customize as needed)
+    function getCompetencyState(action?: CompetencyAction, concepts: Array<{ state?: string }> = []): string {
+      if (!action) return 'not_started';
+      // 1. If actionTimestamps has a final-quiz, state = mastered
+      if (Array.isArray(action.actionTimestamps) && action.actionTimestamps.some((ts: { actionType: string }) => ts.actionType === 'final-quiz')) {
+        return 'mastered';
+      }
+      // 2. If all concepts are in state revision or mastered, state = ready_for_final
+      const totalConcepts = concepts.length;
+      const revisionOrMastered = concepts.filter(c => c.state === 'revision' || c.state === 'mastered').length;
+      const started = concepts.filter(c => c.state === 'started').length;
+      if (totalConcepts > 0 && revisionOrMastered === totalConcepts) {
+        return 'ready_for_final';
+      }
+      // 3. If some concepts are in revision/mastered or actionTimestamps has a pre-quiz, state = started
+      if (
+        (totalConcepts > 0 && revisionOrMastered + started > 0) ||
+        (Array.isArray(action.actionTimestamps) && action.actionTimestamps.some((ts: { actionType: string }) => ts.actionType === 'pre-quiz'))
+      ) {
+        return 'started';
+      }
+      // 4. Otherwise, state = not_started
+      return 'not_started';
+    }
+
+    // Helper: determine state from concept action
+    function getConceptState(action?: ConceptAction): string {
+      if (!action) return 'not_started';
+      if (Array.isArray(action.answeredQuestions) && action.answeredQuestions.filter((q) => q.isValid).length >= 20) {
+        return 'mastered';
+      }
+      if (Array.isArray(action.actionTimestamps) && action.actionTimestamps.some((ts) => ts.actionType === 'finished')) {
+        return 'revision';
+      }
+      if (Array.isArray(action.actionTimestamps) && action.actionTimestamps.some((ts) => ts.actionType === 'started')) {
+        return 'started';
+      }
+      return 'not_started';
+    }
+
+    // Helper: compute next review date for a concept
+    function getConceptNextReview(action?: ConceptAction): Date | undefined {
+      if (!action || !Array.isArray(action.actionTimestamps) || !Array.isArray(action.answeredQuestions)) return undefined;
+      // If mastered, no review needed
+      if (Array.isArray(action.answeredQuestions) && action.answeredQuestions.filter((q) => q.isValid).length >= 20) {
+        return undefined;
+      }
+      const reviews = action.actionTimestamps.filter(({ actionType }) => ['review', 'quiz'].includes(actionType));
+      const nbReviews = reviews.length;
+      if (nbReviews === 0) return undefined;
+      const lastReview = reviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      const nextReviewIn = Math.min(10, nbReviews * nbReviews) * 12 * 60 * 60 * 1000;
+      let nextReviewDate = new Date(new Date(lastReview.createdAt).getTime() + nextReviewIn);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (nextReviewDate < today) {
+        nextReviewDate = today;
+      }
+      return nextReviewDate;
+    }
+
+    // For each subject, add startedCompetencies with .state and inject action into competency and concepts
+    for (const subject of subjects) {
+      if (!subject.competencies) {
+        (subject as SubjectModel & { startedCompetencies: StartedCompetency[] }).startedCompetencies = [];
+        continue;
+      }
+      const started: StartedCompetency[] = [];
+      for (const comp of subject.competencies) {
+        const action = competencyIdToAction[comp.id];
+        const compConcepts = comp.concepts || [];
+        // Compute state for each concept first (already done below, but ensure we have it for state computation)
+        if (Array.isArray(compConcepts)) {
+          for (const concept of compConcepts) {
+            const conceptAction = conceptIdToAction[concept.id];
+            if (conceptAction) {
+              concept.action = conceptAction;
+              concept.state = getConceptState(conceptAction);
+              const nextReview = getConceptNextReview(conceptAction);
+              if (nextReview) concept.nextReview = nextReview;
+            }
+          }
+        }
+        if (action) {
+          comp.action = action; // Inject action into competency
+          // Compute completion count for revision/mastered concepts
+          const revisionOrMasteredCount = compConcepts.filter(c => c.state === 'revision' || c.state === 'mastered').length;
+          const state = getCompetencyState(action, compConcepts);
+          const compWithState: StartedCompetency & { action?: CompetencyAction, revisionOrMasteredCount?: number, totalConcepts?: number } = {
+            ...comp,
+            state,
+            action,
+            revisionOrMasteredCount,
+            totalConcepts: compConcepts.length
+          };
+          started.push(compWithState);
+        }
+      }
+      (subject as SubjectModel & { startedCompetencies: StartedCompetency[] }).startedCompetencies = started;
+    }
+
+    return subjects;
   };
 
   return {
