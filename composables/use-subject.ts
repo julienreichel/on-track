@@ -326,8 +326,8 @@ export default function () {
       ) {
         return 'started';
       }
-      // 4. Otherwise, state = not_started
-      return 'not_started';
+      // 4. Otherwise, state = opened
+      return 'opened';
     }
 
     // Helper: determine state from concept action

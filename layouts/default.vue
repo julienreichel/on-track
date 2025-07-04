@@ -76,7 +76,7 @@
         >
           <q-list v-if="subject.startedCompetencies && subject.startedCompetencies.length">
             <q-item
-              v-for="comp in subject.startedCompetencies.filter(c => ['started', 'ready_for_final', 'mastered'].includes(c.state))"
+              v-for="comp in subject.startedCompetencies.filter(c => ['opened', 'started', 'ready_for_final', 'mastered'].includes(c.state))"
               :key="comp.id"
               clickable
               :to="`/competency/${comp.id}`"
