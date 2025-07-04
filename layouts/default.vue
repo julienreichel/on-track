@@ -217,8 +217,10 @@ const logout = async () => {
   router.push("/login");
 };
 
+const hideContinue = ref(false);
 // Handle Continue button logic
 async function handleContinue() {
+  hideContinue.value = true;
   if (!userSubjects.value.length) {
     notify({ message: 'No subjects to continue.' });
     return;
@@ -238,7 +240,7 @@ async function handleContinue() {
 }
 
 const showContinue = computed(() => {
-  if (!userSubjects.value.length) return false;
+  if (hideContinue.value ||!userSubjects.value.length) return false;
   const next = subjectService.getNextActionToContinue(userSubjects.value);
   return !!next;
 });

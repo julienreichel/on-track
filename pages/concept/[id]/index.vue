@@ -80,6 +80,7 @@
           :teacher-mode="teacherMode"
           :other-undone-concepts="otherUndoneConcepts"
           :other-competencies="otherCompetencies"
+          :active-tab="startTab"
           @read="updateRead"
         />
       </template>
@@ -129,6 +130,7 @@ const notesVisible = ref(false);
 const chatVisible = ref(false);
 const notePlaceholder = ref("*Notes...*");
 const newPost = ref("");
+const startTab = ref("theory");
 
 // Panel is visible if either notes or chat is enabled
 const panelVisible = computed(() => notesVisible.value || chatVisible.value);
@@ -225,6 +227,17 @@ onMounted(async () => {
         });
       }
       conceptAction.value.notes ??= "";
+      if (conceptAction.value.theory) {
+        if (conceptAction.value.examples) {
+          if (conceptAction.value.usedFlashCards?.length !== concept.value.flashCards?.length) {
+            startTab.value = "flashcards";
+          } else {
+            startTab.value = "quiz";
+          }
+        } else {
+          startTab.value = "examples";
+        }
+      } 
     } else {
       showIntro.value = false;
     }
