@@ -1,661 +1,252 @@
-### Calling OpenAI API without Time Limits using AWS Amplify
+# On-Track - AI-Powered Micro-Learning Platform
 
-One of the challenges developers face when integrating the OpenAI API into their applications is the 30-second execution time limit imposed by services like GraphQL. This limit can be particularly problematic for longer-running tasks, such as generating complex responses from OpenAI’s models. Fortunately, we can work around this limitation by leveraging AWS Amplify and DynamoDB to asynchronously process OpenAI requests, ensuring your application remains responsive without hitting the timeout wall.
+## Overview
 
+On-Track is an innovative online learning platform that leverages artificial intelligence to create personalized, bite-sized learning experiences. The platform focuses on micro-learning principles, breaking down complex subjects into manageable competencies and concepts that learners can master at their own pace.
 
-### Creating the Project
+### Key Features
 
-The first step is to create a Nuxt project that will serve as the front-end interface for interacting with OpenAI. You can easily scaffold a new project using the following command:
+- **AI-Generated Content**: Utilizes OpenAI's GPT models to dynamically generate educational content, questions, and assessments
+- **Micro-Learning Approach**: Breaks subjects into competencies and concepts for focused, incremental learning
+- **Spaced Repetition**: Implements intelligent review scheduling based on mastery levels
+- **Progress Tracking**: Comprehensive tracking of learner progress across subjects, competencies, and concepts
+- **Adaptive Learning Paths**: Tracks prerequisites and follow-up competencies to guide learning progression
+- **Kanban Board**: Visual organization of learning tasks and progress
+- **Multi-Language Support**: Built-in internationalization (i18n) for English and French
+
+### Learning Model
+
+The platform organizes knowledge hierarchically:
+
+1. **Subjects**: High-level topics (e.g., Mathematics, Programming)
+2. **Competencies**: Specific skills within a subject, with prerequisites and follow-ups
+3. **Concepts**: Individual learning units within competencies
+4. **Actions**: Learner interactions tracked for progress and scheduling
+
+### Current Status
+
+⚠️ **This project is a work in progress.** Features are actively being developed and refined.
+
+## Technology Stack
+
+### Frontend
+- **Nuxt 3**: Vue.js framework for server-side rendering and static site generation
+- **Quasar**: Vue.js component framework for UI components
+- **TypeScript**: Type-safe development
+
+### Backend
+- **AWS Amplify**: Backend-as-a-service platform
+- **AWS Lambda**: Serverless functions for AI processing
+- **DynamoDB**: NoSQL database for data storage
+- **GraphQL**: API layer for data operations
+
+### AI Integration
+- **OpenAI API**: GPT models for content generation
+- **Asynchronous Processing**: Lambda-based architecture to handle long-running AI requests without timeouts
+
+## Project Structure
+
+```
+on-track/
+├── amplify/                    # AWS Amplify backend configuration
+│   ├── auth/                   # Authentication resources
+│   ├── data/                   # GraphQL schema and data models
+│   ├── functions/              # Lambda functions
+│   │   └── dynamodb-open-ai-trigger/  # OpenAI integration
+│   └── backend.ts              # Backend infrastructure definition
+├── components/                 # Vue components
+│   ├── competency/             # Competency-related components
+│   ├── concept/                # Concept-related components
+│   ├── question/               # Question and quiz components
+│   └── subject/                # Subject display components
+├── composables/                # Vue composables for business logic
+│   ├── use-subject.ts          # Subject management
+│   ├── use-competency.ts       # Competency operations
+│   ├── use-concept.ts          # Concept handling
+│   └── use-*.ts                # Various service composables
+├── layouts/                    # Application layouts
+├── pages/                      # Application pages/routes
+│   ├── index.vue               # Dashboard/home page
+│   ├── subject/                # Subject pages
+│   ├── competency/             # Competency pages
+│   ├── concept/                # Concept learning pages
+│   ├── subjects/current.vue    # Current subjects overview
+│   └── kanban.vue              # Kanban board view
+├── plugins/                    # Nuxt plugins
+├── public/                     # Static assets
+└── server/                     # Server-side code
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18.x or higher
+- npm or yarn
+- AWS Account (for backend deployment)
+- OpenAI API Key
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd on-track
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up AWS Amplify**
+   ```bash
+   npm create amplify@latest
+   ```
+   Follow the prompts to configure your Amplify project.
+
+4. **Configure environment variables**
+
+   Create a `.env` file in the project root (or configure in Amplify Console):
+   ```env
+   OPENAI_MODEL=gpt-4o-mini
+   OPENAI_MAX_TOKEN=500
+   OPENAI_TEMPERATURE=0.7
+   ```
+
+5. **Set up OpenAI API Key**
+
+   In the AWS Amplify Console:
+   - Navigate to **Hosting** → **Secrets**
+   - Create a secret named `OPENAI_API_KEY`
+   - Set the value to your OpenAI API key
+
+### Development
+
+1. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:3000`
+
+2. **Run the Amplify sandbox (for backend development)**
+   ```bash
+   npx ampx sandbox
+   ```
+
+### Building for Production
+
+1. **Build the application**
+   ```bash
+   npm run build
+   ```
+
+2. **Deploy to AWS Amplify**
+
+   The project includes an `amplify.yml` configuration for CI/CD deployment:
+   ```bash
+   npx ampx pipeline-deploy --branch main --app-id $AWS_APP_ID
+   ```
+
+   Or deploy through the Amplify Console by connecting your Git repository.
+
+### Testing
 
 ```bash
-npx nuxi@latest init <project-name>
+# Run tests
+npm run test
+
+# Generate test coverage
+npm run test:coverage
 ```
 
-Next, push your newly created project to GitHub:
+## Key Concepts
 
-```bash
-cd /path/to/<project-name>
-git init
-git remote add origin <repo-url>
-git add .
-git commit -m "Adding Nuxt"
-git push -u origin main
-```
+### Asynchronous AI Processing
 
-### Deploying the Site Using AWS Amplify
+The platform uses a unique architecture to handle OpenAI API calls without timeout limitations:
 
-Once your project is ready, you can deploy it on AWS Amplify for hosting. Simply follow the steps outlined in the [official Nuxt documentation for AWS Amplify deployment](https://nuxt.com/deploy/aws-amplify).
+1. **Request Creation**: Frontend creates a request record in DynamoDB
+2. **Lambda Trigger**: DynamoDB Stream triggers a Lambda function
+3. **AI Processing**: Lambda calls OpenAI API (can run up to 5 minutes)
+4. **Response Update**: Lambda updates the DynamoDB record with the response
+5. **Frontend Polling**: Frontend polls for completion and displays results
 
-### Creating a Schema for OpenAI Requests
+This approach allows for long-running AI operations while keeping the UI responsive.
 
-To handle OpenAI requests without being constrained by time limits, we need to rethink the typical approach. Instead of directly using a GraphQL resolver (which would fail if the request took longer than 30 seconds), we can use a more robust solution.
+### Spaced Repetition Algorithm
 
-Here’s the plan:
-1. When the front-end makes a request, it sends the query to a DynamoDB table and gets an ID back.
-2. A backend trigger (a Lambda function) is invoked to process the request asynchronously.
-3. This Lambda function, which can run for much longer than 30 seconds, communicates with the OpenAI API.
-4. Once the response is received, the Lambda function updates the DynamoDB table.
-5. The front-end can then check back to fetch the result, ensuring the UI stays responsive.
+The platform implements intelligent review scheduling:
+- Reviews are scheduled based on the number of previous reviews
+- Review intervals increase exponentially: `nextReview = min(10, reviews²) × 12 hours`
+- Concepts are marked for revision after completion
+- Mastery is achieved after 20 correct answers
 
-This approach avoids the time constraints of GraphQL while ensuring that the OpenAI API request is handled effectively. This solution is inspired by the [DynamoDB stream example](https://docs.amplify.aws/vue/build-a-backend/functions/examples/dynamo-db-stream/) provided by AWS.
+### Progress Tracking
 
-### Adding Amplify for the Backend
+The system tracks multiple states for competencies and concepts:
 
-Before integrating the OpenAI API, you’ll need to configure AWS Amplify to handle the backend logic. Amplify will manage the infrastructure for us, including handling API calls, storing data, and managing Lambda triggers. In this section, we will set up Amplify for your project and create the necessary models to store and process OpenAI requests.
+**Competency States:**
+- `not_started`: No interaction yet
+- `started`: Pre-quiz taken or some concepts in progress
+- `ready_for_final`: All concepts mastered or in revision
+- `mastered`: Final quiz completed
 
-#### Initialize Amplify
+**Concept States:**
+- `not_started`: No interaction yet
+- `started`: Learning begun
+- `revision`: Completed and scheduled for review
+- `mastered`: 20+ correct answers achieved
 
-If you haven’t already done so, you’ll need to initialize Amplify in your Nuxt project. This will set up the backend infrastructure, including API, authentication, and data storage resources.
+## User Modes
 
-```bash
-npm create amplify@latest
-```
+### Student Mode
+- Navigate learning paths
+- Complete quizzes and exercises
+- Track progress
+- Review concepts
 
-This command initializes Amplify for your project.
-Once this setup is complete, Amplify will create the necessary configuration files for your backend services.
+### Teacher Mode
+- Create and manage subjects
+- Generate AI-powered content
+- View student progress (future feature)
+- Customize learning paths
 
-### Creating the Model for OpenAI Requests
+## Contributing
 
-Next, you’ll define the data model that Amplify will use to store OpenAI requests and responses in DynamoDB. This model will represent the structure of the data being processed by the backend, including the request details and the result from OpenAI.
+This is a work-in-progress project. Contributions are welcome! Please:
 
-In this example we will use a simplify query structure, allowing an optional system prompt and a user prompt. Other structure could be used.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-We create one key components:
-- **OpenAIRequest**: This model will store each request made to OpenAI, along with the response and metadata.
+## Roadmap
 
-Here’s how you can define the GraphQL schema for these models in the `amplify/data/resource.ts`
+- [ ] Enhanced AI content generation
+- [ ] Student analytics dashboard
+- [ ] Multi-user support with roles
+- [ ] Mobile app development
+- [ ] Collaborative learning features
+- [ ] Content marketplace
+- [ ] Advanced spaced repetition algorithms
+- [ ] Gamification elements
 
-```javascript
-import type { ClientSchema } from "@aws-amplify/backend";
-import { a, defineData } from "@aws-amplify/backend";
+## License
 
-// Define the schema for the data models
-const schema = a.schema({
-  // Custom type to store the number of tokens used
-  OpenAIUsage: a.customType({
-    prompt_tokens: a.integer(),          // Number of tokens used in the prompt
-    completion_tokens: a.integer(),      // Number of tokens used in the completion (response)
-    total_tokens: a.integer(),           // Total number of tokens used (prompt + completion)
-  }),
+MIT License, see license.txt
 
-  // Model to store OpenAI requests and their responses
-  OpenAIRequest: a
-    .model({
-      id: a.id().required(),             // Unique identifier for each request
-      prompt: a.string(),                // The user's input or query for OpenAI
-      token: a.integer(),                // Maximum number of tokens allowed in the response
-      format: a.string(),                // Format of the response (e.g., "json", "text")
-      content: a.string(),               // The response generated by OpenAI
-      token_usage: a.ref("OpenAIUsage"), // Reference to the custom type storing token usage
-      finish_reason: a.string(),         // Reason why the OpenAI API stopped generating the response (e.g., token limit reached)
-      ttl: a.integer(),                  // Time-to-live (TTL) for the record, allowing automatic deletion after a certain period
-    })
-    .authorization((allow) => [allow.guest()]), // Allow unauthenticated (guest) users to make requests
-});
+## Acknowledgments
 
-// Exporting the schema and data definition for use in the Amplify project
-export type Schema = ClientSchema<typeof schema>;
+- Built with [Nuxt 3](https://nuxt.com/)
+- UI powered by [Quasar Framework](https://quasar.dev/)
+- Backend infrastructure by [AWS Amplify](https://aws.amazon.com/amplify/)
+- AI capabilities from [OpenAI](https://openai.com/)
 
-export const data = defineData({
-  schema,
-  authorizationModes: {
-    defaultAuthorizationMode: "iam",  // Use AWS Identity and Access Management (IAM) for authorization
-  },
-});
-```
+## Support
 
-#### Explanation of the Code:
+For issues, questions, or contributions, please open an issue on GitHub.
 
-##### **OpenAIUsage Custom Type**:
-   - This custom type is used to store the token usage metrics returned by the OpenAI API.
-   - The `prompt_tokens` field tracks the number of tokens used in the prompt (user input), while the `completion_tokens` field tracks the tokens used by OpenAI in generating the response. The `total_tokens` field sums both.
+---
 
-##### **OpenAIRequest Model**:
-   - This is the main model that stores each request made to OpenAI, along with the metadata and response.
-   - `id`: Each request is assigned a unique ID (required).
-   - `prompt`: The actual question or query input by the user.
-   - `token`: Defines the maximum number of tokens the model should use for generating a response.
-   - `format`: The format of the response, typically "json" or plain text.
-   - `content`: The response content returned by OpenAI.
-   - `token_usage`: A reference to the `OpenAIUsage` custom type, which records how many tokens were used.
-   - `finish_reason`: The reason the response generation stopped (e.g., the model reached the token limit).
-   - `ttl`: Time-to-live for the DynamoDB entry. After the specified time, DynamoDB will automatically remove the entry, helping to clean up old data.
-
-##### **Authorization**:
-   - The `.authorization()` method allows specifying who can interact with this model. In this case, we’ve set it to allow guest users (unauthenticated) to make OpenAI requests. You can customize this to only allow authenticated users if needed.
-
-##### **IAM Authorization**:
-   - Amplify will use AWS Identity and Access Management (IAM) for managing who can access and modify the OpenAIRequest model.
-
-### Adding the Lambda Code
-
-Now that we have set up the data model, it's time to add the Lambda function that will handle the OpenAI API requests asynchronously. This Lambda function will be triggered whenever a new entry is added to the DynamoDB table (which represents a new OpenAI request). The function will process the request, call the OpenAI API, and update the DynamoDB table with the response.
-
-#### Step 1: Install the Required Dependencies
-
-Before creating the Lambda function, we need to install a few dependencies:
-
-```bash
-npm add --save-dev @types/aws-lambda @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb
-```
-
-- **@types/aws-lambda**: Provides TypeScript types for AWS Lambda functions, ensuring type safety when building Lambda handlers.
-- **@aws-sdk/client-dynamodb**: The official AWS SDK client for interacting with DynamoDB from the Lambda function.
-- **@aws-sdk/lib-dynamodb**: A higher-level library that simplifies DynamoDB interactions.
-
-#### Step 2: Create the Lambda Handler
-
-Create the Lambda handler function in the file `amplify/functions/dynamodb-open-ai-trigger/handler.ts`. This handler will be triggered by DynamoDB Streams whenever a new request (i.e., a new record) is inserted into the DynamoDB table.
-
-```javascript
-import type { DynamoDBStreamHandler } from "aws-lambda";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-
-import { env } from "$amplify/env/dynamodb-open-ai-trigger"; // Environment variables
-
-// Initialize DynamoDB clients
-const client = new DynamoDBClient({});
-const ddbDocClient = DynamoDBDocumentClient.from(client);
-
-// Lambda handler triggered by DynamoDB streams
-export const handler: DynamoDBStreamHandler = async (event) => {
-  const apiKey = env.OPENAI_API_KEY; // Fetch OpenAI API key from environment variables
-
-  // Helper function to send a request to the OpenAI API
-  const request = async (body: object): Promise<any> => {
-    const END_POINT = "https://api.openai.com/v1/chat/completions";
-
-    const response = await fetch(END_POINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-    return await response.json();
-  };
-
-  // Process each record in the DynamoDB stream
-  await Promise.all(
-    event.Records.map(async (record) => {
-      if (record.eventName === "INSERT") { // Only process new records (inserts)
-        const tableName = record.eventSourceARN?.split("/")[1]; // Get table name from event
-        const key = record.dynamodb?.Keys?.id?.S; // Get record key (request ID)
-        const row = record.dynamodb?.NewImage; // Get the new record's data
-
-        if (!tableName || !row || !key) return; // Skip if any essential data is missing
-
-        // Extract parameters for the OpenAI request
-        const temperature = Number(env.OPENAI_TEMPERATURE) || 0.7;
-        const max_tokens = Number(row.token?.N) || Number(env.OPENAI_MAX_TOKEN) || 50;
-        const model = env.OPENAI_MODEL;
-
-        // Construct the OpenAI API message format
-        let messages = [
-            { role: "user", content: row.prompt?.S }
-        ];
-
-        // Prepare request body for OpenAI API
-        const body = {
-          messages,
-          model,
-          max_tokens,
-          temperature,
-        };
-
-        // Make the request to OpenAI
-        let data = await request(body);
-
-        // If there is an error, create a fallback response
-        if (data.error) {
-          data.choices = [
-            {
-              message: { content: data.error.message },
-              finish_reason: data.error.code,
-            },
-          ];
-          data.usage = {}; // Fallback usage data
-        }
-
-        // Update the DynamoDB table with the response from OpenAI
-        const updateParams = {
-          TableName: tableName,
-          Key: { id: key }, // Identify the record to update
-          UpdateExpression:
-            "set content = :content, finish_reason = :finish_reason, token_usage = :token_usage, updatedAt = :updatedAt", // Update fields
-          ExpressionAttributeValues: {
-            ":content": data.choices[0].message.content.trim(), // Response content
-            ":finish_reason": data.choices[0].finish_reason, // Reason for finishing
-            ":token_usage": data.usage, // Token usage data
-            ":updatedAt": new Date().toISOString(), // Timestamp for the update
-          },
-        };
-        const command = new UpdateCommand(updateParams);
-        await ddbDocClient.send(command);
-      }
-    }),
-  );
-
-  return {
-    batchItemFailures: [], // Return empty to indicate successful processing of the batch
-  };
-};
-```
-
-#### Explanation of the Code:
-
-##### **Processing the DynamoDB Record**:
-```javascript
-await Promise.all(
-  event.Records.map(async (record) => {
-    if (record.eventName === "INSERT") {
-      const tableName = record.eventSourceARN?.split("/")[1]; // Get table name from event
-      const key = record.dynamodb?.Keys?.id?.S; // Get record key (request ID)
-      const row = record.dynamodb?.NewImage; // Get the new record's data
-      ...
-    }
-  }
-)
-```
-   - **Checking for new records**: The function filters records by checking if the event is of type "INSERT". Only new records are processed.
-   - **Extracting data**: The key (ID) and data fields (such as the prompt, system message, and tokens) are extracted from the new record.
-
-##### **Calling the OpenAI API**:
-```javascript
-const request = async (body: object): Promise<any> => {
-    const END_POINT = "https://api.openai.com/v1/chat/completions";
-
-    const response = await fetch(END_POINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-    return await response.json();
-  };
-```
-   - The function constructs a **POST request** to the OpenAI API using the prompt and other settings from the DynamoDB record. The body of the request is built dynamically based on the incoming data.
-
-##### **Handling API Errors**:
-   - If the OpenAI API returns an error (e.g., invalid prompt, token limit exceeded), the function ensures that the error message is captured and stored in DynamoDB as part of the response, so the front end can display a meaningful message to the user.
-
-##### **Updating DynamoDB**:
-```javascript
-// Update the DynamoDB table with the response from OpenAI
-const updateParams = {
-    TableName: tableName,
-    Key: { id: key }, // Identify the record to update
-    UpdateExpression:
-    "set content = :content, finish_reason = :finish_reason, token_usage = :token_usage, updatedAt = :updatedAt", // Update fields
-    ExpressionAttributeValues: {
-    ":content": data.choices[0].message.content.trim(), // Response content
-    ":finish_reason": data.choices[0].finish_reason, // Reason for finishing
-    ":token_usage": data.usage, // Token usage data
-    ":updatedAt": new Date().toISOString(), // Timestamp for the update
-    },
-};
-const command = new UpdateCommand(updateParams);
-await ddbDocClient.send(command);
-```
-   - Once the response is received from OpenAI, the DynamoDB table is updated with the response content, token usage, and the reason for finishing (e.g., "max tokens reached").
-   - The **UpdateCommand** is used to update the DynamoDB table, ensuring that the original request entry is updated with the results of the OpenAI API call.
-
-##### **Returning Batch Item Failures**:
-   - **`batchItemFailures`**: The function returns an empty array, indicating that all records were processed successfully. If there were any errors in processing, specific records could be flagged as failures, which would cause the Lambda to reprocess them.
-
-### Defining the Lambda Resource
-
-After creating the Lambda handler, you need to define the Lambda function as a resource in AWS Amplify. This resource configuration specifies important parameters, such as the function’s timeout duration, the OpenAI API key as a secret, and various environment variables that control the behavior of the Lambda function.
-
-The following configuration will define the Lambda resource in `amplify/functions/dynamodb-open-ai-trigger/resource.ts`. This ensures that the Lambda function has the necessary permissions, configurations, and environment variables.
-
-#### Create the Resource Information
-
-Along with the Lambda handler, the resource itself needs to be declared. Here’s the code for setting up the resource information for the Lambda function:
-
-```javascript
-import { defineFunction, secret } from "@aws-amplify/backend";
-
-export const dynamoDBAITrigger = defineFunction({
-  name: "dynamodb-open-ai-trigger",
-  timeoutSeconds: 300, // Set the timeout for the Lambda function to 300 seconds (5 minutes)
-  environment: {
-    // Store the OpenAI API key securely as a secret in Amplify
-    OPENAI_API_KEY: secret("OPENAI_API_KEY"),
-
-    // The model, max tokens, and temperature are configurable parameters fetched from environment variables
-    OPENAI_MODEL: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-    OPENAI_MAX_TOKEN: process.env.OPENAI_MAX_TOKEN ?? "500",
-    OPENAI_TEMPERATURE: process.env.OPENAI_TEMPERATURE ?? "0.7",
-  },
-});
-```
-
-#### Explanation of the Code:
-
-##### **Lambda Timeout Configuration (`timeoutSeconds`)**:
-   - The timeout is set to **300 seconds (5 minutes)**, allowing the function to process longer-running OpenAI queries. This extended timeout ensures that even large responses can be processed without prematurely terminating the function.
-
-##### **Secrets Management (`OPENAI_API_KEY`)**:
-   - **`OPENAI_API_KEY: secret("OPENAI_API_KEY")`**: The OpenAI API key is declared as a **secret** in Amplify. This is an important security measure because storing sensitive information such as API keys directly in environment variables or code can expose it to potential threats.
-
-##### **Environment Variables**:
-   - Environment variables allow for dynamic configuration of the Lambda function. In this case, the following parameters are set via environment variables:
-     - **`OPENAI_MODEL`**: Specifies the OpenAI model to use (e.g., gpt-4o-mini).
-     - **`OPENAI_MAX_TOKEN`**: The maximum number of tokens for the OpenAI response. The default is `500` tokens, but this can be overridden by the request payload.
-     - **`OPENAI_TEMPERATURE`**: Controls the randomness of the model's responses.
-
-   By setting these parameters in the environment, you can easily modify the behavior of your Lambda function across different environments (development, production, etc.) without changing the code. It also allows for greater flexibility when tuning the performance of OpenAI requests.
-
-
-### Updating the Backend Definition File to Enable the Trigger
-
-In this step, we will configure the backend by defining the necessary **IAM roles**, enabling **DynamoDB Streams**, and setting **TTL (Time to Live)** for the `OpenAIRequest` table. This configuration ensures that the Lambda function can read from and update the DynamoDB table, and it will be triggered when a new request is added to the table.
-
-#### Step 1: Install the Required Dependency
-
-We need the AWS CDK library to define infrastructure-as-code resources such as IAM roles, DynamoDB streams, and event mappings:
-
-```bash
-npm add --save-dev aws-cdk-lib
-```
-
-#### Step 2: Update the Backend Definition File
-
-In the file `amplify/backend/backend.ts`, you will update the backend definition to include the necessary IAM roles, configure DynamoDB streams for the Lambda trigger, and enable TTL for the DynamoDB table.
-
-```javascript
-import { defineBackend } from "@aws-amplify/backend";
-import { auth } from './auth/resource';
-import { data } from './data/resource';
-
-import { Stack } from "aws-cdk-lib"; // Import Stack to manage resources in the same deployment stack
-import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam"; // IAM roles and policies for permissions
-import { EventSourceMapping, StartingPosition } from "aws-cdk-lib/aws-lambda"; // Event source for triggering Lambda on DynamoDB updates
-
-import { dynamoDBOpenAITrigger } from "./functions/dynamodb-open-ai-trigger/resource"; // Import the Lambda trigger resource
-
-// Define the backend configuration
-const backend = defineBackend({
-  auth,
-  data,
-  dynamoDBOpenAITrigger, // Include the Lambda trigger as part of the backend
-});
-
-// Get a reference to the OpenAIRequest table defined in the data schema
-const OpenAIRequestTable = backend.data.resources.tables["OpenAIRequest"];
-
-// Define an IAM policy to allow the Lambda function to read and update the DynamoDB table
-const policy = new Policy(
-  Stack.of(OpenAIRequestTable), // Ensures that the policy is attached to the same stack as the table to avoid race conditions during deployment
-  "DynamoDBTriggerPolicyForLambda",
-  {
-    statements: [
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: [
-          "dynamodb:DescribeStream",  // Describe the DynamoDB stream (needed to identify the stream)
-          "dynamodb:GetRecords",      // Read records from the stream
-          "dynamodb:GetShardIterator", // Get the shard iterator to process stream records
-          "dynamodb:ListStreams",     // List available DynamoDB streams
-          "dynamodb:UpdateItem",      // Update items in the DynamoDB table (e.g., after receiving OpenAI responses)
-        ],
-        resources: ["*"], // This can be scoped down to the specific DynamoDB table for better security
-      }),
-    ],
-  },
-);
-
-// Attach the policy to the Lambda function role, allowing it to interact with the DynamoDB table
-backend.dynamoDBOpenAITrigger.resources.lambda.role?.attachInlinePolicy(policy);
-
-// Create an event source mapping to trigger the Lambda function when new records are added to the DynamoDB table
-const mapping = new EventSourceMapping(
-  Stack.of(OpenAIRequestTable), // Ensure the mapping is in the same stack as the table to avoid race conditions
-  "DynamoDBTriggerEvent",
-  {
-    target: backend.dynamoDBOpenAITrigger.resources.lambda, // Target the Lambda function that will process the DynamoDB stream
-    eventSourceArn: OpenAIRequestTable.tableStreamArn, // The ARN of the DynamoDB stream that will trigger the Lambda
-    startingPosition: StartingPosition.LATEST, // Start processing from the latest records in the stream
-  },
-);
-
-// Ensure that the event source mapping is created after the IAM policy is attached to avoid dependency issues
-mapping.node.addDependency(policy);
-
-// Configure TTL (Time to Live) for the DynamoDB table to automatically delete old entries after a set time
-backend.data.resources.cfnResources.amplifyDynamoDbTables[
-  "OpenAIRequest"
-].timeToLiveAttribute = {
-  attributeName: "ttl", // Attribute used for TTL in the table (defined in the schema)
-  enabled: true, // Enable TTL for the table
-};
-```
-
-#### Explanation of the Code
-
-##### **IAM Role for the Lambda Function**:
-```javascript
-// Define an IAM policy to allow the Lambda function to read and update the DynamoDB table
-const policy = new Policy(
-  Stack.of(OpenAIRequestTable), // Ensures that the policy is attached to the same stack as the table to avoid race conditions during deployment
-  "DynamoDBTriggerPolicyForLambda",
-  {
-    statements: [
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: [
-          "dynamodb:DescribeStream",  // Describe the DynamoDB stream (needed to identify the stream)
-          "dynamodb:GetRecords",      // Read records from the stream
-          "dynamodb:GetShardIterator", // Get the shard iterator to process stream records
-          "dynamodb:ListStreams",     // List available DynamoDB streams
-          "dynamodb:UpdateItem",      // Update items in the DynamoDB table (e.g., after receiving OpenAI responses)
-        ],
-        resources: ["*"], // This can be scoped down to the specific DynamoDB table for better security
-      }),
-    ],
-  },
-);
-
-// Attach the policy to the Lambda function role, allowing it to interact with the DynamoDB table
-backend.dynamoDBOpenAITrigger.resources.lambda.role?.attachInlinePolicy(policy);
-```
-The Lambda function needs permission to interact with the DynamoDB table.
-
-This is achieved through an **IAM policy** that grants the necessary actions. Specifically, we allow the Lambda function to:
-- **Describe the DynamoDB stream**: This allows the function to read stream metadata.
-- **Get records from the stream**: Necessary for processing newly added records.
-- **Get the shard iterator**: Required for reading the stream in a paginated manner.
-- **Update DynamoDB items**: The Lambda function needs to update the DynamoDB table after it receives a response from the OpenAI API.
-
-The policy is attached to the Lambda's execution role using `attachInlinePolicy`. This ensures that the Lambda has the right permissions to process requests and update DynamoDB entries.
-
-##### **Using the Stack to Avoid Race Conditions**:
-The use of `Stack.of()` ensures that the Lambda function, DynamoDB table, and IAM policy are all deployed in the same CloudFormation stack. This avoids **race conditions** during deployment, where resources may be created in an incorrect order. For example, the policy needs to be attached to the Lambda before the event source mapping is established, so that the Lambda can properly interact with the DynamoDB stream.
-
-By explicitly defining the stack for each resource, we ensure that dependencies are respected during the deployment process.
-
-##### **Event Source Mapping for DynamoDB Streams**:
-```javascript
-// Create an event source mapping to trigger the Lambda function when new records are added to the DynamoDB table
-const mapping = new EventSourceMapping(
-  Stack.of(OpenAIRequestTable), // Ensure the mapping is in the same stack as the table to avoid race conditions
-  "DynamoDBTriggerEvent",
-  {
-    target: backend.dynamoDBOpenAITrigger.resources.lambda, // Target the Lambda function that will process the DynamoDB stream
-    eventSourceArn: OpenAIRequestTable.tableStreamArn, // The ARN of the DynamoDB stream that will trigger the Lambda
-    startingPosition: StartingPosition.LATEST, // Start processing from the latest records in the stream
-  },
-);
-```
-
-The `EventSourceMapping` links the DynamoDB stream to the Lambda function. This configuration ensures that whenever a new record is added to the `OpenAIRequest` table, the stream automatically triggers the Lambda function to process the record:
-- **`target`**: The Lambda function that will be triggered when the DynamoDB stream detects new records.
-- **`eventSourceArn`**: The Amazon Resource Name (ARN) of the DynamoDB stream that will trigger the Lambda.
-- **`startingPosition`**: Specifies where in the stream to start processing. In this case, we use `StartingPosition.LATEST` to only process new records (not historical ones).
-
-The event source mapping is a crucial part of this setup, as it links the DynamoDB table to the Lambda function, ensuring that the Lambda function processes every new OpenAI request asynchronously.
-
-##### **Enabling TTL on the DynamoDB Table**:
-```javascript
-// Configure TTL (Time to Live) for the DynamoDB table to automatically delete old entries after a set time
-backend.data.resources.cfnResources.amplifyDynamoDbTables[
-  "OpenAIRequest"
-].timeToLiveAttribute = {
-  attributeName: "ttl", // Attribute used for TTL in the table (defined in the schema)
-  enabled: true, // Enable TTL for the table
-};
-```
-Time-to-Live (TTL) is configured for the DynamoDB table to automatically delete old records after a certain period. In this case, we use the `ttl` attribute (defined in the schema) to specify the expiration time for each record. Once the TTL is reached, DynamoDB automatically removes the record from the table.
-
-- **`ttl`**: The attribute used for TTL in the DynamoDB table. Each record will have a TTL value that determines when the record expires.
-- **`enabled: true`**: This enables TTL for the table, ensuring that old records are cleaned up without manual intervention.
-
-Enabling TTL is important for maintaining a clean and scalable table, especially when handling a large number of OpenAI requests.
-
-### Configure the Backend Build
-
-To ensure the backend components are deployed correctly as part of your CI/CD pipeline, you need to update the build configuration in `amplify.yml` or directly in the Amplify console.
-
-#### Amplify Build Configuration (`amplify.yml`)
-
-The following configuration ensures that the backend is deployed automatically during the build process:
-
-```yml
-backend:
-  phases:
-    build:
-      commands:
-        - "npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID"
-```
-
-This command triggers the deployment of the backend infrastructure as part of the Amplify pipeline. It uses the branch name and app ID to ensure the correct environment is deployed.
-
-### Set Up OpenAI API Key in Amplify
-
-Once the build configuration is in place, you need to securely store your OpenAI API key as a secret in the Amplify console. This allows your Lambda function to access the API key without exposing it in the code.
-
-To do this:
-
-1. Go to the **Amplify Console**.
-2. Navigate to **Hosting** -> **Secrets**.
-3. Create a new secret named `OPENAI_API_KEY` and provide the value of your OpenAI API key.
-
-This ensures that your API key is securely stored and accessible to the Lambda function, enabling it to make authenticated requests to the OpenAI API.
-
-### Making the Call from the Front-End
-
-The final step is to trigger the OpenAI request from the front-end and retrieve the response. This is done using a **GraphQL mutation** to create the request and an active polling mechanism to check for the completion of the request. Once the response is ready, it will be fetched and displayed on the front-end.
-
-The code below shows how to make the request, check for the response, and handle timeouts using a maximum wait time of 5 minutes.
-
-```javascript
-import { Amplify } from 'aws-amplify';
-import outputs from './amplify_outputs.json'; // Load the Amplify configuration
-Amplify.configure(outputs); // Configure Amplify with the app's environment settings
-
-import { generateClient } from 'aws-amplify/data';
-const client = generateClient(); // Generate a GraphQL client for interacting with Amplify's backend
-
-// Prepare the request payload
-const input = {
-    prompt: "Say hello",       // The user prompt (query) for OpenAI
-    token: 1000                // Maximum number of tokens allowed for the OpenAI response
-};
-
-// Create a new OpenAI request using the GraphQL mutation
-const { data, error } = await client.models.OpenAIRequest.create(input);
-if (error) {
-    throw new Error('Error creating OpenAI request'); // Handle errors during the creation of the request
-}
-const requestId = data.id;
-
-// Polling: Continuously check if the response is ready, with a maximum wait time of 5 minutes
-let totalWaitTime = 0; // Track the total wait time
-let waitTime = 2000;   // Initial wait time (2 seconds)
-while (totalWaitTime < 300 * 1000) {
-    await new Promise((resolve) => setTimeout(resolve, waitTime)); // Wait for the specified time before checking again
-    totalWaitTime += waitTime; // Accumulate the wait time
-    waitTime = Math.min(waitTime + 1000, 10000); // Gradually increase the wait time (exponential backoff) to reduce load
-
-    // Fetch the status of the request from the backend using the unique request ID
-    const { data } = await client.models.OpenAIRequest.get({ id: requestId });
-
-    if (data.finish_reason) { // Check if the request has completed
-        console.log(data.content); // Do something with the respopnse
-        break; // Exit the loop once the response is received
-    }
-}
-```
-
-#### Explanation of the Code
-
-##### **Configuring Amplify**:
-```javascript
-import outputs from './amplify_outputs.json';
-Amplify.configure(outputs);
-```
-- **Amplify.configure**: This function configures Amplify by loading the environment-specific settings from `amplify_outputs.json`. This file contains the necessary configurations for the API, authentication, and other resources created by AWS Amplify. This step ensures that the front-end is connected to the correct backend environment (e.g., dev or prod).
-This should normally be once when loading the application, it was included here in order to have a complete working sample.
-
-##### **Generating a GraphQL Client**:
-```javascript
-import { generateClient } from 'aws-amplify/data';
-const client = generateClient();
-```
-- **generateClient**: This function generates a GraphQL client that allows the front-end to communicate with the Amplify backend. This client provides methods for interacting with the models defined in your schema, such as `OpenAIRequest`.
-
-##### **Creating an OpenAI Request**:
-```javascript
-const input = {
-    system: systemQuery.value,
-    prompt: prompt.value,
-    token: 1000
-};
-const { data, error } = await client.models.OpenAIRequest.create(input);
-```
-- **input**: This object contains the parameters for the OpenAI request:
-  - **prompt**: The user's input or question for OpenAI.
-  - **token**: The maximum number of tokens allowed in the response (defaulting to 1000 here).
-
-- **client.models.OpenAIRequest.create(input)**: This method sends a GraphQL mutation to create a new entry in the DynamoDB table for the OpenAI request. The table will store the request and eventually hold the response from the Lambda function that processes it asynchronously.
-
-- **data.id**: The unique identifier for the request is returned upon successful creation. This ID is essential for tracking and fetching the response later.
-
-##### **Polling for the Response**:
-```javascript
-let totalWaitTime = 0;
-let waitTime = 2000;
-while (totalWaitTime < 300 * 1000) {
-    await new Promise((resolve) => setTimeout(resolve, waitTime));
-    totalWaitTime += waitTime;
-    waitTime = Math.min(waitTime + 1000, 10000);
-
-    const { data } = await client.models.OpenAIRequest.get({ id: requestId });
-
-    if (data.finish_reason) {
-        response.value = data.content;
-        break;
-    }
-}
-```
-- **Polling Mechanism**: The front-end uses a **polling** approach to continuously check if the OpenAI request has been processed and the response is ready. This is one of the possible approach to wait for an answers from OpenAI.
-
-- **Fetching the Request Status**: Inside the polling loop, the front-end makes a `GET` request to fetch the current status of the OpenAI request using its unique `requestId`:
-  - **client.models.OpenAIRequest.get({ id: requestId })**: This method fetches the request record from the DynamoDB table by its `id`. If the request is completed, the `finish_reason` field will be populated with a reason (e.g., "finished", "max tokens reached").
-  - **if (data.finish_reason)**: Once the OpenAI API finishes processing the request, the `finish_reason` field is set in DynamoDB (e.g., "finished"). At this point, the front-end breaks out of the polling loop and displays the result.
-
-### Conclusion
-
-By combining the power of AWS Amplify, DynamoDB, and Lambda, we have successfully created a robust system that allows you to make asynchronous calls to the OpenAI API without being constrained by typical API timeouts. Through careful design, we ensured that long-running requests are handled efficiently, with the backend processing the queries asynchronously and updating the front-end once the results are ready.
-
-This solution addresses the common challenge of dealing with API time limits by decoupling the request process from the immediate response, allowing for a more responsive and scalable user experience. By leveraging Amplify's infrastructure, we've ensured security, scalability, and flexibility, making this solution applicable to a wide range of applications.
-
-If you'd like to dive deeper or see the full implementation, the complete working code for this project can be found in the accompanying **GitHub repository**. You can explore the entire flow, from the front-end interaction to the Lambda function and DynamoDB integration, and easily deploy it in your own environment.
-
-Feel free to clone the repository, experiment, and build upon this solution for your specific use cases.
-
+**Note**: This project is under active development. Features and documentation are subject to change.
